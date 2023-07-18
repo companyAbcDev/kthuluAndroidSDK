@@ -16,7 +16,7 @@ suspend fun account() = runBlocking<Unit> {
         val networkArray = arrayOf("ethereum", "klaytn", "polygon", "binance")
         val mnemonic = "ripple shrimp endorse company horror benefit boring click enter clog grab aware";
         val privateKey = "0x8d993503bb78ab5abfdad2b194bad4ae7cba9fd4590e538d232ba84c41765887";
-        val token_address = "0x007EA5C0Ea75a8DF45D288a4debdD5bb633F9e56"
+        val token_address = "0xab40804c3da6812f41d7744fde8d6b7e8a7c30d5"
         val address = "0xDb639492E2d2A0872A6C3265163fCcC034D036b8"
         val owner = "abcuser"
 
@@ -57,7 +57,7 @@ suspend fun account() = runBlocking<Unit> {
          * true
          */
         // Get account asynchronously to mnemonic
-        var restoreAccountMnemonic = async { restoreAccountAsync("klaytn", null, mnemonic) }.await()
+        var restoreAccountMnemonic = async { restoreAccountAsync("ethereum", null, mnemonic) }.await()
         println(
             """
             restoreAccountMnemonic:
@@ -90,7 +90,7 @@ suspend fun account() = runBlocking<Unit> {
          */
 
         // Find account info asynchronously to mainnet & address
-        val getAccountInfo = async { getAccountInfoAsync(networkString, address) }.await()
+        val getAccountInfo = async { getAccountInfoAsync("ethereum", "0xab40804c3da6812f41d7744fde8d6b7e8a7c30d5") }.await()
         println(
             """
             getAccountInfo:
@@ -370,6 +370,17 @@ suspend fun restoreAccountAsync(
 
         returnData.put("network", network)
         returnData.put("address", credentials.address)
+
+        if(privateKey == null){
+            returnData.put("private", "")
+        } else {
+            returnData.put("private", encrypt(privateKey))
+        }
+        if(mnemonic == null){
+            returnData.put("mnemonic", "")
+        } else {
+            returnData.put("mnemonic", encrypt(mnemonic))
+        }
 
         val networkLoadData = JSONArray(loadData(network))
         networkLoadData.put(returnData)

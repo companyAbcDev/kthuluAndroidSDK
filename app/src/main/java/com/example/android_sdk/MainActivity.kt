@@ -30,14 +30,16 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         )
 
         val networkArray = arrayOf("ethereum", "cypress", "matic", "bnb")
-        val accountsAddtess = "0x1C3c32DFB8cBe1E144d5e79eB41392e535405C40"
+        val accountArray = arrayOf("0x56d6d11df2Aa6A0dBC5569a56C9299fCDb418911", "0xEbEE523BA7C083538E2820245B86fE536FBd2176")
+//        val accountsAddtess = "0x1C3c32DFB8cBe1E144d5e79eB41392e535405C40"
         // Using coroutines to avoid blocking the UI thread
         launch {
             withContext(Dispatchers.IO) {
 //                account()
 //                transaction()
 //                var getNFTsByWalletTest = getNFTsByWallet(networkArray, account)
-//                println("getNFTsByWalletTest ===== " + getNFTsByWalletTest)
+                var getNFTsByWalletTest = getNFTsByWallet(networkArray, accountArray)
+                println("getNFTsByWalletTest ===== " + getNFTsByWalletTest)
 //                var getNFTTransaction = getNFTTransaction("ethereum", "0x3296379a4F0fFEcE6Da595d1206f3dD85fC08508", "9072")
 //                println("getNFTTransaction ==== " + getNFTTransaction)
 //                  var gas = getEstimateGas("ethereum", "baseFee")

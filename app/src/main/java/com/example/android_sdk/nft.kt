@@ -64,7 +64,7 @@ public val addrTransferGoerli = "0x25df7c4d54ce69faf37352cbe98e2d3f9281eaf7"
 //)
 suspend fun getNFTsByWallet(
     network: Array<String>,
-    account: String
+    account: Array<String>
 ): JSONArray = withContext(Dispatchers.IO) {
 
     val dbConnector = DBConnector()
@@ -73,6 +73,7 @@ suspend fun getNFTsByWallet(
     val nftArray = JSONArray()
 
     val net = network.joinToString("','", "'", "'")
+    val acc = account.joinToString("','", "'", "'")
     val query = """
            SELECT owner.network, owner.account, owner.balance,
                 collection.collection_id, collection.collection_name, collection.collection_symbol,
@@ -81,7 +82,7 @@ suspend fun getNFTsByWallet(
             FROM nft_owner_table AS owner
             JOIN nft_token_table AS token ON owner.collection_id = token.collection_id AND owner.token_id = token.token_id AND owner.network = token.network
             JOIN nft_collection_table AS collection ON token.collection_id = collection.collection_id AND token.network = collection.network
-             WHERE owner.network IN ($net) AND owner.account = '$account' AND owner.balance != '0'
+             WHERE owner.network IN ($net) AND owner.account IN ($acc) AND owner.balance != '0'
              ORDER BY token.block_number DESC
         """
     if (connection != null) {
@@ -162,6 +163,106 @@ suspend fun getNFTsByWallet(
     dbConnector.disconnect()
     nftArray
 }
+//suspend fun getNFTsByWallet(
+//    network: Array<String>,
+//    account: String
+//): JSONArray = withContext(Dispatchers.IO) {
+//
+//    val dbConnector = DBConnector()
+//    dbConnector.connect()
+//    val connection = dbConnector.getConnection()
+//    val nftArray = JSONArray()
+//
+//    val net = network.joinToString("','", "'", "'")
+//    val query = """
+//           SELECT owner.network, owner.account, owner.balance,
+//                collection.collection_id, collection.collection_name, collection.collection_symbol,
+//                token.nft_type, token.block_number, token.token_id, token.name as token_name,
+//                token.description, token.image_url, token.attributes, token.token_info, token.minted_time
+//            FROM nft_owner_table AS owner
+//            JOIN nft_token_table AS token ON owner.collection_id = token.collection_id AND owner.token_id = token.token_id AND owner.network = token.network
+//            JOIN nft_collection_table AS collection ON token.collection_id = collection.collection_id AND token.network = collection.network
+//             WHERE owner.network IN ($net) AND owner.account = '$account' AND owner.balance != '0'
+//             ORDER BY token.block_number DESC
+//        """
+//    if (connection != null) {
+//        val dbQueryExector = DBQueryExector(connection)
+//        val getNFT: ResultSet? = dbQueryExector.executeQuery(query)
+//
+//        if (getNFT != null) {
+//            try {
+//                while (getNFT.next()) {
+//                    val objRes = JSONObject()
+//
+//                    val network = getNFT.getString("network")
+//                    val account = getNFT.getString("account")
+//                    val balance = getNFT.getString("balance")
+//                    val collection_id = getNFT.getString("collection_id")
+//                    val collection_name = getNFT.getString("collection_name")
+//                    val collection_symbol = getNFT.getString("collection_symbol")
+//                    val nft_type = getNFT.getString("nft_type")
+//                    val block_number = getNFT.getInt("block_number")
+//                    val token_id = getNFT.getString("token_id")
+//                    val token_name = getNFT.getString("token_name")
+//                    val description = getNFT.getString("description")
+//                    val image_url = getNFT.getString("image_url")
+//                    val attributes = getNFT.getString("attributes")
+//                    val token_info = getNFT.getString("token_info")
+//                    val minted_time = getNFT.getString("minted_time")
+//
+//                    objRes.put("network", network)
+//                    objRes.put("account", account)
+//                    objRes.put("balance", balance)
+//                    objRes.put("collection_id", collection_id)
+//                    objRes.put("collection_name", collection_name ?: JSONObject.NULL)
+//                    objRes.put("collection_symbol", collection_symbol ?: JSONObject.NULL)
+//                    objRes.put("nft_type", nft_type)
+//                    objRes.put("block_number", block_number)
+//                    objRes.put("token_id", token_id)
+//                    objRes.put("token_name", token_name ?: JSONObject.NULL)
+//                    objRes.put("description", description ?: JSONObject.NULL)
+//                    objRes.put("image_url", image_url ?: JSONObject.NULL)
+//                    objRes.put("attributes", attributes ?: JSONObject.NULL)
+//                    objRes.put("token_info", token_info ?: JSONObject.NULL)
+//                    objRes.put("minted_time", minted_time ?: JSONObject.NULL)
+//
+//                    var chkCollection = false
+//
+//                    for(i in 0 until nftArray.length()){
+//                        if(nftArray.optJSONObject(i).getString("collection_id") == objRes.getString("collection_id")
+//                            && nftArray.optJSONObject(i).getString("network") == objRes.getString("network")){
+//
+//                            nftArray.getJSONObject(i).getJSONArray("token").put(objRes)
+//                            chkCollection = true
+//                            break
+//                        }
+//                    }
+//                    if(chkCollection == false){
+//                        var data = JSONObject()
+//                        data.put("network", network)
+//                        data.put("account", account)
+//                        data.put("balance", balance)
+//                        data.put("collection_id", collection_id)
+//                        data.put("collection_name", collection_name)
+//                        data.put("collection_symbol", collection_symbol)
+//                        val objResArray = JSONArray()
+//                        objResArray.put(objRes)
+//                        data.put("token", objResArray)
+//                        nftArray.put(data)
+//                    }
+//                }
+//            }
+//            catch (ex: SQLException){
+//                ex.printStackTrace()
+//            }
+//            finally {
+//                getNFT.close()
+//            }
+//        }
+//    }
+//    dbConnector.disconnect()
+//    nftArray
+//}
 
 //getNFTTransaction
 suspend fun getNFTsTransaction(
