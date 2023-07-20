@@ -77,7 +77,7 @@ suspend fun sendTransactionAsync(
     val rpcUrl = when (network) {
         "ethereum" -> "https://mainnet.infura.io/v3/02c509fda7da4fed882ac537046cfd66"
         "cypress" -> "https://rpc.ankr.com/klaytn"
-        "matic" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
+        "polygon" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
         "bnb" -> "https://bsc-dataseed.binance.org"
         else -> throw IllegalArgumentException("Invalid main network type")
     }
@@ -161,7 +161,7 @@ suspend fun sendTokenTransactionAsync(
     val rpcUrl = when (network) {
         "ethereum" -> "https://mainnet.infura.io/v3/02c509fda7da4fed882ac537046cfd66"
         "cypress" -> "https://rpc.ankr.com/klaytn"
-        "matic" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
+        "polygon" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
         "bnb" -> "https://bsc-dataseed.binance.org"
         else -> throw IllegalArgumentException("Invalid main network type")
     }

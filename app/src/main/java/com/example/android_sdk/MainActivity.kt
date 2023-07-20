@@ -29,8 +29,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             getString(R.string.kthulu_database_driver_class_name)
         )
 
-        val networkArray = arrayOf("ethereum", "cypress", "matic", "bnb")
-        val accountArray = arrayOf("0x56d6d11df2Aa6A0dBC5569a56C9299fCDb418911", "0xEbEE523BA7C083538E2820245B86fE536FBd2176")
+        val networkArray = arrayOf("ethereum", "cypress", "polygon", "bnb")
+        val accountArray = arrayOf("0x7760E0243cA9BAA630412865DF7b39AfbA42Ff0f", "0x7760E0243cA9BAA630412865DF7b39AfbA42Ff0f")
 //        val accountsAddtess = "0x1C3c32DFB8cBe1E144d5e79eB41392e535405C40"
         // Using coroutines to avoid blocking the UI thread
         launch {

@@ -75,14 +75,47 @@ suspend fun getNFTsByWallet(
     val net = network.joinToString("','", "'", "'")
     val acc = account.joinToString("','", "'", "'")
     val query = """
-           SELECT owner.network, owner.account, owner.balance,
-                collection.collection_id, collection.collection_name, collection.collection_symbol,
-                token.nft_type, token.block_number, token.token_id, token.name as token_name, 
-                token.description, token.image_url, token.attributes, token.token_info, token.minted_time
+           SELECT owner.network, 
+                owner.owner_account, 
+                owner.balance,
+                collection.collection_id, 
+                collection.collection_name, 
+                collection.collection_symbol,
+                collection.creator, 
+                collection.total_supply, 
+                collection.deployment_date,
+                collection.slug, 
+                collection.category, 
+                collection.logo_url, 
+                collection.image_s3_url, 
+                collection.isverified,
+                collection.numOwners, 
+                collection.currency, 
+                collection.discord_link, 
+                collection.twitter_link, 
+                collection.instagram_link,
+                collection.facebook_link, 
+                collection.telegram_link, 
+                collection.external_url, 
+                collection.updated_date,
+                token.token_id,
+                token.nft_type, 
+                token.nft_name,
+                token.tag,
+                token.description,
+                token.block_number,
+                token.minted_time,
+                token.license,
+                token.video,
+                token.image_url,
+                token.token_uri,
+                token.ipfs,
+                token.attribute,
+                token.token_info
             FROM nft_owner_table AS owner
             JOIN nft_token_table AS token ON owner.collection_id = token.collection_id AND owner.token_id = token.token_id AND owner.network = token.network
             JOIN nft_collection_table AS collection ON token.collection_id = collection.collection_id AND token.network = collection.network
-             WHERE owner.network IN ($net) AND owner.account IN ($acc) AND owner.balance != '0'
+             WHERE owner.network IN ($net) AND owner.owner_account IN ($acc) AND owner.balance != '0'
              ORDER BY token.block_number DESC
         """
     if (connection != null) {
@@ -95,36 +128,84 @@ suspend fun getNFTsByWallet(
                     val objRes = JSONObject()
 
                     val network = getNFT.getString("network")
-                    val account = getNFT.getString("account")
+                    val owner_account = getNFT.getString("owner_account")
                     val balance = getNFT.getString("balance")
+
                     val collection_id = getNFT.getString("collection_id")
                     val collection_name = getNFT.getString("collection_name")
                     val collection_symbol = getNFT.getString("collection_symbol")
-                    val nft_type = getNFT.getString("nft_type")
-                    val block_number = getNFT.getInt("block_number")
+                    val creator = getNFT.getString("creator")
+                    val total_supply = getNFT.getString("total_supply")
+                    val deployment_date = getNFT.getString("deployment_date")
+                    val slug = getNFT.getString("slug")
+                    val category = getNFT.getString("category")
+                    val logo_url = getNFT.getString("logo_url")
+                    val image_s3_url = getNFT.getString("image_s3_url")
+                    val isverified = getNFT.getString("isverified")
+                    val numOwners = getNFT.getString("numOwners")
+                    val currency = getNFT.getString("currency")
+                    val discord_link = getNFT.getString("discord_link")
+                    val twitter_link = getNFT.getString("twitter_link")
+                    val instagram_link = getNFT.getString("instagram_link")
+                    val facebook_link = getNFT.getString("facebook_link")
+                    val telegram_link = getNFT.getString("telegram_link")
+                    val external_url = getNFT.getString("external_url")
+                    val updated_date = getNFT.getString("updated_date")
+
                     val token_id = getNFT.getString("token_id")
-                    val token_name = getNFT.getString("token_name")
+                    val nft_type = getNFT.getString("nft_type")
+                    val nft_name = getNFT.getString("nft_name")
+                    val tag = getNFT.getString("tag")
                     val description = getNFT.getString("description")
-                    val image_url = getNFT.getString("image_url")
-                    val attributes = getNFT.getString("attributes")
-                    val token_info = getNFT.getString("token_info")
+                    val block_number = getNFT.getInt("block_number")
                     val minted_time = getNFT.getString("minted_time")
+                    val license = getNFT.getString("license")
+                    val video = getNFT.getString("video")
+                    val image_url = getNFT.getString("image_url")
+                    val token_uri = getNFT.getString("token_uri")
+                    val ipfs = getNFT.getString("ipfs")
+                    val attribute = getNFT.getString("attribute")
+                    val token_info = getNFT.getString("token_info")
 
                     objRes.put("network", network)
-                    objRes.put("account", account)
+                    objRes.put("owner_account", owner_account)
                     objRes.put("balance", balance)
                     objRes.put("collection_id", collection_id)
                     objRes.put("collection_name", collection_name ?: JSONObject.NULL)
                     objRes.put("collection_symbol", collection_symbol ?: JSONObject.NULL)
-                    objRes.put("nft_type", nft_type)
-                    objRes.put("block_number", block_number)
+                    objRes.put("creator", creator ?: JSONObject.NULL)
+                    objRes.put("total_supply", total_supply ?: JSONObject.NULL)
+                    objRes.put("deployment_date", deployment_date ?: JSONObject.NULL)
+
+                    objRes.put("slug", slug ?: JSONObject.NULL)
+                    objRes.put("category", category ?: JSONObject.NULL)
+                    objRes.put("logo_url", logo_url ?: JSONObject.NULL)
+                    objRes.put("image_s3_url", image_s3_url ?: JSONObject.NULL)
+                    objRes.put("isverified", isverified ?: JSONObject.NULL)
+                    objRes.put("numOwners", numOwners ?: JSONObject.NULL)
+                    objRes.put("currency", currency ?: JSONObject.NULL)
+                    objRes.put("discord_link", discord_link ?: JSONObject.NULL)
+                    objRes.put("twitter_link", twitter_link ?: JSONObject.NULL)
+                    objRes.put("instagram_link", instagram_link ?: JSONObject.NULL)
+                    objRes.put("facebook_link", facebook_link ?: JSONObject.NULL)
+                    objRes.put("telegram_link", telegram_link ?: JSONObject.NULL)
+                    objRes.put("external_url", external_url ?: JSONObject.NULL)
+                    objRes.put("updated_date", updated_date ?: JSONObject.NULL)
+
                     objRes.put("token_id", token_id)
-                    objRes.put("token_name", token_name ?: JSONObject.NULL)
+                    objRes.put("nft_type", nft_type)
+                    objRes.put("nft_name", nft_name ?: JSONObject.NULL)
+                    objRes.put("tag", tag ?: JSONObject.NULL)
                     objRes.put("description", description ?: JSONObject.NULL)
-                    objRes.put("image_url", image_url ?: JSONObject.NULL)
-                    objRes.put("attributes", attributes ?: JSONObject.NULL)
-                    objRes.put("token_info", token_info ?: JSONObject.NULL)
+                    objRes.put("block_number", block_number)
                     objRes.put("minted_time", minted_time ?: JSONObject.NULL)
+                    objRes.put("license", license ?: JSONObject.NULL)
+                    objRes.put("video", video ?: JSONObject.NULL)
+                    objRes.put("image_url", image_url ?: JSONObject.NULL)
+                    objRes.put("token_uri", token_uri ?: JSONObject.NULL)
+                    objRes.put("ipfs", ipfs ?: JSONObject.NULL)
+                    objRes.put("attribute", attribute ?: JSONObject.NULL)
+                    objRes.put("token_info", token_info ?: JSONObject.NULL)
 
                     var chkCollection = false
 
@@ -140,11 +221,30 @@ suspend fun getNFTsByWallet(
                     if(chkCollection == false){
                         var data = JSONObject()
                         data.put("network", network)
-                        data.put("account", account)
+                        data.put("owner_account", owner_account)
                         data.put("balance", balance)
                         data.put("collection_id", collection_id)
                         data.put("collection_name", collection_name)
                         data.put("collection_symbol", collection_symbol)
+                        data.put("nft_type", nft_type)
+                        data.put("creator", creator ?: JSONObject.NULL)
+                        data.put("total_supply", total_supply ?: JSONObject.NULL)
+                        data.put("deployment_date", deployment_date ?: JSONObject.NULL)
+                        data.put("slug", slug ?: JSONObject.NULL)
+                        data.put("category", category ?: JSONObject.NULL)
+                        data.put("logo_url", logo_url ?: JSONObject.NULL)
+                        data.put("image_s3_url", image_s3_url ?: JSONObject.NULL)
+                        data.put("isverified", isverified ?: JSONObject.NULL)
+                        data.put("numOwners", numOwners ?: JSONObject.NULL)
+                        data.put("currency", currency ?: JSONObject.NULL)
+                        data.put("discord_link", discord_link ?: JSONObject.NULL)
+                        data.put("twitter_link", twitter_link ?: JSONObject.NULL)
+                        data.put("instagram_link", instagram_link ?: JSONObject.NULL)
+                        data.put("facebook_link", facebook_link ?: JSONObject.NULL)
+                        data.put("telegram_link", telegram_link ?: JSONObject.NULL)
+                        data.put("external_url", external_url ?: JSONObject.NULL)
+                        data.put("updated_date", updated_date ?: JSONObject.NULL)
+
                         val objResArray = JSONArray()
                         objResArray.put(objRes)
                         data.put("token", objResArray)
@@ -426,7 +526,7 @@ suspend fun sendNFT721TransactionAsync(
     val rpcUrl = when (network) {
         "ethereum" -> "https://mainnet.infura.io/v3/02c509fda7da4fed882ac537046cfd66"
         "cypress" -> "https://rpc.ankr.com/klaytn"
-        "matic" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
+        "polygon" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
         "bnb" -> "https://bsc-dataseed.binance.org"
         "goerli" -> "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"
         "mumbai" -> "https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78"
@@ -515,7 +615,7 @@ suspend fun sendNFT1155TransactionAsync(
     val rpcUrl = when (network) {
         "ethereum" -> "https://mainnet.infura.io/v3/02c509fda7da4fed882ac537046cfd66"
         "cypress" -> "https://rpc.ankr.com/klaytn"
-        "matic" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
+        "polygon" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
         "bnb" -> "https://bsc-dataseed.binance.org"
         "goerli" -> "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"
         "mumbai" -> "https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78"
@@ -608,7 +708,7 @@ suspend fun sendNFT1155BatchTransactionAsync(
     val rpcUrl = when (network) {
         "ethereum" -> "https://mainnet.infura.io/v3/02c509fda7da4fed882ac537046cfd66"
         "cypress" -> "https://rpc.ankr.com/klaytn"
-        "matic" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
+        "polygon" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
         "bnb" -> "https://bsc-dataseed.binance.org"
         "goerli" -> "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"
         "mumbai" -> "https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78"
@@ -722,7 +822,7 @@ suspend fun deployErc721Async(
     val rpcUrl = when (network) {
         "ethereum" -> "https://mainnet.infura.io/v3/02c509fda7da4fed882ac537046cfd66"
         "cypress" -> "https://rpc.ankr.com/klaytn"
-        "matic" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
+        "polygon" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
         "bnb" -> "https://bsc-dataseed.binance.org"
         "goerli" -> "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"
         "mumbai" -> "https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78"
