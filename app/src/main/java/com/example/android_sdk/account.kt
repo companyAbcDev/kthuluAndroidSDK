@@ -14,7 +14,9 @@ suspend fun account() = runBlocking<Unit> {
     coroutineScope {
         val networkString = "bnb";
         val networkArray = arrayOf("ethereum", "klaytn", "polygon", "binance")
-        val mnemonic = "ripple shrimp endorse company horror benefit boring click enter clog grab aware";
+        val network = arrayOf("ethereum")
+//        val mnemonic = "ripple shrimp endorse company horror benefit boring click enter clog grab aware";
+        val mnemonic = "hill matrix device suggest combine ramp dream waste royal ahead furnace gravity";
         val privateKey = "0x8d993503bb78ab5abfdad2b194bad4ae7cba9fd4590e538d232ba84c41765887";
         val token_address = "0xab40804c3da6812f41d7744fde8d6b7e8a7c30d5"
         val address = "0xDb639492E2d2A0872A6C3265163fCcC034D036b8"
@@ -36,13 +38,13 @@ suspend fun account() = runBlocking<Unit> {
         )
         /**
          * Create Account:
-             [
-                {"network":"ethereum", "user_account":"0x.."},
-                {"network":"klaytn", "user_account":"0x..""},
-                {"network":"polygon", "user_account":"0x.."},
-                {"network":"binace", "user_account":"0x.."}
-             ]
-        */
+        [
+        {"network":"ethereum", "user_account":"0x.."},
+        {"network":"klaytn", "user_account":"0x..""},
+        {"network":"polygon", "user_account":"0x.."},
+        {"network":"binace", "user_account":"0x.."}
+        ]
+         */
 
         var validAddress = async { isValidAddressAsync(address) }.await()
         println(
@@ -52,7 +54,7 @@ suspend fun account() = runBlocking<Unit> {
             """.trimIndent()
         )
         /**
-          isValidAddress : true
+        isValidAddress : true
          */
 
         // Get account asynchronously to mnemonic
@@ -64,11 +66,11 @@ suspend fun account() = runBlocking<Unit> {
             """.trimIndent()
         )
         /**
-         restoreAccountMnemonic
-            {
-                "network":"ethereum",
-                "user_account":"0x..."
-            }
+        restoreAccountMnemonic
+        {
+        "network":"ethereum",
+        "user_account":"0x..."
+        }
          */
 
         // Get account asynchronously to privatekey
@@ -80,11 +82,11 @@ suspend fun account() = runBlocking<Unit> {
             """.trimIndent()
         )
         /**
-         restoreAccountPrivateKey
-            {
-                "network":"ethereum",
-                "user_account":"0x..."
-            }
+        restoreAccountPrivateKey
+        {
+        "network":"ethereum",
+        "user_account":"0x..."
+        }
          */
 
         // Find account info asynchronously to mainnet & address
@@ -97,12 +99,12 @@ suspend fun account() = runBlocking<Unit> {
         )
         /**
          * getAccountInfo :
-            {
-               "user_account" : "0x...",
-               "private" : "0x...",
-               "mnemonic" : "blind nurse ..",
-               "network" : "ethereum"
-            }
+        {
+        "user_account" : "0x...",
+        "private" : "0x...",
+        "mnemonic" : "blind nurse ..",
+        "network" : "ethereum"
+        }
          */
 
         // Get token info asynchronously
@@ -120,12 +122,12 @@ suspend fun account() = runBlocking<Unit> {
         )
         /**
          * TokenInfo:
-            {
-                "token_name" : "Tether",
-                "token_symbol" : "USDT",
-                "decimals": "6",
-                "total_supply" : "39030615894320966"
-            }
+        {
+        "token_name" : "Tether",
+        "token_symbol" : "USDT",
+        "decimals": "6",
+        "total_supply" : "39030615894320966"
+        }
          */
 
         // Get mainnet coin balance asynchronously
@@ -143,9 +145,9 @@ suspend fun account() = runBlocking<Unit> {
         )
         /**
          * getBalanceAsync:
-            {
-                "balance" : "21350.04"
-            }
+        {
+        "balance" : "21350.04"
+        }
          */
 
         // Get token balance asynchronously
@@ -164,9 +166,9 @@ suspend fun account() = runBlocking<Unit> {
         )
         /**
          * getBalanceAsync:
-            {
-                "balance" : "39030603.320966"
-            }
+        {
+        "balance" : "39030603.320966"
+        }
          */
 
         // Get token history asynchronously
@@ -179,41 +181,41 @@ suspend fun account() = runBlocking<Unit> {
         )
         /**
          * getTokenHistoryAsync
-              [
-                {
-                  "network": "ethereum",
-                  "token_address": "0x111111111117dC0aa78b770fA6A738034120C302",
-                  "block_number": "16500012",
-                  "timestamp": "1674844979",
-                  "transaction_hash": "0x86f518368E0d49d5916e2BD9EB162E9952b7b04d",
-                  "from": "0x788d3ea7f4acf229ca96ce3df6eade8f95ad531fa71684e06776f1976ebd4f8c",
-                  "to": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
-                  "amount": "38517813190125303766",
-                  "gas_used": "152837"
-                },
-                {
-                  "network": "ethereum",
-                  "token_address": "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32",
-                  "block_number": "16500001",
-                  "timestamp": "1674844847",
-                  "transaction_hash": "0x7122db0Ebe4EB9B434a9F2fFE6760BC03BFbD0E0",
-                  "from": "0x703e3820c9b13b1751b47c405358401316ecc75de731d3be4c141e5d23b6e077",
-                  "to": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
-                  "amount": "20115660308317876961540",
-                  "gas_used": "472518"
-                },
-                {
-                  "network": "ethereum",
-                  "token_address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-                  "block_number": "16500008",
-                  "timestamp": "1674844931",
-                  "transaction_hash": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
-                  "from": "0xa199413aa46f4311aaa4a797ddd2e6ac7fe9a5209b7459c26e6af134b243b78f",
-                  "to": "0xcADBA199F3AC26F67f660C89d43eB1820b7f7a3b",
-                  "amount": "1413152143",
-                  "gas_used": "736607"
-                }
-              ]
+        [
+        {
+        "network": "ethereum",
+        "token_address": "0x111111111117dC0aa78b770fA6A738034120C302",
+        "block_number": "16500012",
+        "timestamp": "1674844979",
+        "transaction_hash": "0x86f518368E0d49d5916e2BD9EB162E9952b7b04d",
+        "from": "0x788d3ea7f4acf229ca96ce3df6eade8f95ad531fa71684e06776f1976ebd4f8c",
+        "to": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
+        "amount": "38517813190125303766",
+        "gas_used": "152837"
+        },
+        {
+        "network": "ethereum",
+        "token_address": "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32",
+        "block_number": "16500001",
+        "timestamp": "1674844847",
+        "transaction_hash": "0x7122db0Ebe4EB9B434a9F2fFE6760BC03BFbD0E0",
+        "from": "0x703e3820c9b13b1751b47c405358401316ecc75de731d3be4c141e5d23b6e077",
+        "to": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
+        "amount": "20115660308317876961540",
+        "gas_used": "472518"
+        },
+        {
+        "network": "ethereum",
+        "token_address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        "block_number": "16500008",
+        "timestamp": "1674844931",
+        "transaction_hash": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
+        "from": "0xa199413aa46f4311aaa4a797ddd2e6ac7fe9a5209b7459c26e6af134b243b78f",
+        "to": "0xcADBA199F3AC26F67f660C89d43eB1820b7f7a3b",
+        "amount": "1413152143",
+        "gas_used": "736607"
+        }
+        ]
          */
 
         // Get User asynchronously
@@ -226,56 +228,56 @@ suspend fun account() = runBlocking<Unit> {
         )
         /**
          * getUser:
-              [
-                {
-                  "owner_eigenvalue": "abcuser",
-                  "network": "ethereum",
-                  "user_account": "0x5Cd81e6691914557D2F74AE9A3624bfdA0de6D19",
-                  "user_type": "0"
-                },
-                {
-                  "owner_eigenvalue": "abcuser",
-                  "network": "klaytn",
-                  "user_account": "0xB6a37b5d14D502c3Ab0Ae6f3a0E058BC9517786e",
-                  "user_type": "0"
-                },
-                {
-                  "owner_eigenvalue": "abcuser",
-                  "network": "polygon",
-                  "user_account": "0x52101C09296E8486cCDbB7fC2d5B25b204258CCE",
-                  "user_type": "0"
-                },
-                {
-                  "owner_eigenvalue": "abcuser",
-                  "network": "binance",
-                  "user_account": "0xFf32Da2b4948f0E0606D75444AC053dad590884a",
-                  "user_type": "0"
-                },
-                {
-                  "owner_eigenvalue": "abcuser",
-                  "network": "ethereum",
-                  "user_account": "0x5Cd81e6691914557D2F74AE9A3624bfdA0de6D19",
-                  "user_type": "1"
-                },
-                {
-                  "owner_eigenvalue": "abcuser",
-                  "network": "klaytn",
-                  "user_account": "0xB6a37b5d14D502c3Ab0Ae6f3a0E058BC9517786e",
-                  "user_type": "2"
-                },
-                {
-                  "owner_eigenvalue": "abcuser",
-                  "network": "polygon",
-                  "user_account": "0x52101C09296E8486cCDbB7fC2d5B25b204258CCE",
-                  "user_type": "1"
-                },
-                {
-                  "owner_eigenvalue": "abcuser",
-                  "network": "binance",
-                  "user_account": "0xFf32Da2b4948f0E0606D75444AC053dad590884a",
-                  "user_type": "2"
-                }
-              ]
+        [
+        {
+        "owner_eigenvalue": "abcuser",
+        "network": "ethereum",
+        "user_account": "0x5Cd81e6691914557D2F74AE9A3624bfdA0de6D19",
+        "user_type": "0"
+        },
+        {
+        "owner_eigenvalue": "abcuser",
+        "network": "klaytn",
+        "user_account": "0xB6a37b5d14D502c3Ab0Ae6f3a0E058BC9517786e",
+        "user_type": "0"
+        },
+        {
+        "owner_eigenvalue": "abcuser",
+        "network": "polygon",
+        "user_account": "0x52101C09296E8486cCDbB7fC2d5B25b204258CCE",
+        "user_type": "0"
+        },
+        {
+        "owner_eigenvalue": "abcuser",
+        "network": "binance",
+        "user_account": "0xFf32Da2b4948f0E0606D75444AC053dad590884a",
+        "user_type": "0"
+        },
+        {
+        "owner_eigenvalue": "abcuser",
+        "network": "ethereum",
+        "user_account": "0x5Cd81e6691914557D2F74AE9A3624bfdA0de6D19",
+        "user_type": "1"
+        },
+        {
+        "owner_eigenvalue": "abcuser",
+        "network": "klaytn",
+        "user_account": "0xB6a37b5d14D502c3Ab0Ae6f3a0E058BC9517786e",
+        "user_type": "2"
+        },
+        {
+        "owner_eigenvalue": "abcuser",
+        "network": "polygon",
+        "user_account": "0x52101C09296E8486cCDbB7fC2d5B25b204258CCE",
+        "user_type": "1"
+        },
+        {
+        "owner_eigenvalue": "abcuser",
+        "network": "binance",
+        "user_account": "0xFf32Da2b4948f0E0606D75444AC053dad590884a",
+        "user_type": "2"
+        }
+        ]
          */
     }
 }
@@ -294,11 +296,13 @@ suspend fun createAccountsAsync(network: Array<String>): JSONArray = withContext
     val keyPair = Bip32ECKeyPair.deriveKeyPair(change, intArrayOf(0))
     val credentials = Credentials.create(keyPair.privateKey.toString(16))
 
+    var saveMainNet = JSONArray()
     val returnMainNet = JSONArray()
-
+    val networkLoadData = JSONArray(loadData(network[0]))
+    if(networkLoadData.length() != 0){
+        saveMainNet = networkLoadData
+    }
     for (network in network) {
-        val saveMainNet = JSONArray()
-
         val returnData = JSONObject()
         returnData.put("network", network)
         returnData.put("user_account", credentials.address)
@@ -373,17 +377,13 @@ suspend fun restoreAccountAsync(
         }
 
         val credentials = Credentials.create(keyPair)
+        val privat= "0x${Numeric.toHexStringNoPrefix(keyPair.privateKey)}"
 
         mnemonic?.let { it } ?: ""
 
         returnData.put("network", network)
         returnData.put("user_account", credentials.address)
-
-        if(privateKey == null){
-            returnData.put("private", "")
-        } else {
-            returnData.put("private", encrypt(privateKey))
-        }
+        returnData.put("private", encrypt(privat))
         if(mnemonic == null){
             returnData.put("mnemonic", "")
         } else {
@@ -393,7 +393,6 @@ suspend fun restoreAccountAsync(
         val networkLoadData = JSONArray(loadData(network))
         networkLoadData.put(returnData)
         saveData(network, networkLoadData.toString())
-
         returnData
     }catch (e: Exception) {
         returnData.put("error", e.message)
@@ -495,7 +494,7 @@ suspend fun getTokenInfoAsync(
                     jsonData.put("decimals", decimals)
                     jsonData.put("total_supply", total_supply)
 
-                    }
+                }
             } catch (ex: SQLException) {
                 ex.printStackTrace()
             } finally {
@@ -611,3 +610,4 @@ suspend fun getUsersAsync(
     dbConnector.disconnect()
     transferArray
 }
+

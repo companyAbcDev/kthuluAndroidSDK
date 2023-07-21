@@ -75,43 +75,15 @@ suspend fun getNFTsByWallet(
     val net = network.joinToString("','", "'", "'")
     val acc = account.joinToString("','", "'", "'")
     val query = """
-           SELECT owner.network, 
-                owner.owner_account, 
-                owner.balance,
-                collection.collection_id, 
-                collection.collection_name, 
-                collection.collection_symbol,
-                collection.creator, 
-                collection.total_supply, 
-                collection.deployment_date,
-                collection.slug, 
-                collection.category, 
-                collection.logo_url, 
-                collection.image_s3_url, 
-                collection.isverified,
-                collection.numOwners, 
-                collection.currency, 
-                collection.discord_link, 
-                collection.twitter_link, 
-                collection.instagram_link,
-                collection.facebook_link, 
-                collection.telegram_link, 
-                collection.external_url, 
-                collection.updated_date,
-                token.token_id,
-                token.nft_type, 
-                token.nft_name,
-                token.tag,
-                token.description,
-                token.block_number,
-                token.minted_time,
-                token.license,
-                token.video,
-                token.image_url,
-                token.token_uri,
-                token.ipfs,
-                token.attribute,
-                token.token_info
+           SELECT owner.network,owner.owner_account, owner.balance,
+                collection.collection_id, collection.collection_name, collection.collection_symbol, collection.creator, 
+                collection.total_supply, collection.deployment_date, collection.slug, collection.category, 
+                collection.logo_url, collection.image_s3_url, collection.isverified, collection.numOwners, 
+                collection.currency, collection.discord_link, collection.twitter_link, collection.instagram_link,
+                collection.facebook_link, collection.telegram_link, collection.external_url, collection.updated_date,
+                token.token_id, token.nft_type, token.nft_name, token.tag, token.description, token.block_number,
+                token.minted_time, token.license, token.video, token.image_url, token.token_uri,
+                token.ipfs, token.attribute, token.token_info
             FROM nft_owner_table AS owner
             JOIN nft_token_table AS token ON owner.collection_id = token.collection_id AND owner.token_id = token.token_id AND owner.network = token.network
             JOIN nft_collection_table AS collection ON token.collection_id = collection.collection_id AND token.network = collection.network
@@ -130,7 +102,6 @@ suspend fun getNFTsByWallet(
                     val network = getNFT.getString("network")
                     val owner_account = getNFT.getString("owner_account")
                     val balance = getNFT.getString("balance")
-
                     val collection_id = getNFT.getString("collection_id")
                     val collection_name = getNFT.getString("collection_name")
                     val collection_symbol = getNFT.getString("collection_symbol")
@@ -151,7 +122,6 @@ suspend fun getNFTsByWallet(
                     val telegram_link = getNFT.getString("telegram_link")
                     val external_url = getNFT.getString("external_url")
                     val updated_date = getNFT.getString("updated_date")
-
                     val token_id = getNFT.getString("token_id")
                     val nft_type = getNFT.getString("nft_type")
                     val nft_name = getNFT.getString("nft_name")
@@ -176,7 +146,6 @@ suspend fun getNFTsByWallet(
                     objRes.put("creator", creator ?: JSONObject.NULL)
                     objRes.put("total_supply", total_supply ?: JSONObject.NULL)
                     objRes.put("deployment_date", deployment_date ?: JSONObject.NULL)
-
                     objRes.put("slug", slug ?: JSONObject.NULL)
                     objRes.put("category", category ?: JSONObject.NULL)
                     objRes.put("logo_url", logo_url ?: JSONObject.NULL)
@@ -191,7 +160,6 @@ suspend fun getNFTsByWallet(
                     objRes.put("telegram_link", telegram_link ?: JSONObject.NULL)
                     objRes.put("external_url", external_url ?: JSONObject.NULL)
                     objRes.put("updated_date", updated_date ?: JSONObject.NULL)
-
                     objRes.put("token_id", token_id)
                     objRes.put("nft_type", nft_type)
                     objRes.put("nft_name", nft_name ?: JSONObject.NULL)
@@ -365,7 +333,7 @@ suspend fun getNFTsByWallet(
 //}
 
 //getNFTTransaction
-suspend fun getNFTsTransaction(
+suspend fun getNFTsTransferHistory(
     network: String,
     collection_id: String,
     token_id: String
@@ -395,7 +363,7 @@ suspend fun getNFTsTransaction(
     var sqlQuery2 = """
                 SELECT
                     sales.network AS network,
-                    sales.buyer,
+                    sales.buyer_account,
                     sales.block_number,
                     sales.collection_id,
                     sales.token_id,
@@ -404,10 +372,10 @@ suspend fun getNFTsTransaction(
                     sales.`timestamp`,
                     sales.currency,
                     sales.price,
-                    sales.symbol,
+                    sales.currency_symbol,
                     sales.decimals,
                     sales.market,
-                    sales.NFTs,
+                    sales.sales_info,
                     'sales' as 'transaction_type'
                 FROM nft_sales_table AS sales
                 WHERE sales.network = '$network' AND sales.collection_id = '$collection_id' AND sales.token_id = '$token_id'
@@ -461,7 +429,7 @@ suspend fun getNFTsTransaction(
                     val jsonData = JSONObject()
                     // Select data = network, buyer, collection_id, block_number, timestamp, transaction_hash, log_id, token_id, currency, price, symbol, decimals, market, NFTs, transaction_type
                     val network = getTransaction2.getString("network")
-                    val buyer = getTransaction2.getString("buyer")
+                    val buyer_account = getTransaction2.getString("buyer_account")
                     val collection_id = getTransaction2.getString("collection_id")
                     val block_number = getTransaction2.getInt("block_number")
                     val timestamp = getTransaction2.getInt("timestamp")
@@ -470,13 +438,13 @@ suspend fun getNFTsTransaction(
                     val token_id = getTransaction2.getString("token_id")
                     val currency = getTransaction2.getString("currency")
                     val price = getTransaction2.getString("price")
-                    val symbol = getTransaction2.getString("symbol")
+                    val currency_symbol = getTransaction2.getString("currency_symbol")
                     val decimals = getTransaction2.getInt("decimals")
                     val market = getTransaction2.getString("market")
-                    val NFTs = getTransaction2.getString("NFTs")
+                    val sales_info = getTransaction2.getString("sales_info")
 
                     jsonData.put("network", network)
-                    jsonData.put("buyer", buyer)
+                    jsonData.put("buyer_account", buyer_account)
                     jsonData.put("block_number", block_number)
                     jsonData.put("collection_id", collection_id)
                     jsonData.put("token_id", token_id)
@@ -485,10 +453,10 @@ suspend fun getNFTsTransaction(
                     jsonData.put("timestamp", timestamp)
                     jsonData.put("currency", currency)
                     jsonData.put("price", price)
-                    jsonData.put("symbol", symbol)
+                    jsonData.put("currency_symbol", currency_symbol)
                     jsonData.put("decimals", decimals)
                     jsonData.put("market", market)
-                    jsonData.put("NFTs", NFTs)
+                    jsonData.put("sales_info", sales_info)
                     jsonData.put("transaction_type", "sales")
 
                     transactionArray.put(jsonData)

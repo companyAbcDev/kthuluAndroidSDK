@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         )
 
         val networkArray = arrayOf("ethereum", "cypress", "polygon", "bnb")
-        val accountArray = arrayOf("0x7760E0243cA9BAA630412865DF7b39AfbA42Ff0f", "0x7760E0243cA9BAA630412865DF7b39AfbA42Ff0f")
+        val accountArray = arrayOf("0x8A7f97713aec2209c6ed11A07362B874c14A4725", "0x8A7f97713aec2209c6ed11A07362B874c14A4725")
 //        val accountsAddtess = "0x1C3c32DFB8cBe1E144d5e79eB41392e535405C40"
         // Using coroutines to avoid blocking the UI thread
         launch {
@@ -38,10 +38,10 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
 //                account()
 //                transaction()
 //                var getNFTsByWalletTest = getNFTsByWallet(networkArray, account)
-                var getNFTsByWalletTest = getNFTsByWallet(networkArray, accountArray)
-                println("getNFTsByWalletTest ===== " + getNFTsByWalletTest)
-//                var getNFTTransaction = getNFTTransaction("ethereum", "0x3296379a4F0fFEcE6Da595d1206f3dD85fC08508", "9072")
-//                println("getNFTTransaction ==== " + getNFTTransaction)
+//                var getNFTsByWalletTest = getNFTsByWallet(networkArray, accountArray)
+//                println("getNFTsByWalletTest ===== " + getNFTsByWalletTest)
+//                var getNFTsTransferHistory = getNFTsTransferHistory("polygon", "0xba6666B118f8303F990f3519DF07e160227cCE87", "7")
+//                println("getNFTsTransferHistory ==== " + getNFTsTransferHistory)
 //                  var gas = getEstimateGas("ethereum", "baseFee")
 //                  println(gas)
 //                    var gasBydeploy = getEstimateGas("goerli", "deployERC721", null, "0x0eae45485F2D14FDEB3dAa1143E5170752D5EAe8", null, null, null, null, null, null, null, null, "asd", "asd", "0x0eae45485F2D14FDEB3dAa1143E5170752D5EAe8", "asd", "1")
