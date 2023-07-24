@@ -1,6 +1,8 @@
 package com.example.android_sdk
 
+import getAccountInfoAsync
 import kotlinx.coroutines.*
+import kotlinx.serialization.json.Json
 import org.json.JSONObject
 import org.web3j.abi.FunctionEncoder
 import org.web3j.abi.datatypes.Address
@@ -21,21 +23,21 @@ import java.math.BigInteger
 suspend fun transaction() = runBlocking<Unit> {
     // Initialize the coroutine context
     coroutineScope {
-        val network = "cypress"
-        val fromAddress = "0x54fbF887EdB01983DD373E79a0f37413B4565De3"
+        val network = "ethereum"
+//        val fromAddress = "0x54fbF887EdB01983DD373E79a0f37413B4565De3"
+        val fromAddress = "0xab40804c3da6812f41d7744fde8d6b7e8a7c30d5"
         val toAddress = "0x50515891B406cF7B8ab8D27243E0386ED06De7C8"
         val amount = "0.000001"
-        val privateKey = "0x95a6bda95896978315b7b3183f79325c73ca2e9d96baa532361809bceb59ed8e"
         val contractAddress = "0x02cbe46fb8a1f579254a9b485788f2d86cad51aa"
         val decimals = 18
 
         // Send Coin transaction asynchronously
         val sendCoinTransaction =
-            async { sendTransactionAsync(network, fromAddress, toAddress, amount, privateKey) }.await()
+            async { sendTransactionAsync(network, fromAddress, toAddress, amount) }.await()
         if (sendCoinTransaction.getString("result") == "OK") {
             println("Transaction hash: ${sendCoinTransaction.getString("transactionHash")}")
             /**
-             * Transaction hash: 0x..
+            Transaction hash: 0x..
              */
         } else {
             println("Error sending Coin: ${sendCoinTransaction.getString("error")}")
@@ -49,7 +51,6 @@ suspend fun transaction() = runBlocking<Unit> {
                     fromAddress,
                     toAddress,
                     amount,
-                    privateKey,
                     contractAddress,
                     decimals
                 )
@@ -72,8 +73,9 @@ suspend fun sendTransactionAsync(
     fromAddress: String,
     toAddress: String,
     amount: String,
-    privateKey: String,
 ): JSONObject = withContext(Dispatchers.IO) {
+    val getAddressInfo = getAccountInfoAsync(network, fromAddress)
+    val privateKey = getAddressInfo.getString("private")
     val rpcUrl = when (network) {
         "ethereum" -> "https://mainnet.infura.io/v3/02c509fda7da4fed882ac537046cfd66"
         "cypress" -> "https://rpc.ankr.com/klaytn"
@@ -154,10 +156,13 @@ suspend fun sendTokenTransactionAsync(
     fromAddress: String,
     toAddress: String,
     amount: String,
-    privateKey: String,
     contractAddress: String,
     decimals: Int
+    // fromAddress를 사용하여, privateKey 가져오기
+
 ): JSONObject = withContext(Dispatchers.IO) {
+    val getAddressInfo = getAccountInfoAsync(network, fromAddress)
+    val privateKey = getAddressInfo.getString("private")
     val rpcUrl = when (network) {
         "ethereum" -> "https://mainnet.infura.io/v3/02c509fda7da4fed882ac537046cfd66"
         "cypress" -> "https://rpc.ankr.com/klaytn"

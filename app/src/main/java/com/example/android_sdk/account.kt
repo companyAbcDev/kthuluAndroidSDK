@@ -15,8 +15,7 @@ suspend fun account() = runBlocking<Unit> {
         val networkString = "bnb";
         val networkArray = arrayOf("ethereum", "klaytn", "polygon", "binance")
         val network = arrayOf("ethereum")
-//        val mnemonic = "ripple shrimp endorse company horror benefit boring click enter clog grab aware";
-        val mnemonic = "hill matrix device suggest combine ramp dream waste royal ahead furnace gravity";
+        val mnemonic = "ripple shrimp endorse company horror benefit boring click enter clog grab aware";
         val privateKey = "0x8d993503bb78ab5abfdad2b194bad4ae7cba9fd4590e538d232ba84c41765887";
         val token_address = "0xab40804c3da6812f41d7744fde8d6b7e8a7c30d5"
         val address = "0xDb639492E2d2A0872A6C3265163fCcC034D036b8"
@@ -81,6 +80,7 @@ suspend fun account() = runBlocking<Unit> {
             ${restoreAccountPrivateKey}
             """.trimIndent()
         )
+        // "0x8d993503bb78ab5abfdad2b194bad4ae7cba9fd4590e538d232ba84c41765887"
         /**
         restoreAccountPrivateKey
         {
@@ -377,13 +377,14 @@ suspend fun restoreAccountAsync(
         }
 
         val credentials = Credentials.create(keyPair)
-        val privat= "0x${Numeric.toHexStringNoPrefix(keyPair.privateKey)}"
+        var keyPairPrivateKey= "0x${Numeric.toHexStringNoPrefix(keyPair.privateKey)}"
 
         mnemonic?.let { it } ?: ""
 
         returnData.put("network", network)
         returnData.put("user_account", credentials.address)
-        returnData.put("private", encrypt(privat))
+        returnData.put("private", encrypt(keyPairPrivateKey))
+
         if(mnemonic == null){
             returnData.put("mnemonic", "")
         } else {
