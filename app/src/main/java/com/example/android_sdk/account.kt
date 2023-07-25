@@ -298,8 +298,12 @@ suspend fun createAccountsAsync(network: Array<String>): JSONArray = withContext
 
     var saveMainNet = JSONArray()
     val returnMainNet = JSONArray()
-    if (loadData(network[0]) != null){
-        val saveMainNet = JSONArray(loadData(network[0]))
+    val data = loadData(network[0])
+    if (data != null) {
+        val networkLoadData = JSONArray(data)
+        if (networkLoadData.length() != 0) {
+            saveMainNet = networkLoadData
+        }
     }
 
     for (network in network) {
