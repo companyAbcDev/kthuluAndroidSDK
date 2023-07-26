@@ -31,6 +31,10 @@ import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
 import javax.crypto.Cipher
 
+public val addrTransferGoerli = "0x25df7c4d54ce69faf37352cbe98e2d3f9281eaf7"
+public val addrBridgeGoerli = "0x25df7c4d54ce69faf37352cbe98e2d3f9281eaf7"
+
+
 // Create RSA key
 fun generateRSAKeyPair() : KeyPair {
     val keyGen = KeyPairGenerator.getInstance("RSA")
@@ -125,7 +129,8 @@ suspend fun getEstimateGas(
     symbol: String? = null,
     owner: String? = null,
     baseURI: String? = null,
-    uriType: String? = null
+    uriType: String? = null,
+    tokenURI: String? = null
 ): BigInteger = withContext(Dispatchers.IO) {
     val rpcUrl = when (network) {
         "ethereum" -> "https://mainnet.infura.io/v3/02c509fda7da4fed882ac537046cfd66"
@@ -183,6 +188,31 @@ suspend fun getEstimateGas(
                             gasPrice,
                             BigInteger.ZERO, // temporary gasLimit
                             tokenAddress,
+                            encodedFunction // data
+                        )
+                    ).send().amountUsed
+                } catch (ex: Exception) {
+                    // Handle the exception appropriately
+                    result = BigInteger.ZERO
+                }
+            }
+        "deployERC20" ->
+            if (name != null && symbol != null && fromAddress != null && owner != null) {
+                val function = Function(
+                    "deployWrapped20",
+                    listOf(Utf8String(name), Utf8String(symbol), Address(owner)),
+                    emptyList()
+                )
+                val encodedFunction = FunctionEncoder.encode(function)
+
+                try {
+                    result = web3.ethEstimateGas(
+                        Transaction.createFunctionCallTransaction(
+                            fromAddress,
+                            BigInteger.ONE,
+                            gasPrice,
+                            BigInteger.ZERO, // temporary gasLimit
+                            addrBridgeGoerli,
                             encodedFunction // data
                         )
                     ).send().amountUsed
@@ -290,6 +320,31 @@ suspend fun getEstimateGas(
                             gasPrice,
                             BigInteger.ZERO, // temporary gasLimit
                             addrTransferGoerli,
+                            encodedFunction // data
+                        )
+                    ).send().amountUsed
+                } catch (ex: Exception) {
+                    // Handle the exception appropriately
+                    result = BigInteger.ZERO
+                }
+            }
+        "mintERC721" ->
+            if (fromAddress != null && toAddress != null && tokenURI != null && tokenId != null && tokenAddress != null) {
+                val function = Function(
+                    "mint",
+                    listOf(Address(toAddress), Uint256(BigInteger(tokenId)), Utf8String(tokenURI)),
+                    emptyList()
+                )
+                val encodedFunction = FunctionEncoder.encode(function)
+
+                try {
+                    result = web3.ethEstimateGas(
+                        Transaction.createFunctionCallTransaction(
+                            fromAddress,
+                            BigInteger.ONE,
+                            gasPrice,
+                            BigInteger.ZERO, // temporary gasLimit
+                            tokenAddress,
                             encodedFunction // data
                         )
                     ).send().amountUsed

@@ -8,6 +8,7 @@ package com.example.android_sdk
 //import okhttp3.OkHttpClient
 //import okhttp3.Request
 //import okhttp3.RequestBody
+import getAccountInfoAsync
 import kotlinx.coroutines.*
 import org.json.JSONArray
 import org.json.JSONObject
@@ -33,8 +34,6 @@ import org.web3j.utils.Convert
 import org.web3j.utils.Numeric
 import java.math.BigDecimal
 import java.math.BigInteger
-
-public val addrTransferGoerli = "0x25df7c4d54ce69faf37352cbe98e2d3f9281eaf7"
 
 //data class Nft(
 //    var network: List<network>?,
@@ -64,426 +63,438 @@ public val addrTransferGoerli = "0x25df7c4d54ce69faf37352cbe98e2d3f9281eaf7"
 //)
 suspend fun getNFTsByWallet(
     network: Array<String>,
-    account: Array<String>
-): JSONArray = withContext(Dispatchers.IO) {
+    account: String ?= null,
+    collection_id: String ?= null,
+    sort: String ?= null,
+    limit: Int ?= null,
+    page_number: Int ?= null
+): JSONObject = withContext(Dispatchers.IO) {
 
     val dbConnector = DBConnector()
     dbConnector.connect()
     val connection = dbConnector.getConnection()
-    val nftArray = JSONArray()
+    val nftArray = JSONArray() // { ..., value : [ nftArray ]}
+    val nftData = JSONObject() // { "result": OK, "sum": 1, "sort": "desc", "page_count": 1, "value" : nftArray }
 
     val net = network.joinToString("','", "'", "'")
-    val acc = account.joinToString("','", "'", "'")
-    val query = """
-           SELECT owner.network,owner.owner_account, owner.balance,
-                collection.collection_id, collection.collection_name, collection.collection_symbol, collection.creator, 
-                collection.total_supply, collection.deployment_date, collection.slug, collection.category, 
-                collection.logo_url, collection.image_s3_url, collection.isverified, collection.numOwners, 
-                collection.currency, collection.discord_link, collection.twitter_link, collection.instagram_link,
-                collection.facebook_link, collection.telegram_link, collection.external_url, collection.updated_date,
-                token.token_id, token.nft_type, token.nft_name, token.tag, token.description, token.block_number,
-                token.minted_time, token.license, token.video, token.image_url, token.token_uri,
-                token.ipfs, token.attribute, token.token_info
-            FROM nft_owner_table AS owner
-            JOIN nft_token_table AS token ON owner.collection_id = token.collection_id AND owner.token_id = token.token_id AND owner.network = token.network
-            JOIN nft_collection_table AS collection ON token.collection_id = collection.collection_id AND token.network = collection.network
-             WHERE owner.network IN ($net) AND owner.owner_account IN ($acc) AND owner.balance != '0'
-             ORDER BY token.block_number DESC
-        """
-    if (connection != null) {
-        val dbQueryExector = DBQueryExector(connection)
-        val getNFT: ResultSet? = dbQueryExector.executeQuery(query)
 
-        if (getNFT != null) {
-            try {
-                while (getNFT.next()) {
-                    val objRes = JSONObject()
+//    var offset = limit?.let { (page_number?.minus(1))?.times(it) }
+    var offset = if (page_number != null && limit != null) {
+        (page_number - 1) * limit
+    } else {
+        0 // 또는 적절한 기본값 설정
+    }
+    if(page_number==null || page_number==0 || page_number==1){
+        offset = 0
+    }
+    var strQuery =
+        "SELECT" +
+                " owner.network AS network," +
+                " collection.collection_id AS collection_id," +
+                " collection.collection_name AS collection_name," +
+                " collection.collection_symbol AS collection_symbol," +
+                " collection.creator AS creator," +
+                " collection.deployment_date AS deployment_date," +
+                " collection.total_supply AS total_supply," +
+                " token.nft_type AS nft_type," +
+                " token.minted_time AS minted_time," +
+                " token.block_number AS block_number," +
+                " owner.owner_account AS owner_account," +
+                " token.token_id AS token_id," +
+                " owner.balance AS balance," +
+                " token.token_uri AS token_uri," +
+                " token.nft_name AS nft_name," +
+                " token.description AS description," +
+                " token.image_url AS image_url," +
+                " token.external_url AS external_url," +
+                " token.attribute AS attribute," +
+                " token.token_info AS token_info" +
+                " FROM " +
+                "nft_owner_table AS owner" +
+                " JOIN " +
+                "nft_token_table AS token " +
+                "ON " +
+                "owner.collection_id = token.collection_id " +
+                "AND " +
+                "owner.token_id = token.token_id " +
+                "AND " +
+                "owner.network = token.network" +
+                " JOIN " +
+                "nft_collection_table AS collection " +
+                "ON " +
+                "token.collection_id = collection.collection_id " +
+                "AND " +
+                "token.network = collection.network " +
+                "WHERE " +
+                "owner.network IN (${net}) " +
+                "AND " +
+                "owner.balance != '0'"
+    if (account != null) {
+        strQuery += " AND owner.owner_account = '$account'"
+    }
+    if (collection_id != null) {
+        strQuery += " AND owner.collection_id = '$collection_id'"
+    }
+    strQuery += " AND NOT EXISTS ( SELECT 1 FROM nft_trash_table AS trash WHERE trash.network = owner.network AND trash.account = owner.owner_account AND trash.token_id = owner.token_id AND trash.collection_id = owner.collection_id) "
+    strQuery += " ORDER BY token.block_number"
+    if (sort == "asc") {
+        strQuery += " asc"
+    } else {
+        strQuery += " desc"
+    }
+    strQuery += ", CAST(token.token_id AS SIGNED) desc"
+    if (limit != null) {
+        strQuery += " LIMIT $limit OFFSET $offset"
+    }
 
-                    val network = getNFT.getString("network")
-                    val owner_account = getNFT.getString("owner_account")
-                    val balance = getNFT.getString("balance")
-                    val collection_id = getNFT.getString("collection_id")
-                    val collection_name = getNFT.getString("collection_name")
-                    val collection_symbol = getNFT.getString("collection_symbol")
-                    val creator = getNFT.getString("creator")
-                    val total_supply = getNFT.getString("total_supply")
-                    val deployment_date = getNFT.getString("deployment_date")
-                    val slug = getNFT.getString("slug")
-                    val category = getNFT.getString("category")
-                    val logo_url = getNFT.getString("logo_url")
-                    val image_s3_url = getNFT.getString("image_s3_url")
-                    val isverified = getNFT.getString("isverified")
-                    val numOwners = getNFT.getString("numOwners")
-                    val currency = getNFT.getString("currency")
-                    val discord_link = getNFT.getString("discord_link")
-                    val twitter_link = getNFT.getString("twitter_link")
-                    val instagram_link = getNFT.getString("instagram_link")
-                    val facebook_link = getNFT.getString("facebook_link")
-                    val telegram_link = getNFT.getString("telegram_link")
-                    val external_url = getNFT.getString("external_url")
-                    val updated_date = getNFT.getString("updated_date")
-                    val token_id = getNFT.getString("token_id")
-                    val nft_type = getNFT.getString("nft_type")
-                    val nft_name = getNFT.getString("nft_name")
-                    val tag = getNFT.getString("tag")
-                    val description = getNFT.getString("description")
-                    val block_number = getNFT.getInt("block_number")
-                    val minted_time = getNFT.getString("minted_time")
-                    val license = getNFT.getString("license")
-                    val video = getNFT.getString("video")
-                    val image_url = getNFT.getString("image_url")
-                    val token_uri = getNFT.getString("token_uri")
-                    val ipfs = getNFT.getString("ipfs")
-                    val attribute = getNFT.getString("attribute")
-                    val token_info = getNFT.getString("token_info")
+    var sumQuery = """
+            SELECT 
+                count(*) AS sum
+            FROM 
+                nft_owner_table AS owner
+            JOIN 
+                nft_token_table AS token 
+            ON 
+                owner.collection_id = token.collection_id 
+                AND 
+                    owner.token_id = token.token_id 
+                AND 
+                    owner.network = token.network
+            JOIN 
+                nft_collection_table AS collection 
+            ON 
+                token.collection_id = collection.collection_id 
+                AND 
+                    token.network = collection.network
+            WHERE 
+                owner.network IN ($net) 
+                AND 
+                    owner.balance != '0'
+        """.trimIndent()
+    if (account != null) {
+        sumQuery += " AND owner.owner_account = '$account' "
+    }
+    if (collection_id != null) {
+        sumQuery += " AND owner.collection_id = '$collection_id' "
+    }
+    sumQuery += " AND NOT EXISTS ( SELECT 1 FROM nft_trash_table AS trash WHERE trash.network = owner.network AND trash.account = owner.owner_account AND trash.token_id = owner.token_id AND trash.collection_id = owner.collection_id) "
 
-                    objRes.put("network", network)
-                    objRes.put("owner_account", owner_account)
-                    objRes.put("balance", balance)
-                    objRes.put("collection_id", collection_id)
-                    objRes.put("collection_name", collection_name ?: JSONObject.NULL)
-                    objRes.put("collection_symbol", collection_symbol ?: JSONObject.NULL)
-                    objRes.put("creator", creator ?: JSONObject.NULL)
-                    objRes.put("total_supply", total_supply ?: JSONObject.NULL)
-                    objRes.put("deployment_date", deployment_date ?: JSONObject.NULL)
-                    objRes.put("slug", slug ?: JSONObject.NULL)
-                    objRes.put("category", category ?: JSONObject.NULL)
-                    objRes.put("logo_url", logo_url ?: JSONObject.NULL)
-                    objRes.put("image_s3_url", image_s3_url ?: JSONObject.NULL)
-                    objRes.put("isverified", isverified ?: JSONObject.NULL)
-                    objRes.put("numOwners", numOwners ?: JSONObject.NULL)
-                    objRes.put("currency", currency ?: JSONObject.NULL)
-                    objRes.put("discord_link", discord_link ?: JSONObject.NULL)
-                    objRes.put("twitter_link", twitter_link ?: JSONObject.NULL)
-                    objRes.put("instagram_link", instagram_link ?: JSONObject.NULL)
-                    objRes.put("facebook_link", facebook_link ?: JSONObject.NULL)
-                    objRes.put("telegram_link", telegram_link ?: JSONObject.NULL)
-                    objRes.put("external_url", external_url ?: JSONObject.NULL)
-                    objRes.put("updated_date", updated_date ?: JSONObject.NULL)
-                    objRes.put("token_id", token_id)
-                    objRes.put("nft_type", nft_type)
-                    objRes.put("nft_name", nft_name ?: JSONObject.NULL)
-                    objRes.put("tag", tag ?: JSONObject.NULL)
-                    objRes.put("description", description ?: JSONObject.NULL)
-                    objRes.put("block_number", block_number)
-                    objRes.put("minted_time", minted_time ?: JSONObject.NULL)
-                    objRes.put("license", license ?: JSONObject.NULL)
-                    objRes.put("video", video ?: JSONObject.NULL)
-                    objRes.put("image_url", image_url ?: JSONObject.NULL)
-                    objRes.put("token_uri", token_uri ?: JSONObject.NULL)
-                    objRes.put("ipfs", ipfs ?: JSONObject.NULL)
-                    objRes.put("attribute", attribute ?: JSONObject.NULL)
-                    objRes.put("token_info", token_info ?: JSONObject.NULL)
+    try{
+        var sum: Int? = null
+        if ((account==null && collection_id==null) || (limit == null && page_number != null)) {
+            throw Exception() // 예외 발생
+        }
+        if (connection != null) {
+            val dbQueryExector = DBQueryExector(connection)
+            val getNFT: ResultSet? = dbQueryExector.executeQuery(strQuery)
+            val getSum: ResultSet? = dbQueryExector.executeQuery(sumQuery)
+            if (getNFT != null) {
+                try {
+                    while (getNFT.next()) {
+                        val objRes = JSONObject()
 
-                    var chkCollection = false
+                        val network = getNFT.getString("network")
+                        val collection_id = getNFT.getString("collection_id")
+                        val collection_name = getNFT.getString("collection_name")
+                        val collection_symbol = getNFT.getString("collection_symbol")
+                        val collection_creator = getNFT.getString("creator")
+                        val deployment_date = getNFT.getString("deployment_date")
+                        val total_supply = getNFT.getString("total_supply")
+                        val nft_type = getNFT.getString("nft_type")
+                        val minted_time = getNFT.getString("minted_time")
+                        val block_number = getNFT.getInt("block_number")
+                        val owner_account = getNFT.getString("owner_account")
+                        val token_id = getNFT.getString("token_id")
+                        val balance = getNFT.getString("balance")
+                        val token_uri = getNFT.getString("token_uri")
+                        val nft_name = getNFT.getString("nft_name")
+                        val description = getNFT.getString("description")
+                        val image_url = getNFT.getString("image_url")
+                        val external_url = getNFT.getString("external_url")
+                        val attribute = getNFT.getString("attribute")
+                        val token_info = getNFT.getString("token_info")
 
-                    for(i in 0 until nftArray.length()){
-                        if(nftArray.optJSONObject(i).getString("collection_id") == objRes.getString("collection_id")
-                            && nftArray.optJSONObject(i).getString("network") == objRes.getString("network")){
+                        val replace_attributes = JSONArray(attribute ?: "[]")
+                        val replace_metadata = JSONObject(token_info ?: "{}")
 
-                            nftArray.getJSONObject(i).getJSONArray("token").put(objRes)
-                            chkCollection = true
-                            break
-                        }
-                    }
-                    if(chkCollection == false){
-                        var data = JSONObject()
-                        data.put("network", network)
-                        data.put("owner_account", owner_account)
-                        data.put("balance", balance)
-                        data.put("collection_id", collection_id)
-                        data.put("collection_name", collection_name)
-                        data.put("collection_symbol", collection_symbol)
-                        data.put("nft_type", nft_type)
-                        data.put("creator", creator ?: JSONObject.NULL)
-                        data.put("total_supply", total_supply ?: JSONObject.NULL)
-                        data.put("deployment_date", deployment_date ?: JSONObject.NULL)
-                        data.put("slug", slug ?: JSONObject.NULL)
-                        data.put("category", category ?: JSONObject.NULL)
-                        data.put("logo_url", logo_url ?: JSONObject.NULL)
-                        data.put("image_s3_url", image_s3_url ?: JSONObject.NULL)
-                        data.put("isverified", isverified ?: JSONObject.NULL)
-                        data.put("numOwners", numOwners ?: JSONObject.NULL)
-                        data.put("currency", currency ?: JSONObject.NULL)
-                        data.put("discord_link", discord_link ?: JSONObject.NULL)
-                        data.put("twitter_link", twitter_link ?: JSONObject.NULL)
-                        data.put("instagram_link", instagram_link ?: JSONObject.NULL)
-                        data.put("facebook_link", facebook_link ?: JSONObject.NULL)
-                        data.put("telegram_link", telegram_link ?: JSONObject.NULL)
-                        data.put("external_url", external_url ?: JSONObject.NULL)
-                        data.put("updated_date", updated_date ?: JSONObject.NULL)
+                        objRes.put("network", network)
+                        objRes.put("collection_id", collection_id ?: JSONObject.NULL)
+                        objRes.put("collection_name", collection_name ?: JSONObject.NULL)
+                        objRes.put("collection_symbol", collection_symbol ?: JSONObject.NULL)
+                        objRes.put("collection_creator", collection_creator ?: JSONObject.NULL)
+                        objRes.put("collection_timestamp", deployment_date ?: JSONObject.NULL)
+                        objRes.put("collection_total_supply", total_supply ?: JSONObject.NULL)
+                        objRes.put("nft_type", nft_type ?: JSONObject.NULL)
+                        objRes.put("minted_timestamp", minted_time ?: JSONObject.NULL)
+                        objRes.put("block_number", block_number ?: JSONObject.NULL)
+                        objRes.put("owner", owner_account ?: JSONObject.NULL)
+                        objRes.put("token_id", token_id ?: JSONObject.NULL)
+                        objRes.put("token_balance", balance ?: JSONObject.NULL)
+                        objRes.put("token_uri", token_uri ?: JSONObject.NULL)
+                        objRes.put("name", nft_name ?: JSONObject.NULL)
+                        objRes.put("description", description ?: JSONObject.NULL)
+                        objRes.put("image", image_url ?: JSONObject.NULL)
+                        objRes.put("external_url", external_url ?: JSONObject.NULL)
+                        objRes.put("attributes", replace_attributes)
+                        objRes.put("metadata", replace_metadata)
 
-                        val objResArray = JSONArray()
-                        objResArray.put(objRes)
-                        data.put("token", objResArray)
-                        nftArray.put(data)
+                        nftArray.put(objRes)
                     }
                 }
+                catch (ex: SQLException){
+                    ex.printStackTrace()
+                }
+                finally {
+                    getNFT.close()
+                }
             }
-            catch (ex: SQLException){
-                ex.printStackTrace()
-            }
-            finally {
-                getNFT.close()
+            //sum 출력
+            if(getSum != null){
+                try {
+                    while (getSum.next()) {
+                        sum = getSum.getInt("sum")
+                        //nftData.put("sum", sum)
+                    }
+                }
+                catch (ex: SQLException){
+                    ex.printStackTrace()
+                }
+                finally {
+                    getSum.close()
+                }
             }
         }
+        dbConnector.disconnect()
+
+        val limit: Int? = limit
+        val page_count: Int? = if (sum != null && limit != null) {
+            Math.ceil(sum.toDouble() / limit.toDouble()).toInt()
+        } else {
+            0
+        }
+
+        nftData.put("result", "OK")
+        nftData.put("sum", sum)
+        nftData.put("sort", sort)
+        nftData.put("page_count", page_count)
+        nftData.put("value", nftArray)
     }
-    dbConnector.disconnect()
-    nftArray
+    catch (e: Exception) {
+        nftData.put("result", "FAIL")
+        nftData.put("error", e.message)
+    }
 }
-//suspend fun getNFTsByWallet(
-//    network: Array<String>,
-//    account: String
-//): JSONArray = withContext(Dispatchers.IO) {
-//
-//    val dbConnector = DBConnector()
-//    dbConnector.connect()
-//    val connection = dbConnector.getConnection()
-//    val nftArray = JSONArray()
-//
-//    val net = network.joinToString("','", "'", "'")
-//    val query = """
-//           SELECT owner.network, owner.account, owner.balance,
-//                collection.collection_id, collection.collection_name, collection.collection_symbol,
-//                token.nft_type, token.block_number, token.token_id, token.name as token_name,
-//                token.description, token.image_url, token.attributes, token.token_info, token.minted_time
-//            FROM nft_owner_table AS owner
-//            JOIN nft_token_table AS token ON owner.collection_id = token.collection_id AND owner.token_id = token.token_id AND owner.network = token.network
-//            JOIN nft_collection_table AS collection ON token.collection_id = collection.collection_id AND token.network = collection.network
-//             WHERE owner.network IN ($net) AND owner.account = '$account' AND owner.balance != '0'
-//             ORDER BY token.block_number DESC
-//        """
-//    if (connection != null) {
-//        val dbQueryExector = DBQueryExector(connection)
-//        val getNFT: ResultSet? = dbQueryExector.executeQuery(query)
-//
-//        if (getNFT != null) {
-//            try {
-//                while (getNFT.next()) {
-//                    val objRes = JSONObject()
-//
-//                    val network = getNFT.getString("network")
-//                    val account = getNFT.getString("account")
-//                    val balance = getNFT.getString("balance")
-//                    val collection_id = getNFT.getString("collection_id")
-//                    val collection_name = getNFT.getString("collection_name")
-//                    val collection_symbol = getNFT.getString("collection_symbol")
-//                    val nft_type = getNFT.getString("nft_type")
-//                    val block_number = getNFT.getInt("block_number")
-//                    val token_id = getNFT.getString("token_id")
-//                    val token_name = getNFT.getString("token_name")
-//                    val description = getNFT.getString("description")
-//                    val image_url = getNFT.getString("image_url")
-//                    val attributes = getNFT.getString("attributes")
-//                    val token_info = getNFT.getString("token_info")
-//                    val minted_time = getNFT.getString("minted_time")
-//
-//                    objRes.put("network", network)
-//                    objRes.put("account", account)
-//                    objRes.put("balance", balance)
-//                    objRes.put("collection_id", collection_id)
-//                    objRes.put("collection_name", collection_name ?: JSONObject.NULL)
-//                    objRes.put("collection_symbol", collection_symbol ?: JSONObject.NULL)
-//                    objRes.put("nft_type", nft_type)
-//                    objRes.put("block_number", block_number)
-//                    objRes.put("token_id", token_id)
-//                    objRes.put("token_name", token_name ?: JSONObject.NULL)
-//                    objRes.put("description", description ?: JSONObject.NULL)
-//                    objRes.put("image_url", image_url ?: JSONObject.NULL)
-//                    objRes.put("attributes", attributes ?: JSONObject.NULL)
-//                    objRes.put("token_info", token_info ?: JSONObject.NULL)
-//                    objRes.put("minted_time", minted_time ?: JSONObject.NULL)
-//
-//                    var chkCollection = false
-//
-//                    for(i in 0 until nftArray.length()){
-//                        if(nftArray.optJSONObject(i).getString("collection_id") == objRes.getString("collection_id")
-//                            && nftArray.optJSONObject(i).getString("network") == objRes.getString("network")){
-//
-//                            nftArray.getJSONObject(i).getJSONArray("token").put(objRes)
-//                            chkCollection = true
-//                            break
-//                        }
-//                    }
-//                    if(chkCollection == false){
-//                        var data = JSONObject()
-//                        data.put("network", network)
-//                        data.put("account", account)
-//                        data.put("balance", balance)
-//                        data.put("collection_id", collection_id)
-//                        data.put("collection_name", collection_name)
-//                        data.put("collection_symbol", collection_symbol)
-//                        val objResArray = JSONArray()
-//                        objResArray.put(objRes)
-//                        data.put("token", objResArray)
-//                        nftArray.put(data)
-//                    }
-//                }
-//            }
-//            catch (ex: SQLException){
-//                ex.printStackTrace()
-//            }
-//            finally {
-//                getNFT.close()
-//            }
-//        }
-//    }
-//    dbConnector.disconnect()
-//    nftArray
-//}
 
 //getNFTTransaction
 suspend fun getNFTsTransferHistory(
     network: String,
-    collection_id: String,
-    token_id: String
-) : JSONArray = withContext(Dispatchers.IO){
+    collection_id: String ?= null,
+    token_id: String ?= null,
+    type: String ?= null,
+    sort: String ?= null,
+    limit: Int ?= null,
+    page_number: Int ?= null
+) : JSONObject = withContext(Dispatchers.IO){
+
     val dbConnector = DBConnector()
     dbConnector.connect()
     val connection = dbConnector.getConnection()
     val transactionArray = JSONArray()
+    val transferData = JSONObject()
 
-    var sqlQuery1 = """
-                SELECT
-                    transfer.network AS network,
-                    transfer.`from`,
-                    transfer.`to`,
-                    transfer.collection_id,
-                    transfer.block_number,
-                    transfer.`timestamp`,
-                    transfer.transaction_hash,
-                    transfer.log_id,
-                    transfer.token_id,
-                    transfer.amount,
-                    'transfer' as 'transaction_type'
-                FROM nft_transfer_table AS transfer
-                WHERE transfer.network = '$network' AND transfer.collection_id = '$collection_id' AND transfer.token_id = '$token_id'
-                """
-
-    var sqlQuery2 = """
-                SELECT
-                    sales.network AS network,
-                    sales.buyer_account,
-                    sales.block_number,
-                    sales.collection_id,
-                    sales.token_id,
-                    sales.transaction_hash,
-                    sales.log_id,
-                    sales.`timestamp`,
-                    sales.currency,
-                    sales.price,
-                    sales.currency_symbol,
-                    sales.decimals,
-                    sales.market,
-                    sales.sales_info,
-                    'sales' as 'transaction_type'
-                FROM nft_sales_table AS sales
-                WHERE sales.network = '$network' AND sales.collection_id = '$collection_id' AND sales.token_id = '$token_id'
-                """
-    if (connection != null) {
-        val dbQueryExector = DBQueryExector(connection)
-        val getTransaction1: ResultSet? = dbQueryExector.executeQuery(sqlQuery1)
-        val getTransaction2: ResultSet? = dbQueryExector.executeQuery(sqlQuery2)
-
-        if (getTransaction1 != null) {
-            try {
-                while (getTransaction1.next()) {
-                    val jsonData = JSONObject()
-                    // Select data = network, from, to, collection_id, block_number, timestamp, transaction_hash, log_id, token_id, amount, transaction_type
-                    val network = getTransaction1.getString("network")
-                    val from = getTransaction1.getString("from")
-                    val to = getTransaction1.getString("to")
-                    val collection_id = getTransaction1.getString("collection_id")
-                    val block_number = getTransaction1.getInt("block_number")
-                    val timestamp = getTransaction1.getInt("timestamp")
-                    val transaction_hash = getTransaction1.getString("transaction_hash")
-                    val log_id = getTransaction1.getString("log_id")
-                    val token_id = getTransaction1.getString("token_id")
-                    val amount = getTransaction1.getString("amount")
-
-                    jsonData.put("network", network)
-                    jsonData.put("from", from)
-                    jsonData.put("to", to)
-                    jsonData.put("collection_id", collection_id)
-                    jsonData.put("block_number", block_number)
-                    jsonData.put("timestamp", timestamp)
-                    jsonData.put("transaction_hash", transaction_hash)
-                    jsonData.put("log_id", log_id)
-                    jsonData.put("token_id", token_id)
-                    jsonData.put("amount", amount)
-                    jsonData.put("transaction_type", "transfer")
-
-                    transactionArray.put(jsonData)
-                }
-            }
-            catch (ex: SQLException){
-                ex.printStackTrace()
-            }
-            finally {
-                getTransaction1.close()
-            }
-        }
-        if (getTransaction2 != null){
-            try {
-                while (getTransaction2.next()){
-                    val jsonData = JSONObject()
-                    // Select data = network, buyer, collection_id, block_number, timestamp, transaction_hash, log_id, token_id, currency, price, symbol, decimals, market, NFTs, transaction_type
-                    val network = getTransaction2.getString("network")
-                    val buyer_account = getTransaction2.getString("buyer_account")
-                    val collection_id = getTransaction2.getString("collection_id")
-                    val block_number = getTransaction2.getInt("block_number")
-                    val timestamp = getTransaction2.getInt("timestamp")
-                    val transaction_hash = getTransaction2.getString("transaction_hash")
-                    val log_id = getTransaction2.getString("log_id")
-                    val token_id = getTransaction2.getString("token_id")
-                    val currency = getTransaction2.getString("currency")
-                    val price = getTransaction2.getString("price")
-                    val currency_symbol = getTransaction2.getString("currency_symbol")
-                    val decimals = getTransaction2.getInt("decimals")
-                    val market = getTransaction2.getString("market")
-                    val sales_info = getTransaction2.getString("sales_info")
-
-                    jsonData.put("network", network)
-                    jsonData.put("buyer_account", buyer_account)
-                    jsonData.put("block_number", block_number)
-                    jsonData.put("collection_id", collection_id)
-                    jsonData.put("token_id", token_id)
-                    jsonData.put("transaction_hash", transaction_hash)
-                    jsonData.put("log_id", log_id)
-                    jsonData.put("timestamp", timestamp)
-                    jsonData.put("currency", currency)
-                    jsonData.put("price", price)
-                    jsonData.put("currency_symbol", currency_symbol)
-                    jsonData.put("decimals", decimals)
-                    jsonData.put("market", market)
-                    jsonData.put("sales_info", sales_info)
-                    jsonData.put("transaction_type", "sales")
-
-                    transactionArray.put(jsonData)
-                }
-            }
-            catch (ex: SQLException){
-                ex.printStackTrace()
-            }
-            finally {
-                getTransaction2.close()
-            }
-        }
+    var offset = if (page_number != null && limit != null) {
+        (page_number - 1) * limit
+    } else {
+        0 // 또는 적절한 기본값 설정
     }
-    // Convert JSONArray to List<JSONObject>
-    val transactionList = (0 until transactionArray.length()).map { i ->
-        transactionArray.getJSONObject(i)
+    if(page_number==null || page_number==0 || page_number==1){
+        offset = 0
     }
 
-    // Sort the list by timestamp in descending order
-    val sortedList = transactionList.sortedByDescending { it.getInt("timestamp") }
+    var transferQuery =
+        """
+        SELECT
+            transfer.network AS network,
+            sales.buyer_account AS buyer_account,
+            transfer.`from` AS from_address,
+            transfer.`to` AS to_address,
+            transfer.collection_id AS collection_id,
+            transfer.block_number AS block_number,
+            transfer.`timestamp` AS timestamp,
+            transfer.transaction_hash AS transaction_hash,
+            transfer.log_id AS log_id,
+            transfer.token_id AS token_id,
+            transfer.amount AS amount,
+            sales.currency AS currency,
+            sales.currency_symbol AS currency_symbol,
+            sales.decimals AS decimals,
+            sales.price AS price,
+            sales.market AS market,
+            sales.sales_info AS sales_info,
+        CASE 
+            WHEN 
+                sales.sales_info IS NOT NULL THEN 'sales'
+            ELSE 
+                'transfer'
+        END AS 
+                transaction_type
+        FROM 
+            nft_transfer_table AS transfer
+        LEFT OUTER JOIN
+            nft_sales_table AS sales
+            ON 
+                transfer.transaction_hash = sales.transaction_hash
+        LEFT JOIN
+            nft_transaction_type_table AS type
+            ON
+                transfer.transaction_hash = type.transaction_hash
+        WHERE 
+            transfer.network = '${network}' """
+    if(token_id != null){
+        transferQuery += " AND transfer.token_id = '${token_id}' "
+    }
+    if(collection_id != null){
+        transferQuery += " AND transfer.collection_id= '${collection_id}' "
+    }
+    if(type=="transfer"){
+        transferQuery += "AND type.transaction_type = 'transfer' ORDER BY transfer.block_number"
+    }
+    else if(type=="sales"){
+        transferQuery += "AND type.transaction_type = 'sales' ORDER BY transfer.block_number"
+    }
+    else{
+        transferQuery += " ORDER BY transfer.block_number"
+    }
+    if(sort == "asc"){
+        transferQuery += " asc"
+    } else {
+        transferQuery += " desc"
+    }
+    transferQuery += ", CAST(transfer.token_id AS SIGNED) desc"
+    if (limit != null) {
+        transferQuery += " LIMIT ${limit} OFFSET ${offset}"
+    }
 
-    // Convert the sorted list back to JSONArray
-    val sortedArray = JSONArray(sortedList)
+    var sumQuery = """
+            SELECT 
+                count(*) AS sum
+            FROM 
+                nft_transfer_table AS transfer
+            JOIN 
+                nft_sales_table AS sales
+            ON 
+                transfer.transaction_hash = sales.transaction_hash
+            JOIN 
+                nft_transaction_type_table AS type
+            ON 
+                transfer.transaction_hash = type.transaction_hash
+            WHERE 
+                transfer.network = '$network'
+        """.trimIndent()
+    if (token_id != null) {
+        sumQuery += " AND transfer.token_id = '$token_id' "
+    }
+    if (collection_id != null) {
+        sumQuery += " AND transfer.collection_id = '$collection_id' "
+    }
+    try {
+        var sum: Int? = null
+        if ((token_id == null && collection_id == null) || (limit == null && page_number != null)) {
+            throw Exception() // 예외 발생
+        }
+        if (connection != null) {
+            val dbQueryExector = DBQueryExector(connection)
+            val getTransaction1: ResultSet? = dbQueryExector.executeQuery(transferQuery)
+            val getSum: ResultSet? = dbQueryExector.executeQuery(sumQuery)
+            if (getTransaction1 != null) {
+                try {
+                    while (getTransaction1.next()) {
+                        val jsonData = JSONObject()
+                        // Select data = network, from, to, collection_id, block_number, timestamp, transaction_hash, log_id, token_id, amount, transaction_type
+                        val network = getTransaction1.getString("network")
+                        val buyer_account = getTransaction1.getString("buyer_account")
+                        val from_address = getTransaction1.getString("from_address")
+                        val to_address = getTransaction1.getString("to_address")
+                        val collection_id = getTransaction1.getString("collection_id")
+                        val block_number = getTransaction1.getInt("block_number")
+                        val timestamp = getTransaction1.getInt("timestamp")
+                        val transaction_hash = getTransaction1.getString("transaction_hash")
+                        val log_id = getTransaction1.getString("log_id")
+                        val token_id = getTransaction1.getString("token_id")
+                        val amount = getTransaction1.getString("amount")
+                        val currency = getTransaction1.getString("currency")
+                        val currency_symbol = getTransaction1.getString("currency_symbol")
+                        val decimals = getTransaction1.getString("decimals")
+                        val price = getTransaction1.getString("price")
+                        val market = getTransaction1.getString("market")
+                        val sales_info = getTransaction1.getString("sales_info")
+                        val transaction_type = getTransaction1.getString("transaction_type")
 
-    dbConnector.disconnect()
-    sortedArray
+                        val replace_sales_info = JSONArray(sales_info ?: "[]")
+
+                        jsonData.put("network", network)
+                        jsonData.put("buyer", buyer_account)
+                        jsonData.put("from", from_address)
+                        jsonData.put("to", to_address)
+                        jsonData.put("collection_id", collection_id)
+                        jsonData.put("block_number", block_number)
+                        jsonData.put("timestamp", timestamp)
+                        jsonData.put("transaction_hash", transaction_hash)
+                        jsonData.put("log_id", log_id)
+                        jsonData.put("token_id", token_id)
+                        jsonData.put("amount", amount)
+                        jsonData.put("currency", currency)
+                        jsonData.put("currency_symbol", currency_symbol)
+                        jsonData.put("decimals", decimals)
+                        jsonData.put("price", price)
+                        jsonData.put("market", market)
+                        jsonData.put("sales_info", replace_sales_info)
+                        jsonData.put("type", transaction_type)
+
+                        transactionArray.put(jsonData)
+                    }
+                }
+                catch (ex: SQLException) {
+                    ex.printStackTrace()
+                } finally {
+                    getTransaction1.close()
+                }
+            }
+            if(getSum != null){
+                try {
+                    while (getSum.next()) {
+                        sum = getSum.getInt("sum")
+                    }
+                }
+                catch (ex: SQLException){
+                    ex.printStackTrace()
+                }
+                finally {
+                    getSum.close()
+                }
+            }
+        }
+        dbConnector.disconnect()
+
+        val limit: Int? = limit
+        val page_count: Int? = if (sum != null && limit != null) {
+            Math.ceil(sum.toDouble() / limit.toDouble()).toInt()
+        } else {
+            0
+        }
+
+        transferData.put("result", "OK")
+        transferData.put("sum", sum)
+        transferData.put("sort", sort)
+        transferData.put("page_count", page_count)
+        transferData.put("value", transactionArray)
+    }
+    catch (e: Exception){
+        transferData.put("result", "FAIL")
+        transferData.put("error", e.message)
+    }
 }
+
 suspend fun sendNFT721TransactionAsync(
     network: String,
     fromAddress: String,
@@ -504,9 +515,12 @@ suspend fun sendNFT721TransactionAsync(
     val jsonData = JSONObject()
 
     try {
+        val getAddressInfo = getAccountInfoAsync(network, fromAddress)
+        val privateKey = getAddressInfo.getString("private")
+
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
-            Credentials.create("0x40ceea6075422a7f04e6d5250e482ab1bc857816d20e99bd6ab819afe1a2bfb6")
+            Credentials.create(privateKey)
 
         val function = Function(
             "safeTransferFrom",
@@ -591,9 +605,11 @@ suspend fun sendNFT1155TransactionAsync(
         else -> throw IllegalArgumentException("Invalid main network type")
     }
     try {
+        val getAddressInfo = getAccountInfoAsync(network, fromAddress)
+        val privateKey = getAddressInfo.getString("private")
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
-            Credentials.create("0x40ceea6075422a7f04e6d5250e482ab1bc857816d20e99bd6ab819afe1a2bfb6")
+            Credentials.create(privateKey)
 
         val ethGasPrice = web3j.ethGasPrice().sendAsync().get()
 
@@ -684,9 +700,11 @@ suspend fun sendNFT1155BatchTransactionAsync(
         else -> throw IllegalArgumentException("Invalid main network type")
     }
     try {
+        val getAddressInfo = getAccountInfoAsync(network, fromAddress)
+        val privateKey = getAddressInfo.getString("private")
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
-            Credentials.create("0x40ceea6075422a7f04e6d5250e482ab1bc857816d20e99bd6ab819afe1a2bfb6")
+            Credentials.create(privateKey)
 
         val ethGasPrice = web3j.ethGasPrice().sendAsync().get()
 
@@ -786,11 +804,11 @@ suspend fun deployErc721Async(
     baseURI: String,
     owner: String,
     uriType: String
-): JSONObject = withContext(Dispatchers.IO){
+): JSONObject = withContext(Dispatchers.IO) {
     val rpcUrl = when (network) {
         "ethereum" -> "https://mainnet.infura.io/v3/02c509fda7da4fed882ac537046cfd66"
         "cypress" -> "https://rpc.ankr.com/klaytn"
-        "polygon" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
+        "matic" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
         "bnb" -> "https://bsc-dataseed.binance.org"
         "goerli" -> "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"
         "mumbai" -> "https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78"
@@ -800,13 +818,21 @@ suspend fun deployErc721Async(
     val jsonData = JSONObject()
 
     try {
+        val getAddressInfo = getAccountInfoAsync(network, fromAddress)
+        val privateKey = getAddressInfo.getString("private")
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
-            Credentials.create("")
+            Credentials.create(privateKey)
 
         val function = Function(
             "deployWrapped721",
-            listOf(Utf8String(name), Utf8String(symbol), Utf8String(baseURI), Utf8String(owner), Uint8(BigInteger(uriType))),
+            listOf(
+                Utf8String(name),
+                Utf8String(symbol),
+                Utf8String(baseURI),
+                Address(owner),
+                Uint8(BigInteger(uriType))
+            ),
             emptyList()
         )
         val encodedFunction = FunctionEncoder.encode(function)
@@ -871,6 +897,101 @@ suspend fun deployErc721Async(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        jsonData.put("result", "OK")
+        jsonData.put("transactionHash", txHash)
+    } catch (e: Exception) {
+        jsonData.put("result", "FAIL")
+        jsonData.put("error", e.message)
+    }
+}
+
+
+suspend fun mintErc721Async(
+    network: String,
+    fromAddress: String,
+    toAddress: String,
+    tokenURI: String,
+    tokenId: String,
+    nftContractAddress: String
+): JSONObject = withContext(Dispatchers.IO){
+    val rpcUrl = when (network) {
+        "ethereum" -> "https://mainnet.infura.io/v3/02c509fda7da4fed882ac537046cfd66"
+        "cypress" -> "https://rpc.ankr.com/klaytn"
+        "matic" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
+        "bnb" -> "https://bsc-dataseed.binance.org"
+        "goerli" -> "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"
+        "mumbai" -> "https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78"
+        "bnbTest" -> "https://data-seed-prebsc-1-s1.binance.org:8545"
+        else -> throw IllegalArgumentException("Invalid main network type")
+    }
+    val jsonData = JSONObject()
+
+    try {
+        val getAddressInfo = getAccountInfoAsync(network, fromAddress)
+        val privateKey = getAddressInfo.getString("private")
+        val web3j = Web3j.build(HttpService(rpcUrl))
+        val credentials =
+            Credentials.create(privateKey)
+
+        val function = Function(
+            "mint",
+            listOf(Address(toAddress), Uint256(BigInteger(tokenId)), Utf8String(tokenURI)),
+            emptyList()
+        )
+        val encodedFunction = FunctionEncoder.encode(function)
+
+        val nonce = web3j.ethGetTransactionCount(fromAddress, DefaultBlockParameterName.PENDING)
+            .sendAsync()
+            .get()
+            .transactionCount
+
+        val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+        val tx = if (network == "bnb" || network == "bnbTest") {
+            RawTransaction.createTransaction(
+                nonce,
+                getEstimateGas(network, "baseFee"), // Add 20% to the gas price
+                getEstimateGas(
+                    network,
+                    "mintERC721",
+                    null,
+                    fromAddress,
+                    toAddress,
+                    null,
+                    tokenId,
+                    null, null, null, null, null, null, null, null, null, null,
+                    tokenURI
+                ), // Add 20% to the gas limit
+                nftContractAddress,
+                encodedFunction
+            )
+        } else {
+            RawTransaction.createTransaction(
+                chainId,
+                nonce,
+                getEstimateGas(
+                    network,
+                    "mintERC721",
+                    null,
+                    fromAddress,
+                    toAddress,
+                    null,
+                    tokenId,
+                    null, null, null, null, null, null, null, null, null, null,
+                    tokenURI
+                ), // Add 20% to the gas limit
+                nftContractAddress,
+                BigInteger.ZERO,
+                encodedFunction,
+                //0.1gwei
+                BigInteger("100000000"),
+                getEstimateGas(network, "baseFee")
+            )
+        }
+
+        val signedMessage = TransactionEncoder.signMessage(tx, credentials)
+        val signedTx = Numeric.toHexString(signedMessage)
+
+        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
         jsonData.put("result","OK")
         jsonData.put("transactionHash",txHash)
     } catch (e: Exception) {
@@ -878,6 +999,7 @@ suspend fun deployErc721Async(
         jsonData.put("error", e.message)
     }
 }
+
 
 //fun getNftsByWallet(mainNet: List<String>, address: String) {
 //    var res: JSONArray? = null
@@ -1126,6 +1248,3 @@ suspend fun deployErc721Async(
 //fun decimalToHexString(decimal: Int): String {
 //    return Integer.toHexString(decimal)
 //}
-
-
-
