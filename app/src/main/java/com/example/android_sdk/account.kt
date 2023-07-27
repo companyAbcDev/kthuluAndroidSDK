@@ -14,27 +14,27 @@ suspend fun account() = runBlocking<Unit> {
     coroutineScope {
         val networkString = "bnb";
         val networkArray = arrayOf("ethereum", "cypress", "polygon", "bnb")
-        val network = arrayOf("ethereum")
+        val network = arrayOf("ethereum","cypress")
         val mnemonic = "ripple shrimp endorse company horror benefit boring click enter clog grab aware";
         val privateKey = "0x8d993503bb78ab5abfdad2b194bad4ae7cba9fd4590e538d232ba84c41765887";
         val token_address = "0xab40804c3da6812f41d7744fde8d6b7e8a7c30d5"
-        val address = "0xDb639492E2d2A0872A6C3265163fCcC034D036b8"
+        val account = "0xDb639492E2d2A0872A6C3265163fCcC034D036b8"
         val owner_eigenvalue = "abcuser"
 
-        // Create accounts asynchronously
-        var createAccounts = async { createAccountsAsync(networkArray) }.await()
-        println(
-            """
-            Create Accounts:
-            ${createAccounts}
-            """.trimIndent()
-        )
-        println(
-            """
-            Create Accounts loaddata:
-            ${loadData("ethereum")}
-            """.trimIndent()
-        )
+//        // Create accounts asynchronously
+//        var createAccounts = async { createAccountsAsync(networkArray) }.await()
+//        println(
+//            """
+//            Create Accounts:
+//            ${createAccounts}
+//            """.trimIndent()
+//        )
+//        println(
+//            """
+//            Create Accounts loaddata:
+//            ${loadData("ethereum")}
+//            """.trimIndent()
+//        )
 //        /**
 //         * Create Account:
 //        [
@@ -45,7 +45,7 @@ suspend fun account() = runBlocking<Unit> {
 //        ]
 //         */
 //
-//        var validAddress = async { isValidAddressAsync(address) }.await()
+//        var validAddress = async { isValidAddressAsync(account) }.await()
 //        println(
 //            """
 //            isValidAddress:
@@ -57,7 +57,7 @@ suspend fun account() = runBlocking<Unit> {
 //         */
 //
 //        // Get account asynchronously to mnemonic
-//        var restoreAccountMnemonic = async { restoreAccountAsync("ethereum", null, mnemonic) }.await()
+//        var restoreAccountMnemonic = async { restoreAccountAsync(network, null, mnemonic) }.await()
 //        println(
 //            """
 //            restoreAccountMnemonic:
@@ -72,23 +72,23 @@ suspend fun account() = runBlocking<Unit> {
 //            }
 //         */
 //
-//        // Get account asynchronously to privatekey
-//        val restoreAccountPrivateKey = async { restoreAccountAsync("ethereum", privateKey) }.await()
-//        println(
-//            """
-//            getaccountPrivateKey:
-//            ${restoreAccountPrivateKey}
-//            """.trimIndent()
-//        )
-//        /**
-//        restoreAccountPrivateKey
-//            {
-//                "network":"ethereum",
-//                "account":"0x..."
-//            }
-//         */
+        // Get account asynchronously to privatekey
+        val restoreAccountPrivateKey = async { restoreAccountAsync(network, privateKey) }.await()
+        println(
+            """
+            getaccountPrivateKey:
+            ${restoreAccountPrivateKey}
+            """.trimIndent()
+        )
+        /**
+        restoreAccountPrivateKey
+        {
+        "network":"ethereum",
+        "account":"0x..."
+        }
+         */
 //
-//        // Find account info asynchronously to mainnet & address
+//        // Find account info asynchronously to network & account
 //        val getAccountInfo = async { getAccountInfoAsync("ethereum", "0xab40804c3da6812f41d7744fde8d6b7e8a7c30d5") }.await()
 //        println(
 //            """
@@ -133,7 +133,7 @@ suspend fun account() = runBlocking<Unit> {
 //        val getMainnetCoinBalance = async {
 //            getBalanceAsync(
 //                networkString,
-//                address
+//                account
 //            )
 //        }.await()
 //        println(
@@ -171,7 +171,7 @@ suspend fun account() = runBlocking<Unit> {
 //         */
 //
 //        // Get token history asynchronously
-//        val getTokenTransferHistory = async { getTokenHistoryAsync(networkString, address, token_address) }.await()
+//        val getTokenTransferHistory = async { getTokenHistoryAsync(networkString, account, token_address) }.await()
 //        println(
 //            """
 //            getTokenTransferHistory:
@@ -331,6 +331,7 @@ suspend fun createAccountsAsync(
 
             saveData(network, saveMainNet.toString())
         }
+
         resultData.put("result", "OK")
         resultData.put("value", resultArray)
         resultData
@@ -340,9 +341,9 @@ suspend fun createAccountsAsync(
     }
 }
 
-suspend fun isValidAddressAsync(user_account: String): Boolean = withContext(Dispatchers.IO) {
+suspend fun isValidAddressAsync(account: String): Boolean = withContext(Dispatchers.IO) {
     try {
-        WalletUtils.isValidAddress(user_account)
+        WalletUtils.isValidAddress(account)
     } catch (e: Exception) {
         false
     }
@@ -368,12 +369,10 @@ fun isValidMnemonic(phrase: String): Boolean {
 
 // getAccountAsync asynchronously
 suspend fun restoreAccountAsync(
-    network: String,
-    privateKey: String? = null,
+    network: Array<String>,
+    private: String? = null,
     mnemonic: String? = null
 ): JSONObject = withContext(Dispatchers.IO) {
-    val returnObject = JSONObject()
-    val saveObject = JSONObject()
 
     // save array & object
     val resultArray = JSONArray()
@@ -395,11 +394,11 @@ suspend fun restoreAccountAsync(
                 val change = Bip32ECKeyPair.deriveKeyPair(account, intArrayOf(0))
                 Bip32ECKeyPair.deriveKeyPair(change, intArrayOf(0))
             }
-            privateKey != null -> {
-                if (!isValidPrivateKey(privateKey)) {
+            private != null -> {
+                if (!isValidPrivateKey(private)) {
                     throw IllegalArgumentException("Invalid private key.")
                 }
-                ECKeyPair.create(Numeric.hexStringToByteArray(privateKey))
+                ECKeyPair.create(Numeric.hexStringToByteArray(private))
             }
             else -> throw IllegalArgumentException("Either mnemonic or privateKey must be provided.")
         }
@@ -409,23 +408,39 @@ suspend fun restoreAccountAsync(
 
         mnemonic?.let { it } ?: ""
 
-        // save
-        saveObject.put("network", network)
-        saveObject.put("account", credentials.address)
-        saveObject.put("private", encrypt(keyPairPrivateKey))
-        if(mnemonic == null){
-            saveObject.put("mnemonic", "")
-        } else {
-            saveObject.put("mnemonic", encrypt(mnemonic))
+        var saveMainNet = JSONArray()
+        val data = loadData(network[0])
+        if (data != null) {
+            // 기존에 있는 계정 정보 추가
+            val networkLoadData = JSONArray(data)
+            if (networkLoadData.length() != 0) {
+                saveMainNet = networkLoadData
+            }
         }
-        val networkLoadData = JSONArray(loadData(network))
-        networkLoadData.put(saveObject)
-        saveData(network, networkLoadData.toString())
 
-        // add return value
-        returnObject.put("network", network)
-        returnObject.put("account", credentials.address)
-        resultArray.put(returnObject)
+        for (network in network) {
+
+            // add return value
+            val returnObject = JSONObject()
+            returnObject.put("network", network)
+            returnObject.put("account", credentials.address)
+            resultArray.put(returnObject)
+
+            // save
+            val saveObject = JSONObject()
+            saveObject.put("network", network)
+            saveObject.put("account", credentials.address)
+            saveObject.put("private", encrypt(keyPairPrivateKey))
+            if (mnemonic == null) {
+                saveObject.put("mnemonic", "")
+            } else {
+                saveObject.put("mnemonic", encrypt(mnemonic))
+            }
+
+            saveMainNet.put(saveObject)
+            saveData(network, saveMainNet.toString())
+        }
+
         resultData.put("result", "OK")
         resultData.put("value", resultArray)
 
@@ -437,13 +452,13 @@ suspend fun restoreAccountAsync(
 
 }
 
-suspend fun getAccountInfoAsync(network: String, user_account: String?): JSONObject = withContext(Dispatchers.IO) {
+suspend fun getAccountInfoAsync(network: String, account: String?): JSONObject = withContext(Dispatchers.IO) {
     val networkLoadData = JSONArray(loadData(network))
     var equalAddress: JSONObject? = null
 
     for (i in 0 until networkLoadData.length()) {
         val loadDataAddress = networkLoadData.getJSONObject(i)
-        if (user_account == loadDataAddress.getString("user_account")) {
+        if (account == loadDataAddress.getString("account")) {
             equalAddress = loadDataAddress
             break
         }
