@@ -18,8 +18,8 @@ suspend fun account() = runBlocking<Unit> {
         val mnemonic = "ripple shrimp endorse company horror benefit boring click enter clog grab aware";
         val privateKey = "0x8d993503bb78ab5abfdad2b194bad4ae7cba9fd4590e538d232ba84c41765887";
         val token_address = "0xab40804c3da6812f41d7744fde8d6b7e8a7c30d5"
-        val account = "0xDb639492E2d2A0872A6C3265163fCcC034D036b8"
-        val owner_eigenvalue = "abcuser"
+        val account = "0x45a24682cb6e4f5e31e43b5e4213f21e6c3fa0f2"
+        val owner = "abcuser"
 
 //        // Create accounts asynchronously
 //        var createAccounts = async { createAccountsAsync(networkArray) }.await()
@@ -36,14 +36,14 @@ suspend fun account() = runBlocking<Unit> {
 //            """.trimIndent()
 //        )
 //        /**
-//         * Create Account:
-//        [
-//        {"network":"ethereum", "user_account":"0x.."},
-//        {"network":"klaytn", "user_account":"0x..""},
-//        {"network":"polygon", "user_account":"0x.."},
-//        {"network":"binace", "user_account":"0x.."}
-//        ]
-//         */
+////         * Create Account:
+////        [
+////        {"network":"ethereum", "user_account":"0x.."},
+////        {"network":"klaytn", "user_account":"0x..""},
+////        {"network":"polygon", "user_account":"0x.."},
+////        {"network":"binace", "user_account":"0x.."}
+////        ]
+////         */
 //
 //        var validAddress = async { isValidAddressAsync(account) }.await()
 //        println(
@@ -72,39 +72,39 @@ suspend fun account() = runBlocking<Unit> {
 //            }
 //         */
 //
-        // Get account asynchronously to privatekey
-        val restoreAccountPrivateKey = async { restoreAccountAsync(network, privateKey) }.await()
-        println(
-            """
-            getaccountPrivateKey:
-            ${restoreAccountPrivateKey}
-            """.trimIndent()
-        )
-        /**
-        restoreAccountPrivateKey
-        {
-        "network":"ethereum",
-        "account":"0x..."
-        }
-         */
-//
-//        // Find account info asynchronously to network & account
-//        val getAccountInfo = async { getAccountInfoAsync("ethereum", "0xab40804c3da6812f41d7744fde8d6b7e8a7c30d5") }.await()
+//        // Get account asynchronously to privatekey
+//        val restoreAccountPrivateKey = async { restoreAccountAsync(network, privateKey) }.await()
 //        println(
 //            """
-//            getAccountInfo:
-//            ${getAccountInfo}
+//            getaccountPrivateKey:
+//            ${restoreAccountPrivateKey}
 //            """.trimIndent()
 //        )
 //        /**
-//         * getAccountInfo :
-//        {
-//        "account" : "0x...",
-//        "private" : "0x...",
-//        "mnemonic" : "blind nurse ..",
-//        "network" : "ethereum"
-//        }
+//        restoreAccountPrivateKey
+//            {
+//                "network":"ethereum",
+//                "account":"0x..."
+//            }
 //         */
+//
+        // Find account info asynchronously to network & account
+        val getAccountInfo = async { getAccountInfoAsync("ethereum", account) }.await()
+        println(
+            """
+            getAccountInfo:
+            ${getAccountInfo}
+            """.trimIndent()
+        )
+        /**
+         * getAccountInfo :
+        {
+        "account" : "0x...",
+        "private" : "0x...",
+        "mnemonic" : "blind nurse ..",
+        "network" : "ethereum"
+        }
+         */
 //
 //        // Get token info asynchronously
 //        val tokenInfo = async {
@@ -456,22 +456,26 @@ suspend fun getAccountInfoAsync(network: String, account: String?): JSONObject =
     val networkLoadData = JSONArray(loadData(network))
     var equalAddress: JSONObject? = null
 
-    for (i in 0 until networkLoadData.length()) {
-        val loadDataAddress = networkLoadData.getJSONObject(i)
-        if (account == loadDataAddress.getString("account")) {
-            equalAddress = loadDataAddress
-            break
+    try {
+        for (i in 0 until networkLoadData.length()) {
+            val loadDataAddress = networkLoadData.getJSONObject(i)
+            if (account == loadDataAddress.getString("account")) {
+                equalAddress = loadDataAddress
+                break
+            }
         }
-    }
 
-    if (equalAddress == null) {
-        equalAddress = JSONObject()
-    } else {
-        equalAddress.put("private", decrypt((equalAddress.getString("private"))))
-        equalAddress.put("mnemonic", decrypt(equalAddress.getString("mnemonic")))
-    }
+        if (equalAddress == null) {
+            equalAddress = JSONObject()
+        } else {
+            equalAddress.put("private", decrypt((equalAddress.getString("private"))))
+            equalAddress.put("mnemonic", decrypt(equalAddress.getString("mnemonic")))
+        }
 
-    equalAddress ?: JSONObject()
+        equalAddress ?: JSONObject()
+    } catch (e:Exception){
+        equalAddress ?: JSONObject()
+    }
 }
 
 // Get token info asynchronously
