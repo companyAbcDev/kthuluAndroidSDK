@@ -13,7 +13,7 @@ suspend fun account() = runBlocking<Unit> {
     // Initialize the coroutine context
     coroutineScope {
         val networkString = "bnb";
-        val networkArray = arrayOf("ethereum", "klaytn", "polygon", "binance")
+        val networkArray = arrayOf("ethereum", "cypress", "polygon", "bnb")
         val network = arrayOf("ethereum")
         val mnemonic = "ripple shrimp endorse company horror benefit boring click enter clog grab aware";
         val privateKey = "0x8d993503bb78ab5abfdad2b194bad4ae7cba9fd4590e538d232ba84c41765887";
@@ -35,256 +35,257 @@ suspend fun account() = runBlocking<Unit> {
             ${loadData("ethereum")}
             """.trimIndent()
         )
-        /**
-         * Create Account:
-        [
-        {"network":"ethereum", "user_account":"0x.."},
-        {"network":"klaytn", "user_account":"0x..""},
-        {"network":"polygon", "user_account":"0x.."},
-        {"network":"binace", "user_account":"0x.."}
-        ]
-         */
-
-        var validAddress = async { isValidAddressAsync(address) }.await()
-        println(
-            """
-            isValidAddress:
-            ${validAddress}
-            """.trimIndent()
-        )
-        /**
-        isValidAddress : true
-         */
-
-        // Get account asynchronously to mnemonic
-        var restoreAccountMnemonic = async { restoreAccountAsync("ethereum", null, mnemonic) }.await()
-        println(
-            """
-            restoreAccountMnemonic:
-            ${restoreAccountMnemonic}
-            """.trimIndent()
-        )
-        /**
-        restoreAccountMnemonic
-        {
-        "network":"ethereum",
-        "user_account":"0x..."
-        }
-         */
-
-        // Get account asynchronously to privatekey
-        val restoreAccountPrivateKey = async { restoreAccountAsync("ethereum", privateKey) }.await()
-        println(
-            """
-            getaccountPrivateKey:
-            ${restoreAccountPrivateKey}
-            """.trimIndent()
-        )
-        // "0x8d993503bb78ab5abfdad2b194bad4ae7cba9fd4590e538d232ba84c41765887"
-        /**
-        restoreAccountPrivateKey
-        {
-        "network":"ethereum",
-        "user_account":"0x..."
-        }
-         */
-
-        // Find account info asynchronously to mainnet & address
-        val getAccountInfo = async { getAccountInfoAsync("ethereum", "0xab40804c3da6812f41d7744fde8d6b7e8a7c30d5") }.await()
-        println(
-            """
-            getAccountInfo:
-            ${getAccountInfo}
-            """.trimIndent()
-        )
-        /**
-         * getAccountInfo :
-        {
-        "user_account" : "0x...",
-        "private" : "0x...",
-        "mnemonic" : "blind nurse ..",
-        "network" : "ethereum"
-        }
-         */
-
-        // Get token info asynchronously
-        val tokenInfo = async {
-            getTokenInfoAsync(
-                networkString,
-                token_address
-            )
-        }.await()
-        println(
-            """
-            TokenInfo:
-            ${tokenInfo}
-            """.trimIndent()
-        )
-        /**
-         * TokenInfo:
-        {
-        "token_name" : "Tether",
-        "token_symbol" : "USDT",
-        "decimals": "6",
-        "total_supply" : "39030615894320966"
-        }
-         */
-
-        // Get mainnet coin balance asynchronously
-        val getMainnetCoinBalance = async {
-            getBalanceAsync(
-                networkString,
-                address
-            )
-        }.await()
-        println(
-            """
-            getBalance:
-            ${getMainnetCoinBalance}
-            """.trimIndent()
-        )
-        /**
-         * getBalanceAsync:
-        {
-        "balance" : "21350.04"
-        }
-         */
-
-        // Get token balance asynchronously
-        val getTokenBalance = async {
-            getBalanceAsync(
-                networkString,
-                address,
-                token_address
-            )
-        }.await()
-        println(
-            """
-            getBalance:
-            ${getTokenBalance}
-            """.trimIndent()
-        )
-        /**
-         * getBalanceAsync:
-        {
-        "balance" : "39030603.320966"
-        }
-         */
-
-        // Get token history asynchronously
-        val getTokenTransferHistory = async { getTokenHistoryAsync(networkString, address, token_address) }.await()
-        println(
-            """
-            getTokenTransferHistory:
-            ${getTokenTransferHistory}
-            """.trimIndent()
-        )
-        /**
-         * getTokenHistoryAsync
-        [
-        {
-        "network": "ethereum",
-        "token_address": "0x111111111117dC0aa78b770fA6A738034120C302",
-        "block_number": "16500012",
-        "timestamp": "1674844979",
-        "transaction_hash": "0x86f518368E0d49d5916e2BD9EB162E9952b7b04d",
-        "from": "0x788d3ea7f4acf229ca96ce3df6eade8f95ad531fa71684e06776f1976ebd4f8c",
-        "to": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
-        "amount": "38517813190125303766",
-        "gas_used": "152837"
-        },
-        {
-        "network": "ethereum",
-        "token_address": "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32",
-        "block_number": "16500001",
-        "timestamp": "1674844847",
-        "transaction_hash": "0x7122db0Ebe4EB9B434a9F2fFE6760BC03BFbD0E0",
-        "from": "0x703e3820c9b13b1751b47c405358401316ecc75de731d3be4c141e5d23b6e077",
-        "to": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
-        "amount": "20115660308317876961540",
-        "gas_used": "472518"
-        },
-        {
-        "network": "ethereum",
-        "token_address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-        "block_number": "16500008",
-        "timestamp": "1674844931",
-        "transaction_hash": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
-        "from": "0xa199413aa46f4311aaa4a797ddd2e6ac7fe9a5209b7459c26e6af134b243b78f",
-        "to": "0xcADBA199F3AC26F67f660C89d43eB1820b7f7a3b",
-        "amount": "1413152143",
-        "gas_used": "736607"
-        }
-        ]
-         */
-
-        // Get User asynchronously
-        val getUsers = async { getUsersAsync(owner_eigenvalue) }.await()
-        println(
-            """
-            getUser:
-            ${getUsers}
-            """.trimIndent()
-        )
-        /**
-         * getUser:
-        [
-        {
-        "owner_eigenvalue": "abcuser",
-        "network": "ethereum",
-        "user_account": "0x5Cd81e6691914557D2F74AE9A3624bfdA0de6D19",
-        "user_type": "0"
-        },
-        {
-        "owner_eigenvalue": "abcuser",
-        "network": "klaytn",
-        "user_account": "0xB6a37b5d14D502c3Ab0Ae6f3a0E058BC9517786e",
-        "user_type": "0"
-        },
-        {
-        "owner_eigenvalue": "abcuser",
-        "network": "polygon",
-        "user_account": "0x52101C09296E8486cCDbB7fC2d5B25b204258CCE",
-        "user_type": "0"
-        },
-        {
-        "owner_eigenvalue": "abcuser",
-        "network": "binance",
-        "user_account": "0xFf32Da2b4948f0E0606D75444AC053dad590884a",
-        "user_type": "0"
-        },
-        {
-        "owner_eigenvalue": "abcuser",
-        "network": "ethereum",
-        "user_account": "0x5Cd81e6691914557D2F74AE9A3624bfdA0de6D19",
-        "user_type": "1"
-        },
-        {
-        "owner_eigenvalue": "abcuser",
-        "network": "klaytn",
-        "user_account": "0xB6a37b5d14D502c3Ab0Ae6f3a0E058BC9517786e",
-        "user_type": "2"
-        },
-        {
-        "owner_eigenvalue": "abcuser",
-        "network": "polygon",
-        "user_account": "0x52101C09296E8486cCDbB7fC2d5B25b204258CCE",
-        "user_type": "1"
-        },
-        {
-        "owner_eigenvalue": "abcuser",
-        "network": "binance",
-        "user_account": "0xFf32Da2b4948f0E0606D75444AC053dad590884a",
-        "user_type": "2"
-        }
-        ]
-         */
+//        /**
+//         * Create Account:
+//        [
+//        {"network":"ethereum", "user_account":"0x.."},
+//        {"network":"klaytn", "user_account":"0x..""},
+//        {"network":"polygon", "user_account":"0x.."},
+//        {"network":"binace", "user_account":"0x.."}
+//        ]
+//         */
+//
+//        var validAddress = async { isValidAddressAsync(address) }.await()
+//        println(
+//            """
+//            isValidAddress:
+//            ${validAddress}
+//            """.trimIndent()
+//        )
+//        /**
+//        isValidAddress : true
+//         */
+//
+//        // Get account asynchronously to mnemonic
+//        var restoreAccountMnemonic = async { restoreAccountAsync("ethereum", null, mnemonic) }.await()
+//        println(
+//            """
+//            restoreAccountMnemonic:
+//            ${restoreAccountMnemonic}
+//            """.trimIndent()
+//        )
+//        /**
+//        restoreAccountMnemonic
+//            {
+//                "network":"ethereum",
+//                "account":"0x..."
+//            }
+//         */
+//
+//        // Get account asynchronously to privatekey
+//        val restoreAccountPrivateKey = async { restoreAccountAsync("ethereum", privateKey) }.await()
+//        println(
+//            """
+//            getaccountPrivateKey:
+//            ${restoreAccountPrivateKey}
+//            """.trimIndent()
+//        )
+//        /**
+//        restoreAccountPrivateKey
+//            {
+//                "network":"ethereum",
+//                "account":"0x..."
+//            }
+//         */
+//
+//        // Find account info asynchronously to mainnet & address
+//        val getAccountInfo = async { getAccountInfoAsync("ethereum", "0xab40804c3da6812f41d7744fde8d6b7e8a7c30d5") }.await()
+//        println(
+//            """
+//            getAccountInfo:
+//            ${getAccountInfo}
+//            """.trimIndent()
+//        )
+//        /**
+//         * getAccountInfo :
+//        {
+//        "account" : "0x...",
+//        "private" : "0x...",
+//        "mnemonic" : "blind nurse ..",
+//        "network" : "ethereum"
+//        }
+//         */
+//
+//        // Get token info asynchronously
+//        val tokenInfo = async {
+//            getTokenInfoAsync(
+//                networkString,
+//                token_address
+//            )
+//        }.await()
+//        println(
+//            """
+//            TokenInfo:
+//            ${tokenInfo}
+//            """.trimIndent()
+//        )
+//        /**
+//         * TokenInfo:
+//        {
+//        "token_name" : "Tether",
+//        "token_symbol" : "USDT",
+//        "decimals": "6",
+//        "total_supply" : "39030615894320966"
+//        }
+//         */
+//
+//        // Get mainnet coin balance asynchronously
+//        val getMainnetCoinBalance = async {
+//            getBalanceAsync(
+//                networkString,
+//                address
+//            )
+//        }.await()
+//        println(
+//            """
+//            getBalance:
+//            ${getMainnetCoinBalance}
+//            """.trimIndent()
+//        )
+//        /**
+//         * getBalanceAsync:
+//        {
+//        "balance" : "21350.04"
+//        }
+//         */
+//
+//        // Get token balance asynchronously
+//        val getTokenBalance = async {
+//            getBalanceAsync(
+//                networkString,
+//                address,
+//                token_address
+//            )
+//        }.await()
+//        println(
+//            """
+//            getBalance:
+//            ${getTokenBalance}
+//            """.trimIndent()
+//        )
+//        /**
+//         * getBalanceAsync:
+//        {
+//        "balance" : "39030603.320966"
+//        }
+//         */
+//
+//        // Get token history asynchronously
+//        val getTokenTransferHistory = async { getTokenHistoryAsync(networkString, address, token_address) }.await()
+//        println(
+//            """
+//            getTokenTransferHistory:
+//            ${getTokenTransferHistory}
+//            """.trimIndent()
+//        )
+//        /**
+//         * getTokenHistoryAsync
+//        [
+//        {
+//        "network": "ethereum",
+//        "token_address": "0x111111111117dC0aa78b770fA6A738034120C302",
+//        "block_number": "16500012",
+//        "timestamp": "1674844979",
+//        "transaction_hash": "0x86f518368E0d49d5916e2BD9EB162E9952b7b04d",
+//        "from": "0x788d3ea7f4acf229ca96ce3df6eade8f95ad531fa71684e06776f1976ebd4f8c",
+//        "to": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
+//        "amount": "38517813190125303766",
+//        "gas_used": "152837"
+//        },
+//        {
+//        "network": "ethereum",
+//        "token_address": "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32",
+//        "block_number": "16500001",
+//        "timestamp": "1674844847",
+//        "transaction_hash": "0x7122db0Ebe4EB9B434a9F2fFE6760BC03BFbD0E0",
+//        "from": "0x703e3820c9b13b1751b47c405358401316ecc75de731d3be4c141e5d23b6e077",
+//        "to": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
+//        "amount": "20115660308317876961540",
+//        "gas_used": "472518"
+//        },
+//        {
+//        "network": "ethereum",
+//        "token_address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+//        "block_number": "16500008",
+//        "timestamp": "1674844931",
+//        "transaction_hash": "0x1111111254fb6c44bAC0beD2854e76F90643097d",
+//        "from": "0xa199413aa46f4311aaa4a797ddd2e6ac7fe9a5209b7459c26e6af134b243b78f",
+//        "to": "0xcADBA199F3AC26F67f660C89d43eB1820b7f7a3b",
+//        "amount": "1413152143",
+//        "gas_used": "736607"
+//        }
+//        ]
+//         */
+//
+//        // Get User asynchronously
+//        val getUsers = async { getUsersAsync(owner_eigenvalue) }.await()
+//        println(
+//            """
+//            getUser:
+//            ${getUsers}
+//            """.trimIndent()
+//        )
+//        /**
+//         * getUser:
+//        [
+//        {
+//        "owner_eigenvalue": "abcuser",
+//        "network": "ethereum",
+//        "user_account": "0x5Cd81e6691914557D2F74AE9A3624bfdA0de6D19",
+//        "user_type": "0"
+//        },
+//        {
+//        "owner_eigenvalue": "abcuser",
+//        "network": "klaytn",
+//        "user_account": "0xB6a37b5d14D502c3Ab0Ae6f3a0E058BC9517786e",
+//        "user_type": "0"
+//        },
+//        {
+//        "owner_eigenvalue": "abcuser",
+//        "network": "polygon",
+//        "user_account": "0x52101C09296E8486cCDbB7fC2d5B25b204258CCE",
+//        "user_type": "0"
+//        },
+//        {
+//        "owner_eigenvalue": "abcuser",
+//        "network": "binance",
+//        "user_account": "0xFf32Da2b4948f0E0606D75444AC053dad590884a",
+//        "user_type": "0"
+//        },
+//        {
+//        "owner_eigenvalue": "abcuser",
+//        "network": "ethereum",
+//        "user_account": "0x5Cd81e6691914557D2F74AE9A3624bfdA0de6D19",
+//        "user_type": "1"
+//        },
+//        {
+//        "owner_eigenvalue": "abcuser",
+//        "network": "klaytn",
+//        "user_account": "0xB6a37b5d14D502c3Ab0Ae6f3a0E058BC9517786e",
+//        "user_type": "2"
+//        },
+//        {
+//        "owner_eigenvalue": "abcuser",
+//        "network": "polygon",
+//        "user_account": "0x52101C09296E8486cCDbB7fC2d5B25b204258CCE",
+//        "user_type": "1"
+//        },
+//        {
+//        "owner_eigenvalue": "abcuser",
+//        "network": "binance",
+//        "user_account": "0xFf32Da2b4948f0E0606D75444AC053dad590884a",
+//        "user_type": "2"
+//        }
+//        ]
+//         */
     }
 }
 
 
 // Create accounts asynchronously
-suspend fun createAccountsAsync(network: Array<String>): JSONArray = withContext(Dispatchers.IO) {
+suspend fun createAccountsAsync(
+    network: Array<String>
+): JSONObject = withContext(Dispatchers.IO) {
     val initialEntropy = RandomUtils.nextBytes(16)
     val mnemonic = MnemonicUtils.generateMnemonic(initialEntropy)
     val seed = MnemonicUtils.generateSeed(mnemonic, null)
@@ -297,31 +298,46 @@ suspend fun createAccountsAsync(network: Array<String>): JSONArray = withContext
     val credentials = Credentials.create(keyPair.privateKey.toString(16))
 
     var saveMainNet = JSONArray()
-    val returnMainNet = JSONArray()
     val data = loadData(network[0])
     if (data != null) {
+        // 기존에 있는 계정 정보 추가
         val networkLoadData = JSONArray(data)
         if (networkLoadData.length() != 0) {
             saveMainNet = networkLoadData
         }
     }
 
-    for (network in network) {
-        val returnData = JSONObject()
-        returnData.put("network", network)
-        returnData.put("user_account", credentials.address)
-        val saveData = JSONObject()
-        saveData.put("network", network)
-        saveData.put("user_account", credentials.address)
-        saveData.put("private", encrypt("0x${Numeric.toHexStringNoPrefix(keyPair.privateKey)}"))
-        saveData.put("mnemonic", encrypt(mnemonic))
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
 
-        returnMainNet.put(returnData)
-        saveMainNet.put(saveData)
-        saveData(network, saveMainNet.toString())
+    try{
+        for (network in network) {
+
+            // add return value
+            val returnData = JSONObject()
+            returnData.put("network", network)
+            returnData.put("account", credentials.address)
+            resultArray.put(returnData)
+
+            //save
+            val saveData = JSONObject()
+            saveData.put("network", network)
+            saveData.put("account", credentials.address)
+            saveData.put("private", encrypt("0x${Numeric.toHexStringNoPrefix(keyPair.privateKey)}"))
+            saveData.put("mnemonic", encrypt(mnemonic))
+            saveMainNet.put(saveData)
+
+            saveData(network, saveMainNet.toString())
+        }
+        resultData.put("result", "OK")
+        resultData.put("value", resultArray)
+        resultData
+
+    } catch(e: Exception){
+        resultData
     }
-
-    returnMainNet
 }
 
 suspend fun isValidAddressAsync(user_account: String): Boolean = withContext(Dispatchers.IO) {
@@ -356,7 +372,15 @@ suspend fun restoreAccountAsync(
     privateKey: String? = null,
     mnemonic: String? = null
 ): JSONObject = withContext(Dispatchers.IO) {
-    val returnData = JSONObject()
+    val returnObject = JSONObject()
+    val saveObject = JSONObject()
+
+    // save array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
+
     try {
         val keyPair = when {
             mnemonic != null -> {
@@ -385,23 +409,30 @@ suspend fun restoreAccountAsync(
 
         mnemonic?.let { it } ?: ""
 
-        returnData.put("network", network)
-        returnData.put("user_account", credentials.address)
-        returnData.put("private", encrypt(keyPairPrivateKey))
-
+        // save
+        saveObject.put("network", network)
+        saveObject.put("account", credentials.address)
+        saveObject.put("private", encrypt(keyPairPrivateKey))
         if(mnemonic == null){
-            returnData.put("mnemonic", "")
+            saveObject.put("mnemonic", "")
         } else {
-            returnData.put("mnemonic", encrypt(mnemonic))
+            saveObject.put("mnemonic", encrypt(mnemonic))
         }
-
         val networkLoadData = JSONArray(loadData(network))
-        networkLoadData.put(returnData)
+        networkLoadData.put(saveObject)
         saveData(network, networkLoadData.toString())
-        returnData
+
+        // add return value
+        returnObject.put("network", network)
+        returnObject.put("account", credentials.address)
+        resultArray.put(returnObject)
+        resultData.put("result", "OK")
+        resultData.put("value", resultArray)
+
+        resultData
     }catch (e: Exception) {
-        returnData.put("error", e.message)
-        returnData
+        resultData.put("error", e.message)
+        resultData
     }
 
 }
