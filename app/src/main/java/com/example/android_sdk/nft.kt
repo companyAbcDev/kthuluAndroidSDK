@@ -35,6 +35,7 @@ import org.web3j.utils.Convert
 import org.web3j.utils.Numeric
 import java.math.BigDecimal
 import java.math.BigInteger
+import java.sql.Statement
 
 //data class Nft(
 //    var network: List<network>?,
@@ -62,6 +63,104 @@ import java.math.BigInteger
 //    var value: String?,
 //    var trait_type: String?
 //)
+suspend fun setNFTsTrash(
+    network: String,
+    owner: String,
+    account: String,
+    collection_id: String,
+    token_id: String
+): JSONObject = withContext(Dispatchers.IO) {
+    val dbConnector = DBConnector()
+    dbConnector.connect()
+    val connection = dbConnector.getConnection()
+    val trashData = JSONObject()
+
+    try {
+        val trashQuery =
+            "INSERT INTO " +
+                    "nft_trash_table (network, account, collection_id, token_id, owner) " +
+                    "VALUES " +
+                    "('$network', '$account', '$collection_id', '$token_id', '$owner')"
+
+        println(trashQuery)
+
+        val statement: Statement = connection!!.createStatement()
+        statement.executeUpdate(trashQuery)
+        trashData.put("result", "OK")
+    } catch (e: SQLException) {
+        e.printStackTrace()
+        trashData.put("result", "FAIL")
+        if (e.message?.contains("Duplicate entry") == true) {
+            trashData.put("reason", "Duplicate entry")
+        }
+        else if (e.message?.contains("Table not found") == true) {
+            trashData.put("reason", "Table not found")
+        }
+        else if (e.message?.contains("Column not found") == true) {
+            trashData.put("reason", "Column not found")
+        }
+        else if (e.message?.contains("Connection timeout") == true) {
+            trashData.put("reason", "Connection timeout")
+        }
+        else if (e.message?.contains("Connection refused") == true) {
+            trashData.put("reason", "Connection refused")
+        }
+        else {
+            trashData.put("reason", e.printStackTrace())
+        }
+    } finally {
+        connection?.close()
+    }
+
+    trashData
+}
+suspend fun deleteNFTsTrash(
+    network: String,
+    owner: String,
+    account: String,
+    collection_id: String,
+    token_id: String
+): JSONObject = withContext(Dispatchers.IO) {
+    val dbConnector = DBConnector()
+    dbConnector.connect()
+    val connection = dbConnector.getConnection()
+    val trashData = JSONObject()
+
+    try {
+        val deleteQuery =
+            "DELETE FROM " +
+                    "nft_trash_table " +
+                    "WHERE " +
+                    "network = '$network' " +
+                    "AND " +
+                    "account = '$account' " +
+                    "AND " +
+                    "collection_id = '$collection_id' " +
+                    "AND " +
+                    "token_id = '$token_id' " +
+                    "AND " +
+                    "owner = '$owner'"
+
+        println(deleteQuery)
+
+        val statement: Statement = connection!!.createStatement()
+        val rowsAffected = statement.executeUpdate(deleteQuery)
+
+        if (rowsAffected > 0) {
+            trashData.put("result", "OK")
+        } else {
+            trashData.put("result", "FAIL")
+        }
+    } catch (e: SQLException) {
+        e.printStackTrace()
+        trashData.put("result", "FAIL")
+    } finally {
+        connection?.close()
+    }
+    trashData
+}
+
+@SuppressLint("SuspiciousIndentation")
 suspend fun getNFTsByWallet(
     network: Array<String>,
     account: String ?= null,
@@ -90,97 +189,97 @@ suspend fun getNFTsByWallet(
     }
     var strQuery =
         "SELECT" +
-            " owner.network AS network," +
-            " collection.collection_id AS collection_id," +
-            " collection.collection_name AS collection_name," +
-            " collection.collection_symbol AS collection_symbol," +
-            " collection.creator AS creator," +
-            " collection.deployment_date AS deployment_date," +
-            " collection.total_supply AS total_supply," +
-            " token.nft_type AS nft_type," +
-            " token.minted_time AS minted_time," +
-            " token.block_number AS block_number," +
-            " owner.owner_account AS owner_account," +
-            " token.token_id AS token_id," +
-            " owner.balance AS balance," +
-            " token.token_uri AS token_uri," +
-            " token.nft_name AS nft_name," +
-            " token.description AS description," +
-            " token.image_url AS image_url," +
-            " token.external_url AS external_url," +
-            " token.attribute AS attribute," +
-            " token.token_info AS token_info" +
-        " FROM " +
-            "nft_owner_table AS owner" +
-        " JOIN " +
-            "nft_token_table AS token " +
-        "ON " +
-            "owner.collection_id = token.collection_id " +
-            "AND " +
-                "owner.token_id = token.token_id " +
-            "AND " +
-                "owner.network = token.network" +
-        " JOIN " +
-            "nft_collection_table AS collection " +
-        "ON " +
-            "token.collection_id = collection.collection_id " +
-            "AND " +
-                "token.network = collection.network " +
-        "WHERE " +
-            "owner.network IN (${net}) " +
-            "AND " +
-                "owner.balance != '0'"
-        if (account != null) {
-            strQuery += " AND owner.owner_account = '$account'"
-        }
-        if (collection_id != null) {
-            strQuery += " AND owner.collection_id = '$collection_id'"
-        }
-        strQuery += " AND NOT EXISTS ( SELECT 1 FROM nft_trash_table AS trash WHERE trash.network = owner.network AND trash.account = owner.owner_account AND trash.token_id = owner.token_id AND trash.collection_id = owner.collection_id) "
-        strQuery += " ORDER BY token.block_number"
-        if (sort == "asc") {
-            strQuery += " asc"
-        } else {
-            strQuery += " desc"
-        }
-        strQuery += ", CAST(token.token_id AS SIGNED) desc"
-        if (limit != null) {
-            strQuery += " LIMIT $limit OFFSET $offset"
-        }
-        println(strQuery)
+                " owner.network AS network," +
+                " collection.collection_id AS collection_id," +
+                " collection.collection_name AS collection_name," +
+                " collection.collection_symbol AS collection_symbol," +
+                " collection.creator AS creator," +
+                " collection.deployment_date AS deployment_date," +
+                " collection.total_supply AS total_supply," +
+                " token.nft_type AS nft_type," +
+                " token.minted_time AS minted_time," +
+                " token.block_number AS block_number," +
+                " owner.owner_account AS owner_account," +
+                " token.token_id AS token_id," +
+                " owner.balance AS balance," +
+                " token.token_uri AS token_uri," +
+                " token.nft_name AS nft_name," +
+                " token.description AS description," +
+                " token.image_url AS image_url," +
+                " token.external_url AS external_url," +
+                " token.attribute AS attribute," +
+                " token.token_info AS token_info" +
+                " FROM " +
+                "nft_owner_table AS owner" +
+                " JOIN " +
+                "nft_token_table AS token" +
+                " ON" +
+                " owner.collection_id = token.collection_id" +
+                " AND " +
+                " owner.token_id = token.token_id" +
+                " AND " +
+                " owner.network = token.network" +
+                " JOIN " +
+                "nft_collection_table AS collection" +
+                " ON" +
+                " token.collection_id = collection.collection_id" +
+                " AND" +
+                " token.network = collection.network" +
+                " WHERE" +
+                " owner.network IN (${net})" +
+                " AND" +
+                " owner.balance != '0'"
+    if (account != null) {
+        strQuery += " AND owner.owner_account = '$account'"
+    }
+    if (collection_id != null) {
+        strQuery += " AND owner.collection_id = '$collection_id'"
+    }
+    strQuery += " AND NOT EXISTS ( SELECT 1 FROM nft_trash_table AS trash JOIN users_table AS users ON users.owner_eigenvalue = trash.owner WHERE trash.network = owner.network AND trash.account = owner.owner_account AND owner.owner_account = users.user_account AND trash.token_id = owner.token_id AND trash.collection_id = owner.collection_id AND trash.owner = users.owner_eigenvalue)"
+    strQuery += " ORDER BY token.block_number"
+    if (sort == " asc") {
+        strQuery += " asc"
+    } else {
+        strQuery += " desc"
+    }
+    strQuery += ", CAST(token.token_id AS SIGNED) desc"
+    if (limit != null) {
+        strQuery += " LIMIT $limit OFFSET $offset"
+    }
+    println(strQuery)
 
     var sumQuery =
-        "SELECT " +
-            " count(*) AS sum" +
-        " FROM" +
-            " nft_owner_table AS owner" +
-        " JOIN" +
-            " nft_token_table AS token" +
-        " ON" +
-            " owner.collection_id = token.collection_id" +
-            " AND" +
+        "SELECT" +
+                " count(*) AS sum" +
+                " FROM" +
+                " nft_owner_table AS owner" +
+                " JOIN" +
+                " nft_token_table AS token" +
+                " ON" +
+                " owner.collection_id = token.collection_id" +
+                " AND" +
                 " owner.token_id = token.token_id" +
-            " AND" +
+                " AND" +
                 " owner.network = token.network" +
-        " JOIN" +
-            " nft_collection_table AS collection" +
-        " ON" +
-            " token.collection_id = collection.collection_id" +
-            " AND" +
+                " JOIN" +
+                " nft_collection_table AS collection" +
+                " ON" +
+                " token.collection_id = collection.collection_id" +
+                " AND" +
                 " token.network = collection.network" +
-        " WHERE" +
-            " owner.network IN ($net)" +
-            " AND" +
+                " WHERE" +
+                " owner.network IN ($net)" +
+                " AND" +
                 " owner.balance != '0'"
-        if (account != null) {
-            sumQuery += " AND owner.owner_account = '$account' "
-        }
-        if (collection_id != null) {
-            sumQuery += " AND owner.collection_id = '$collection_id' "
-        }
-            sumQuery += " AND NOT EXISTS ( SELECT 1 FROM nft_trash_table AS trash WHERE trash.network = owner.network AND trash.account = owner.owner_account AND trash.token_id = owner.token_id AND trash.collection_id = owner.collection_id) "
+    if (account != null) {
+        sumQuery += " AND owner.owner_account = '$account' "
+    }
+    if (collection_id != null) {
+        sumQuery += " AND owner.collection_id = '$collection_id' "
+    }
+    sumQuery += " AND NOT EXISTS ( SELECT 1 FROM nft_trash_table AS trash JOIN users_table AS users ON users.owner_eigenvalue = trash.owner WHERE trash.network = owner.network AND trash.account = owner.owner_account AND owner.owner_account = users.user_account AND trash.token_id = owner.token_id AND trash.collection_id = owner.collection_id AND trash.owner = users.owner_eigenvalue)"
 
-        println(sumQuery)
+    println(sumQuery)
     try{
         var sum: Int? = null
         if ((account==null && collection_id==null) || (limit == null && page_number != null)) {
@@ -361,7 +460,7 @@ suspend fun getNFTsByWalletArray(
     if (collection_id != null) {
         strQuery += " AND owner.collection_id = '$collection_id'"
     }
-    strQuery += " AND NOT EXISTS ( SELECT 1 FROM nft_trash_table AS trash WHERE trash.network = owner.network AND trash.account = owner.owner_account AND trash.token_id = owner.token_id AND trash.collection_id = owner.collection_id) "
+    strQuery += " AND NOT EXISTS ( SELECT 1 FROM nft_trash_table AS trash JOIN users_table AS users ON users.owner_eigenvalue = trash.owner WHERE trash.network = owner.network AND trash.account = owner.owner_account AND owner.owner_account = users.user_account AND trash.token_id = owner.token_id AND trash.collection_id = owner.collection_id AND trash.owner = users.owner_eigenvalue)"
     strQuery += " ORDER BY token.block_number"
     if (sort == "asc") {
         strQuery += " asc"
@@ -403,7 +502,7 @@ suspend fun getNFTsByWalletArray(
     if (collection_id != null) {
         sumQuery += " AND owner.collection_id = '$collection_id' "
     }
-    sumQuery += " AND NOT EXISTS ( SELECT 1 FROM nft_trash_table AS trash WHERE trash.network = owner.network AND trash.account = owner.owner_account AND trash.token_id = owner.token_id AND trash.collection_id = owner.collection_id) "
+    sumQuery += " AND NOT EXISTS ( SELECT 1 FROM nft_trash_table AS trash JOIN users_table AS users ON users.owner_eigenvalue = trash.owner WHERE trash.network = owner.network AND trash.account = owner.owner_account AND owner.owner_account = users.user_account AND trash.token_id = owner.token_id AND trash.collection_id = owner.collection_id AND trash.owner = users.owner_eigenvalue)"
 
     println(sumQuery)
     try{
@@ -541,93 +640,93 @@ suspend fun getNFTsTransferHistory(
 
     var transferQuery =
         " SELECT" +
-            " transfer.network AS network," +
-            " sales.buyer_account AS buyer_account," +
-            " transfer.`from` AS from_address," +
-            " transfer.`to` AS to_address," +
-            " transfer.collection_id AS collection_id," +
-            " transfer.block_number AS block_number," +
-            " transfer.`timestamp` AS timestamp," +
-            " transfer.transaction_hash AS transaction_hash," +
-            " transfer.log_id AS log_id," +
-            " transfer.token_id AS token_id," +
-            " transfer.amount AS amount," +
-            " sales.currency AS currency," +
-            " sales.currency_symbol AS currency_symbol," +
-            " sales.decimals AS decimals," +
-            " sales.price AS price," +
-            " sales.market AS market," +
-            " sales.sales_info AS sales_info," +
-        " CASE" +
-            " WHEN" +
+                " transfer.network AS network," +
+                " sales.buyer_account AS buyer_account," +
+                " transfer.`from` AS from_address," +
+                " transfer.`to` AS to_address," +
+                " transfer.collection_id AS collection_id," +
+                " transfer.block_number AS block_number," +
+                " transfer.`timestamp` AS timestamp," +
+                " transfer.transaction_hash AS transaction_hash," +
+                " transfer.log_id AS log_id," +
+                " transfer.token_id AS token_id," +
+                " transfer.amount AS amount," +
+                " sales.currency AS currency," +
+                " sales.currency_symbol AS currency_symbol," +
+                " sales.decimals AS decimals," +
+                " sales.price AS price," +
+                " sales.market AS market," +
+                " sales.sales_info AS sales_info," +
+                " CASE" +
+                " WHEN" +
                 " sales.sales_info IS NOT NULL THEN 'sales'" +
-            " ELSE" +
+                " ELSE" +
                 " 'transfer'" +
-        " END AS" +
-            " transaction_type" +
-        " FROM" +
-            " nft_transfer_table AS transfer" +
-        " LEFT OUTER JOIN" +
-            " nft_sales_table AS sales" +
-        " ON" +
-            " transfer.transaction_hash = sales.transaction_hash" +
-        " LEFT JOIN" +
-            " nft_transaction_type_table AS type" +
-        " ON" +
-            " transfer.transaction_hash = type.transaction_hash" +
-        " WHERE" +
-            " transfer.network = '${network}'"
-        if(token_id != null){
-            transferQuery += " AND transfer.token_id = '${token_id}' "
-        }
-        if(collection_id != null){
-            transferQuery += " AND transfer.collection_id= '${collection_id}' "
-        }
-        if(type=="transfer"){
-            transferQuery += "AND type.transaction_type = 'transfer' ORDER BY transfer.block_number"
-        }
-        else if(type=="sales"){
-            transferQuery += "AND type.transaction_type = 'sales' ORDER BY transfer.block_number"
-        }
-        else{
-            transferQuery += " ORDER BY transfer.block_number"
-        }
-        if(sort == "asc"){
-            transferQuery += " asc"
-        } else {
-            transferQuery += " desc"
-        }
-        transferQuery += ", CAST(transfer.token_id AS SIGNED) desc"
-        if (limit != null) {
-            transferQuery += " LIMIT ${limit} OFFSET ${offset}"
-        }
-        println(transferQuery)
+                " END AS" +
+                " transaction_type" +
+                " FROM" +
+                " nft_transfer_table AS transfer" +
+                " LEFT OUTER JOIN" +
+                " nft_sales_table AS sales" +
+                " ON" +
+                " transfer.transaction_hash = sales.transaction_hash" +
+                " LEFT JOIN" +
+                " nft_transaction_type_table AS type" +
+                " ON" +
+                " transfer.transaction_hash = type.transaction_hash" +
+                " WHERE" +
+                " transfer.network = '${network}'"
+    if(token_id != null){
+        transferQuery += " AND transfer.token_id = '${token_id}' "
+    }
+    if(collection_id != null){
+        transferQuery += " AND transfer.collection_id= '${collection_id}' "
+    }
+    if(type=="transfer"){
+        transferQuery += "AND type.transaction_type = 'transfer' ORDER BY transfer.block_number"
+    }
+    else if(type=="sales"){
+        transferQuery += "AND type.transaction_type = 'sales' ORDER BY transfer.block_number"
+    }
+    else{
+        transferQuery += " ORDER BY transfer.block_number"
+    }
+    if(sort == "asc"){
+        transferQuery += " asc"
+    } else {
+        transferQuery += " desc"
+    }
+    transferQuery += ", CAST(transfer.token_id AS SIGNED) desc"
+    if (limit != null) {
+        transferQuery += " LIMIT ${limit} OFFSET ${offset}"
+    }
+    println(transferQuery)
 
     var sumQuery =
         "SELECT" +
-            " count(*) AS sum" +
-        " FROM " +
-            " nft_transfer_table AS transfer" +
-        " LEFT JOIN " +
-            " nft_sales_table AS sales" +
-        " ON " +
-            " transfer.transaction_hash = sales.transaction_hash" +
-        " LEFT JOIN " +
-            " nft_transaction_type_table AS type" +
-        " ON " +
-            " transfer.transaction_hash = type.transaction_hash" +
-        " WHERE " +
-            " transfer.network = '$network'"
-        if (token_id != null) {
-            sumQuery += " AND transfer.token_id = '$token_id' "
-        }
-        if (collection_id != null) {
-            sumQuery += " AND transfer.collection_id = '$collection_id' "
-        }
-        if(type != null){
-            sumQuery += " AND type.transaction_type = '${type}'"
-        }
-        println(sumQuery)
+                " count(*) AS sum" +
+                " FROM " +
+                " nft_transfer_table AS transfer" +
+                " LEFT JOIN " +
+                " nft_sales_table AS sales" +
+                " ON " +
+                " transfer.transaction_hash = sales.transaction_hash" +
+                " LEFT JOIN " +
+                " nft_transaction_type_table AS type" +
+                " ON " +
+                " transfer.transaction_hash = type.transaction_hash" +
+                " WHERE " +
+                " transfer.network = '$network'"
+    if (token_id != null) {
+        sumQuery += " AND transfer.token_id = '$token_id' "
+    }
+    if (collection_id != null) {
+        sumQuery += " AND transfer.collection_id = '$collection_id' "
+    }
+    if(type != null){
+        sumQuery += " AND type.transaction_type = '${type}'"
+    }
+    println(sumQuery)
     try {
         var sum: Int? = null
         if ((token_id == null && collection_id == null) || (limit == null && page_number != null)) {

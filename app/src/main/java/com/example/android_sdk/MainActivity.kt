@@ -30,8 +30,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             getString(R.string.kthulu_database_driver_class_name)
         )
 
-//        var network = arrayOf("ethereum", "cypress", "polygon", "bnb")
-//        var accountArray = arrayOf("0x7F8aD8986a7f87C1E03104995876A09D08B2c39b", "0x13418f99467D20A7970a36fe4F2fF6Ec494A3A12")
+        var network = arrayOf("ethereum", "cypress", "polygon", "bnb")
+        var accountArray = arrayOf("0xe2Ce91F22ed39520e8b099F3800BD21f5b090b56")
 //        var account = "0x13418f99467D20A7970a36fe4F2fF6Ec494A3A12"
 //        var collection_id = "0x22d5f9B75c524Fec1D6619787e582644CD4D7422"
 //        var sort = "desc"
@@ -54,11 +54,11 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
 //                println("getNFTsByWallet ===== " + getNFTsByWallet)
 //                var getNFTsByWalletArray= getNFTsByWalletArray(
 //                    network = network,
-//                    account = accountArray,
-//                    collection_id = collection_id,
-//                    sort = sort,
-//                    limit = limit,
-//                    page_number = page_number
+//                    account = accountArray
+////                    collection_id = collection_id,
+////                    sort = sort,
+////                    limit = limit,
+////                    page_number = page_number
 //                )
 //                println("getNFTsByWalletArray ===== " + getNFTsByWalletArray)
 //                var getNFTsTransferHistory =
@@ -78,6 +78,10 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
 //                    println(gasBydeploy)
 //                  var sendNFT = sendNFT1155BatchTransactionAsync("goerli", "0x772A779d280d19C2bd582B4F3840De703249CA39", "0x54fbF887EdB01983DD373E79a0f37413B4565De3", arrayOf("182","189"), "0x5a644acd663d7e4d07eeabe43df0f985670f8f9a", arrayOf("1","1"))
 //                  println(sendNFT)
+//                var setNFTsTrash = setNFTsTrash("bnb", "zvjqjxew7c", "0xe2Ce91F22ed39520e8b099F3800BD21f5b090b56", "0xa2e4F38f50c00b2B30Cb1EC295301ce1DE825F06", "1")
+//                println("setNFTsTrash === "+ setNFTsTrash)
+//                var deleteNFTsTrash = deleteNFTsTrash("bnb", "zvjqjxew7c", "0xe2Ce91F22ed39520e8b099F3800BD21f5b090b56", "0x33763cf6CEbbD70db9613e5073B10b195DFB7cdA", "1")
+//                println("deleteNFTsTrash === "+ deleteNFTsTrash)
             }
         }
     }
