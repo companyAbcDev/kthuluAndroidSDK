@@ -166,7 +166,7 @@ suspend fun sendTransactionAsync(
                 toAddress, // to
                 weiAmount, // value
                 "0x", // data
-                BigInteger.ZERO, // maxPriorityFeePerGas
+                BigInteger("1000000000"), // maxPriorityFeePerGas
                 getEstimateGas(network, "baseFee") // maxFeePerGas Add 20% to the gas price
             )
         }
@@ -178,8 +178,13 @@ suspend fun sendTransactionAsync(
             .sendAsync()
             .get()
             .transactionHash
-        jsonData.put("result", "OK")
-        jsonData.put("transactionHash", transactionHash)
+        if(transactionHash != null) {
+            jsonData.put("result", "OK")
+            jsonData.put("transactionHash", transactionHash)
+        } else {
+            jsonData.put("result", "FAIL")
+            jsonData.put("error", "insufficient funds")
+        }
     } catch (e: Exception) {
         jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
@@ -278,8 +283,13 @@ suspend fun sendTokenTransactionAsync(
             .sendAsync()
             .get()
             .transactionHash
-        jsonData.put("result", "OK")
-        jsonData.put("transactionHash", transactionHash)
+        if(transactionHash != null) {
+            jsonData.put("result", "OK")
+            jsonData.put("transactionHash", transactionHash)
+        } else {
+            jsonData.put("result", "FAIL")
+            jsonData.put("error", "insufficient funds")
+        }
     } catch (e: Exception) {
         jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
@@ -383,8 +393,13 @@ suspend fun deployErc20Async(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        jsonData.put("result","OK")
-        jsonData.put("transactionHash",txHash)
+        if(txHash != null) {
+            jsonData.put("result", "OK")
+            jsonData.put("transactionHash", txHash)
+        } else {
+            jsonData.put("result", "FAIL")
+            jsonData.put("error", "insufficient funds")
+        }
     } catch (e: Exception) {
         jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
