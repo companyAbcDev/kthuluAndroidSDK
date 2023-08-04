@@ -68,20 +68,20 @@ suspend fun transaction() = runBlocking<Unit> {
 //            println("Error sending Token: ${sendErc20Transaction.getString("error")}")
 //        }
 //
-//        val deployErc20 =
-//            async {
-//                deployErc20Async(
-//                    "goerli",
-//                    fromAddress,
-//                    "seonghunToken",
-//                    "SHT",
-//                    "5000000000"
-//                )
-//            }.await()
-//        println("Transaction hash: ${deployErc20}")
-//        /**
-//         * Transaction hash: 0x..
-//         */
+        val deployErc20 =
+            async {
+                deployErc20Async(
+                    "polygon",
+                    fromAddress,
+                    "MainAbcToken",
+                    "MAT",
+                    "5000000000"
+                )
+            }.await()
+        println("Transaction hash: ${deployErc20}")
+        /**
+         * Transaction hash: 0x..
+         */
 //        val mintErc20 =
 //            async {
 //                mintErc20Async(
@@ -271,8 +271,7 @@ suspend fun sendTokenTransactionAsync(
                 token_address, // to
                 BigInteger.ZERO, // value
                 encodedFunction, // data
-                //1gwei
-                BigInteger("1000000000"), // maxPriorityFeePerGas
+                BigInteger("30000000000"), // 30 Gwei maxPriorityFeePerGas
                 getEstimateGas(network, "baseFee") // maxFeePerGas Add 20% to the gas price
             )
         }
@@ -384,25 +383,10 @@ suspend fun deployErc20Async(
                 erc20DeployPolygon,
                 BigInteger.ZERO,
                 encodedFunction,
-                getEstimateGas(
-                    network,
-                    "deployERC20",
-                    null,
-                    ownerAddress,
-                    null,
-                    totalSupply,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    name, symbol
-                ), // Add 20% to the gas limit, // maxPriorityFeePerGas
+                BigInteger("33000000000"), // 33 Gwei maxPriorityFeePerGas
                 getEstimateGas(network, "baseFee") // Add 20% to the gas price
             )
         }
-
         val signedMessage = TransactionEncoder.signMessage(tx, credentials)
         val signedTx = Numeric.toHexString(signedMessage)
 
