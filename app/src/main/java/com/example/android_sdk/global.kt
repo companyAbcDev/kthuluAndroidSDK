@@ -35,6 +35,7 @@ public val addrTransferGoerli = "0x25df7c4d54ce69faf37352cbe98e2d3f9281eaf7"
 public val addrBridgeGoerli = "0x25df7c4d54ce69faf37352cbe98e2d3f9281eaf7"
 public val erc20DeployGoerli = "0xc11735Ce3c155E755bC9839A5B5d06dEa0482306"
 public val erc20DeployMumbai = "0x95f34cD3FE7ca6273f7EaFcA35E65A36aa8894cC"
+public val erc20DeployPolygon = "0x96856126a6bb4870cDD3e179004CD18cEf569044"
 
 // Create RSA key
 fun generateRSAKeyPair() : KeyPair {
@@ -212,7 +213,7 @@ suspend fun getEstimateGas(
                             BigInteger.ONE,
                             gasPrice,
                             BigInteger.ZERO, // temporary gasLimit
-                            erc20DeployGoerli,
+                            erc20DeployPolygon,
                             encodedFunction // data
                         )
                     ).send().amountUsed
