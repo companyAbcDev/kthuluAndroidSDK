@@ -385,7 +385,7 @@ suspend fun deployErc20Async(
                 BigInteger.ZERO,
                 encodedFunction,
                 //1gwei
-                BigInteger("1000000000"), // maxPriorityFeePerGas
+                BigInteger("2000000000"), // maxPriorityFeePerGas
                 getEstimateGas(network, "baseFee") // Add 20% to the gas price
             )
         }
