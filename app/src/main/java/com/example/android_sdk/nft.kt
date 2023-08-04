@@ -900,7 +900,7 @@ suspend fun sendNFT721TransactionAsync(
                 BigInteger.ZERO,
                 encodedFunction,
                 //1gwei
-                BigInteger("1000000000"),
+                BigInteger("33000000000"),
                 getEstimateGas(network, "baseFee")
             )
         }
@@ -997,7 +997,7 @@ suspend fun sendNFT1155TransactionAsync(
                 BigInteger.ZERO,
                 encodedFunction,
                 //1gwei
-                BigInteger("1000000000"),
+                BigInteger("33000000000"),
                 getEstimateGas(network, "baseFee")
             )
         }
@@ -1103,7 +1103,7 @@ suspend fun sendNFT721BatchTransactionAsync(
                 BigInteger.ZERO,
                 encodedFunction,
                 //1gwei
-                BigInteger("1000000000"),
+                BigInteger("33000000000"),
                 getEstimateGas(network, "baseFee")
             )
         }
@@ -1221,7 +1221,7 @@ suspend fun sendNFT1155BatchTransactionAsync(
                 BigInteger.ZERO,
                 encodedFunction,
                 //1gwei
-                BigInteger("1000000000"),
+                BigInteger("33000000000"),
                 getEstimateGas(network, "baseFee")
             )
         }
@@ -1250,7 +1250,7 @@ suspend fun deployErc721Async(
     val rpcUrl = when (network) {
         "ethereum" -> "https://mainnet.infura.io/v3/02c509fda7da4fed882ac537046cfd66"
         "cypress" -> "https://rpc.ankr.com/klaytn"
-        "matic" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
+        "polygon" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
         "bnb" -> "https://bsc-dataseed.binance.org"
         "goerli" -> "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"
         "mumbai" -> "https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78"
@@ -1361,7 +1361,7 @@ suspend fun mintErc721Async(
     val rpcUrl = when (network) {
         "ethereum" -> "https://mainnet.infura.io/v3/02c509fda7da4fed882ac537046cfd66"
         "cypress" -> "https://rpc.ankr.com/klaytn"
-        "matic" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
+        "polygon" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
         "bnb" -> "https://bsc-dataseed.binance.org"
         "goerli" -> "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"
         "mumbai" -> "https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78"

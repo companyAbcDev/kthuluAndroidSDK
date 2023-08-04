@@ -52,15 +52,15 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
 //                    page_number = page_number
 //                )
 //                println("getNFTsByWallet ===== " + getNFTsByWallet)
-//                var getNFTsByWalletArray= getNFTsByWalletArray(
-//                    network = network,
-//                    account = accountArray
-////                    collection_id = collection_id,
-////                    sort = sort,
-////                    limit = limit,
-////                    page_number = page_number
-//                )
-//                println("getNFTsByWalletArray ===== " + getNFTsByWalletArray)
+                var getNFTsByWalletArray= getNFTsByWalletArray(
+                    network = network,
+                    account = accountArray
+//                    collection_id = collection_id,
+//                    sort = sort,
+//                    limit = limit,
+//                    page_number = page_number
+                )
+                println("getNFTsByWalletArray ===== " + getNFTsByWalletArray)
 //                var getNFTsTransferHistory =
 //                    getNFTsTransferHistory(
 //                        network = "polygon",
