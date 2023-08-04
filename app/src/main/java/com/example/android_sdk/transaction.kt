@@ -1,6 +1,7 @@
 package com.example.android_sdk
 
 import getAccountInfoAsync
+import getTokenInfoAsync
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
@@ -197,8 +198,7 @@ suspend fun sendTokenTransactionAsync(
     fromAddress: String,
     toAddress: String,
     amount: String,
-    contractAddress: String,
-    decimals: Int
+    token_address: String
 ): JSONObject = withContext(Dispatchers.IO) {
     val rpcUrl = when (network) {
         "ethereum" -> "https://mainnet.infura.io/v3/02c509fda7da4fed882ac537046cfd66"
@@ -217,13 +217,14 @@ suspend fun sendTokenTransactionAsync(
 
     val jsonData = JSONObject()
     try {
+        val decimals = getTokenInfoAsync(network, token_address).getString("decimals")
         // Ensure amount is a valid number
         if (BigDecimal(amount) <= BigDecimal.ZERO) {
             jsonData.put("error", "insufficient funds")
         }
         val web3 = Web3j.build(HttpService(rpcUrl))
         val credentials = Credentials.create(privateKey)
-        val decimalMultiplier = BigDecimal.TEN.pow(decimals)
+        val decimalMultiplier = BigDecimal.TEN.pow(decimals.toInt())
         val tokenAmount = BigDecimal(amount).multiply(decimalMultiplier).toBigInteger()
         val function = Function(
             "transfer",
@@ -246,12 +247,12 @@ suspend fun sendTokenTransactionAsync(
                 getEstimateGas(
                     network,
                     "transferERC20",
-                    contractAddress,
+                    token_address,
                     fromAddress,
                     toAddress,
                     amount
                 ), // Add 20% to the gas limit
-                contractAddress, // to
+                token_address, // to
                 tokenAmount, // value
                 encodedFunction // data
             )
@@ -262,12 +263,12 @@ suspend fun sendTokenTransactionAsync(
                 getEstimateGas(
                     network,
                     "transferERC20",
-                    contractAddress,
+                    token_address,
                     fromAddress,
                     toAddress,
                     amount
                 ), // gasLimit Add 20% to the gas limit,
-                contractAddress, // to
+                token_address, // to
                 BigInteger.ZERO, // value
                 encodedFunction, // data
                 //1gwei
@@ -380,7 +381,7 @@ suspend fun deployErc20Async(
                     null,
                     name, symbol
                 ), // Add 20% to the gas limit
-                erc20DeployGoerli,
+                erc20DeployPolygon,
                 BigInteger.ZERO,
                 encodedFunction,
                 //1gwei
