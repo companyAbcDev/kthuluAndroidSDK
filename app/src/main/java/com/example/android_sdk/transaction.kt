@@ -22,7 +22,6 @@ import org.web3j.utils.Convert
 import org.web3j.utils.Numeric
 import java.math.BigDecimal
 import java.math.BigInteger
-import java.math.RoundingMode
 
 suspend fun transaction() = runBlocking<Unit> {
     // Initialize the coroutine context
@@ -367,7 +366,6 @@ suspend fun deployErc20Async(
             RawTransaction.createTransaction(
                 chainId,
                 nonce,
-                BigDecimal(
                 getEstimateGas(
                     network,
                     "deployERC20",
@@ -382,12 +380,26 @@ suspend fun deployErc20Async(
                     null,
                     null,
                     name, symbol
-                )).multiply(BigDecimal(1.2)).setScale(0, RoundingMode.DOWN).toBigInteger(), // Add 20% to the gas limit
+                ), // Add 20% to the gas limit
                 erc20DeployPolygon,
                 BigInteger.ZERO,
                 encodedFunction,
-                BigInteger("2000000000"), // maxPriorityFeePerGas
-                BigDecimal(getEstimateGas(network, "baseFee")).multiply(BigDecimal(1.2)).setScale(0, RoundingMode.DOWN).toBigInteger() // Add 20% to the gas price
+                getEstimateGas(
+                    network,
+                    "deployERC20",
+                    null,
+                    ownerAddress,
+                    null,
+                    totalSupply,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    name, symbol
+                ), // Add 20% to the gas limit, // maxPriorityFeePerGas
+                getEstimateGas(network, "baseFee") // Add 20% to the gas price
             )
         }
 
