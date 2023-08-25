@@ -28,17 +28,21 @@ import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
+import java.time.Instant
 import java.util.Base64
 import javax.crypto.Cipher
 
-fun kthuluSdkVersion(){
-    println("Kthulu SDK version:0.0.73, Connect OK")
+fun sdkConnectTest(){
+    println("SDK version:0.0.71, Connect OK")
 }
 var rpcUrl ="";
-var erc20BridgeContractAddress = "";
+var bridgeConfigContractAddress = "";
+var bridgeContractAddress = "";
 var erc721DeployContractAddress = "";
 var erc1155DeployContractAddress = "";
-var erc20BridgeConfigContractAddress = "";
+var uniswapV2RouterAddress = "";
+var uniswapV2FactoryAddress = "";
+var maxPriorityFeePerGas = "";
 
 fun networkSettings(network: String) {
     rpcUrl = when (network) {
@@ -52,7 +56,18 @@ fun networkSettings(network: String) {
         "tbnb" -> "https://data-seed-prebsc-1-s1.binance.org:8545"
         else -> throw IllegalArgumentException("Invalid main network type")
     }
-    erc20BridgeConfigContractAddress = when (network) {
+    maxPriorityFeePerGas = when (network) {
+        "ethereum" -> "2000000000"
+        "cypress" -> "0"
+        "polygon" -> "50000000000"
+        "bnb" -> "0"
+        "goerli" -> "2000000000"
+        "baobab" -> "0"
+        "mumbai" -> "50000000000"
+        "tbnb" -> "0"
+        else -> throw IllegalArgumentException("Invalid main network type")
+    }
+    bridgeConfigContractAddress = when (network) {
         "ethereum" -> "0xf643a4fb01cbbfb561cc906c1f37d5718ef3bba3"
         "cypress" -> "0x33fcf21e795447cc1668ef2ca06dbf78eb180763"
         "polygon" -> "0xf643a4fb01cbbfb561cc906c1f37d5718ef3bba3"
@@ -63,7 +78,7 @@ fun networkSettings(network: String) {
         "tbnb" -> ""
         else -> throw IllegalArgumentException("Invalid main network type")
     }
-    erc20BridgeContractAddress = when (network) {
+    bridgeContractAddress = when (network) {
         "ethereum" -> "0x7362fa30ada8ccf2130017f2a8f0b6be78aa38de"
         "cypress" -> "0xb7e2b748364c7d38311444a62a57d76dd697e99b"
         "polygon" -> "0x7362fa30ada8ccf2130017f2a8f0b6be78aa38de"
@@ -74,26 +89,26 @@ fun networkSettings(network: String) {
         "tbnb" -> "0x808EE7147d91EAe0f658164248402ac380EB5F17"
         else -> throw IllegalArgumentException("Invalid main network type")
     }
-    erc721DeployContractAddress = when (network) {
-        "ethereum" -> ""
+    uniswapV2RouterAddress = when (network) {
+        "ethereum" -> "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
         "cypress" -> ""
-        "polygon" -> "0x780A19638D126d59f4Ed048Ae1e0DC77DAf39a77"
-        "bnb" -> ""
-        "goerli" -> "0x4F6b53a83c71EF127FE6e3f76f666A064116E201"
-        "baobab" -> "0x780A19638D126d59f4Ed048Ae1e0DC77DAf39a77"
-        "mumbai" -> "0xE00838B7948833cf14935489bAF52F2d8d0c2d23"
-        "tbnb" -> "0xB668Bd1358442ba36eb9f2E00B2E79b2c6F1bD98"
+        "polygon" -> "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff"
+        "bnb" -> "0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F"
+        "goerli" -> ""
+        "baobab" -> ""
+        "mumbai" -> ""
+        "tbnb" -> ""
         else -> throw IllegalArgumentException("Invalid main network type")
     }
-    erc1155DeployContractAddress = when (network) {
-        "ethereum" -> ""
+    uniswapV2FactoryAddress = when (network) {
+        "ethereum" -> "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f"
         "cypress" -> ""
-        "polygon" -> "0xf643a4fb01cbbfb561cc906c1f37d5718ef3bba3"
-        "bnb" -> ""
-        "goerli" -> "0xFEA394a312369b7772513cF856ce4424C1756F2C"
-        "baobab" -> "0x96856126a6bb4870cdd3e179004cd18cef569044"
-        "mumbai" -> "0x57040e8b36AD23BB766572cED73A1daC6596d375"
-        "tbnb" -> "0x23205635BcFAEeb236360D35731d708415246DAC"
+        "polygon" -> "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"
+        "bnb" -> "0xBCfCcbde45cE874adCB698cC183deBcF17952812"
+        "goerli" -> ""
+        "baobab" -> ""
+        "mumbai" -> ""
+        "tbnb" -> ""
         else -> throw IllegalArgumentException("Invalid main network type")
     }
 }
@@ -194,7 +209,7 @@ suspend fun getEstimateGasAsync(
     baseURI: String? = null,
     uriType: String? = null,
     tokenURI: String? = null,
-    batchTokenURI: Array<String>? = null,
+    batchTokenURI: Array<String>? = null
 ): BigInteger = withContext(Dispatchers.IO) {
     networkSettings(network)
     var result = BigInteger.ZERO;
@@ -274,7 +289,7 @@ suspend fun getEstimateGasAsync(
                             BigInteger.ONE,
                             gasPrice,
                             BigInteger.ZERO, // temporary gasLimit
-                            erc20BridgeContractAddress,
+                            bridgeContractAddress,
                             encodedFunction // data
                         )
                     ).send().amountUsed
@@ -298,7 +313,32 @@ suspend fun getEstimateGasAsync(
                             BigInteger.ONE,
                             gasPrice,
                             BigInteger.ZERO, // temporary gasLimit
-                            erc20BridgeContractAddress,
+                            bridgeContractAddress,
+                            encodedFunction // data
+                        )
+                    ).send().amountUsed
+                } catch (ex: Exception) {
+                    // Handle the exception appropriately
+                    result = BigInteger.ZERO
+                }
+            }
+        "swapToken" ->
+            if (fromAddress != null && tokenAddress != null && tokenAmount != null && toTokenAddress != null) {
+                val path = DynamicArray(Address::class.java, listOf(Address(tokenAddress), Address(toTokenAddress)))
+                // Deadline is the current time + 10 minutes in seconds
+                val deadline = Instant.now().epochSecond + 600
+                val function = Function("swapExactETHForTokens", listOf(Uint256(BigInteger.ZERO), path, Address(fromAddress), Uint256(deadline)), emptyList())
+                val encodedFunction = FunctionEncoder.encode(function)
+                val amountInWei = Convert.toWei(tokenAmount, Convert.Unit.ETHER).toBigIntegerExact()
+                try {
+                    result = web3.ethEstimateGas(
+                        Transaction.createFunctionCallTransaction(
+                            fromAddress,
+                            BigInteger.ONE,
+                            gasPrice,
+                            BigInteger.ZERO, // temporary gasLimit
+                            uniswapV2RouterAddress,
+                            amountInWei, // value
                             encodedFunction // data
                         )
                     ).send().amountUsed
@@ -420,8 +460,8 @@ suspend fun getEstimateGasAsync(
         "deployERC721" ->
             if (name != null && symbol != null && fromAddress != null && owner != null && baseURI != null && uriType != null) {
                 val function = Function(
-                    "deployedERC721",
-                    listOf(Utf8String(name), Utf8String(symbol), Utf8String(baseURI), Uint8(BigInteger(uriType)), Address(owner)),
+                    "deployWrapped721",
+                    listOf(Utf8String(name), Utf8String(symbol), Utf8String(baseURI), Address(owner), Uint8(BigInteger(uriType))),
                     emptyList()
                 )
                 val encodedFunction = FunctionEncoder.encode(function)
@@ -433,7 +473,7 @@ suspend fun getEstimateGasAsync(
                             BigInteger.ONE,
                             gasPrice,
                             BigInteger.ZERO, // temporary gasLimit
-                            erc721DeployContractAddress,
+                            bridgeContractAddress,
                             encodedFunction // data
                         )
                     ).send().amountUsed
@@ -445,8 +485,8 @@ suspend fun getEstimateGasAsync(
         "deployERC1155" ->
             if (name != null && symbol != null && fromAddress != null && owner != null && baseURI != null && uriType != null) {
                 val function = Function(
-                    "deployedERC1155",
-                    listOf(Utf8String(name), Utf8String(symbol), Utf8String(baseURI), Uint8(BigInteger(uriType)), Address(owner)),
+                    "deployWrapped1155",
+                    listOf(Utf8String(name), Utf8String(symbol), Utf8String(baseURI), Address(owner), Uint8(BigInteger(uriType))),
                     emptyList()
                 )
                 val encodedFunction = FunctionEncoder.encode(function)
@@ -458,7 +498,7 @@ suspend fun getEstimateGasAsync(
                             BigInteger.ONE,
                             gasPrice,
                             BigInteger.ZERO, // temporary gasLimit
-                            erc1155DeployContractAddress,
+                            bridgeContractAddress,
                             encodedFunction // data
                         )
                     ).send().amountUsed
@@ -630,5 +670,5 @@ suspend fun getEstimateGasAsync(
 
 fun textToHex(text: String): String {
     if (text.isEmpty()) return "0x00"
-    return "0x" + text.map { it.toInt().toString(16).padStart(2, '0') }.joinToString("")
+    return text.map { it.toInt().toString(16).padStart(2, '0') }.joinToString("")
 }

@@ -1142,7 +1142,7 @@ suspend fun sendNFT721TransactionAsync(
                 BigInteger.ZERO,
                 encodedFunction,
                 //1gwei
-                BigInteger("50000000000"),
+                BigInteger(maxPriorityFeePerGas),
                 getEstimateGasAsync(network, "baseFee")
             )
         }
@@ -1236,7 +1236,7 @@ suspend fun sendNFT1155TransactionAsync(
                 BigInteger.ZERO,
                 encodedFunction,
                 //1gwei
-                BigInteger("50000000000"),
+                BigInteger(maxPriorityFeePerGas),
                 getEstimateGasAsync(network, "baseFee")
             )
         }
@@ -1339,7 +1339,7 @@ suspend fun sendNFT721BatchTransactionAsync(
                 BigInteger.ZERO,
                 encodedFunction,
                 //1gwei
-                BigInteger("50000000000"),
+                BigInteger(maxPriorityFeePerGas),
                 getEstimateGasAsync(network, "baseFee")
             )
         }
@@ -1456,7 +1456,7 @@ suspend fun sendNFT1155BatchTransactionAsync(
                 BigInteger.ZERO,
                 encodedFunction,
                 //1gwei
-                BigInteger("50000000000"),
+                BigInteger(maxPriorityFeePerGas),
                 getEstimateGasAsync(network, "baseFee")
             )
         }
@@ -1501,13 +1501,13 @@ suspend fun deployErc721Async(
             Credentials.create(privateKey)
 
         val function = Function(
-            "deployedERC721",
+            "deployWrapped721",
             listOf(
                 Utf8String(name),
                 Utf8String(symbol),
                 Utf8String(token_base_uri),
-                Uint8(BigInteger(uri_type)),
-                Address(owner)
+                Address(owner),
+                Uint8(BigInteger(uri_type))
             ),
             emptyList()
         )
@@ -1538,7 +1538,7 @@ suspend fun deployErc721Async(
                     null,
                     name, symbol, owner, token_base_uri, uri_type
                 ), // Add 20% to the gas limit
-                erc721DeployContractAddress,
+                bridgeContractAddress,
                 encodedFunction
             )
         } else {
@@ -1560,11 +1560,11 @@ suspend fun deployErc721Async(
                     null,
                     name, symbol, owner, token_base_uri, uri_type
                 ),
-                erc721DeployContractAddress,
+                bridgeContractAddress,
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
-                BigInteger("50000000000"),
+                BigInteger(maxPriorityFeePerGas),
                 getEstimateGasAsync(network, "baseFee")
             )
         }
@@ -1609,13 +1609,13 @@ suspend fun deployErc1155Async(
             Credentials.create(privateKey)
 
         val function = Function(
-            "deployedERC1155",
+            "deployWrapped1155",
             listOf(
                 Utf8String(name),
                 Utf8String(symbol),
                 Utf8String(token_base_uri),
-                Uint8(BigInteger(uri_type)),
-                Address(owner)
+                Address(owner),
+                Uint8(BigInteger(uri_type))
             ),
             emptyList()
         )
@@ -1646,7 +1646,7 @@ suspend fun deployErc1155Async(
                     null,
                     name, symbol, owner, token_base_uri, uri_type
                 ), // Add 20% to the gas limit
-                erc1155DeployContractAddress,
+                bridgeContractAddress,
                 encodedFunction
             )
         } else {
@@ -1668,11 +1668,11 @@ suspend fun deployErc1155Async(
                     null,
                     name, symbol, owner, token_base_uri, uri_type
                 ),
-                erc1155DeployContractAddress,
+                bridgeContractAddress,
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
-                BigInteger("50000000000"),
+                BigInteger(maxPriorityFeePerGas),
                 getEstimateGasAsync(network, "baseFee")
             )
         }
@@ -1766,7 +1766,7 @@ suspend fun mintErc721Async(
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
-                BigInteger("50000000000"),
+                BigInteger(maxPriorityFeePerGas),
                 getEstimateGasAsync(network, "baseFee")
             )
         }
@@ -1860,7 +1860,7 @@ suspend fun mintErc1155Async(
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
-                BigInteger("50000000000"),
+                BigInteger(maxPriorityFeePerGas),
                 getEstimateGasAsync(network, "baseFee")
             )
         }
@@ -1956,7 +1956,7 @@ suspend fun batchMintErc721Async(
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
-                BigInteger("50000000000"),
+                BigInteger(maxPriorityFeePerGas),
                 getEstimateGasAsync(network, "baseFee")
             )
         }
@@ -2053,7 +2053,7 @@ suspend fun batchMintErc1155Async(
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
-                BigInteger("50000000000"),
+                BigInteger(maxPriorityFeePerGas),
                 getEstimateGasAsync(network, "baseFee")
             )
         }
@@ -2144,7 +2144,7 @@ suspend fun burnErc721Async(
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
-                BigInteger("50000000000"),
+                BigInteger(maxPriorityFeePerGas),
                 getEstimateGasAsync(network, "baseFee")
             )
         }
@@ -2236,7 +2236,7 @@ suspend fun burnErc1155Async(
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
-                BigInteger("50000000000"),
+                BigInteger(maxPriorityFeePerGas),
                 getEstimateGasAsync(network, "baseFee")
             )
         }
@@ -2638,8 +2638,8 @@ suspend fun chkNFTHolder(
             ).send()
             val ownerOutput =
                 FunctionReturnDecoder.decode(ownerResponse.result, ownerFunction.outputParameters)
-            val owner = ownerOutput[0].value
-            if (owner == account) {
+            val owner = ownerOutput[0].value.toString()
+            if (owner.toLowerCase() == account.toLowerCase()) {
                 result.put("result", "OK")
             } else {
                 result.put("result", "FAIL")
