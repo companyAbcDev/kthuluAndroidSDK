@@ -31,8 +31,8 @@ import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
 import javax.crypto.Cipher
 
-fun sdkConnectTest(){
-    println("SDK version:0.0.71, Connect OK")
+fun kthuluSdkVersion(){
+    println("Kthulu SDK version:0.0.73, Connect OK")
 }
 var rpcUrl ="";
 var erc20BridgeContractAddress = "";
