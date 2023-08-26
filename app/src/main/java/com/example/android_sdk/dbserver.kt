@@ -21,26 +21,13 @@ class DBConnector() {
 
     fun connect() {
         try {
-            if (ConfigHolder.databaseUrl != null && ConfigHolder.databaseUsername != null &&
-                ConfigHolder.databasePassword != null && ConfigHolder.databaseDriverClassName != null
-            ) {
-                // User-specified configuration
-                connectToDatabase(
-                    ConfigHolder.databaseUrl!!,
-                    ConfigHolder.databaseUsername!!,
-                    ConfigHolder.databasePassword!!,
-                    ConfigHolder.databaseDriverClassName!!
-                )
-            } else {
-                // Manual configuration
-                connectToDatabase(
-                    "jdbc:mariadb://210.207.161.10:3306/kthulu?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false",
-                    "kthulu",
-                    "kthulu123",
-                    "org.mariadb.jdbc.Driver"
-                )
-            }
-
+            // User-specified configuration
+            connectToDatabase(
+                ConfigHolder.databaseUrl!!,
+                ConfigHolder.databaseUsername!!,
+                ConfigHolder.databasePassword!!,
+                ConfigHolder.databaseDriverClassName!!
+            )
             println("Database Connection Successful")
         } catch (ex: ClassNotFoundException) {
             ex.printStackTrace()

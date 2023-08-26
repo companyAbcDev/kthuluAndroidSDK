@@ -32,8 +32,8 @@ import java.time.Instant
 import java.util.Base64
 import javax.crypto.Cipher
 
-fun sdkConnectTest(){
-    println("SDK version:0.0.71, Connect OK")
+fun kthuluSdkVersion(){
+    println("SDK version:0.0.75, Connect OK")
 }
 var rpcUrl ="";
 var bridgeConfigContractAddress = "";
@@ -327,9 +327,9 @@ suspend fun getEstimateGasAsync(
                 val path = DynamicArray(Address::class.java, listOf(Address(tokenAddress), Address(toTokenAddress)))
                 // Deadline is the current time + 10 minutes in seconds
                 val deadline = Instant.now().epochSecond + 600
-                val function = Function("swapExactETHForTokens", listOf(Uint256(BigInteger.ZERO), path, Address(fromAddress), Uint256(deadline)), emptyList())
+                val function = Function("swapExactTokensForTokens", listOf(Uint256(BigInteger(tokenAmount)), Uint256(BigInteger.ZERO), path, Address(fromAddress), Uint256(deadline)), emptyList())
+
                 val encodedFunction = FunctionEncoder.encode(function)
-                val amountInWei = Convert.toWei(tokenAmount, Convert.Unit.ETHER).toBigIntegerExact()
                 try {
                     result = web3.ethEstimateGas(
                         Transaction.createFunctionCallTransaction(
@@ -338,7 +338,7 @@ suspend fun getEstimateGasAsync(
                             gasPrice,
                             BigInteger.ZERO, // temporary gasLimit
                             uniswapV2RouterAddress,
-                            amountInWei, // value
+                            BigInteger.ZERO, // value
                             encodedFunction // data
                         )
                     ).send().amountUsed

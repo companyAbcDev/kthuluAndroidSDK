@@ -29,131 +29,18 @@ import org.web3j.utils.Convert
 import org.web3j.utils.Numeric
 import java.math.BigDecimal
 import java.math.BigInteger
+import java.math.RoundingMode
 import java.time.Instant
 
 suspend fun transaction() = runBlocking<Unit> {
     // Initialize the coroutine context
     coroutineScope {
-//        val network = "ethereum"
-//        val fromAddress = "0x54fbF887EdB01983DD373E79a0f37413B4565De3"
         // test
         val fromAddress = "0xeC4eC414c1f6a0759e5d184E17dB45cCd87E09FD"
         val toAddress = "0x0eae45485F2D14FDEB3dAa1143E5170752D5EAe8"
-        val amount = "0.0001"
+        val amount = "0.000001"
         val contractAddress = "0x02cbe46fb8a1f579254a9b485788f2d86cad51aa"
         val decimals = 18
-
-//        // Send Coin transaction asynchronously
-//        val sendCoinTransaction =
-//            async { sendTransactionAsync("cypress", fromAddress, toAddress, amount) }.await()
-//        if (sendCoinTransaction.getString("result") == "OK") {
-//            println("Transaction hash: ${sendCoinTransaction.getString("transactionHash")}")
-//            /**
-//              Transaction hash: 0x..
-//             */
-//        } else {
-//            println("Error sending Coin: ${sendCoinTransaction.getString("error")}")
-//        }
-//
-//        // Send token transaction asynchronously
-//        val sendErc20Transaction =
-//            async {
-//                sendTokenTransactionAsync(
-//                    "cypress",
-//                    fromAddress,
-//                    toAddress,
-//                    "0.0001",
-//                    "0x02cbe46fb8a1f579254a9b485788f2d86cad51aa"
-//                )
-//            }.await()
-//        if (sendErc20Transaction.getString("result") == "OK") {
-//            println("Transaction hash: ${sendErc20Transaction.getString("transactionHash")}")
-//            /**
-//             * Transaction hash: 0x..
-//             */
-//        } else {
-//            println("Error sending Token: ${sendErc20Transaction.getString("error")}")
-//        }
-////
-//        val deployErc20 =
-//            async {
-//                deployErc20Async(
-//                    "polygon",
-//                    fromAddress,
-//                    "AbcUseToken",
-//                    "AUT",
-//                    "50000"
-//                )
-//            }.await()
-//        println("Transaction hash: ${deployErc20}")
-//        /**
-//         * Transaction hash: 0x..
-//         */
-
-//         val bridgeToken =
-//             async {
-//                 bridgeTokenAsync(
-//                     "polygon",
-//                     fromAddress,
-//                     "ETHEREUM",
-//                     "11"
-//                 )
-//             }.await()
-//         println("Transaction hash: ${bridgeToken}")
-//         /**
-//          * Transaction hash: 0x..
-//          */
-
-        //  val bridgeToken =
-        //     async {
-        //         bridgeTokenAsync(
-        //             "cypress",
-        //             fromAddress,
-        //             "POLYGON",
-        //             "10000000000000000",
-        //             "0x085AB24e511bEa905bDe815FA38a11eEB507E206"
-        //         )
-        //     }.await()
-        // println("Transaction hash: ${bridgeToken}")
-        // /**
-        //  * Transaction hash: 0x..
-        //  */
-
-//      val coinForTokenswap =
-//      async {
-//         coinForTokenswapAsync( "polygon", fromAddress,"0xc2132D05D31c914a87C6611C10748AEb04B58e8F", "3")
-//     }.await()
-//     println("Transaction hash: ${coinForTokenswap}")
-//     /**
-//      * Transaction hash: 0x..
-//      */
-
-//        val tokenForTokenswap =
-//            async {
-//                tokenSwapAppove( "polygon", fromAddress,"0xc2132D05D31c914a87C6611C10748AEb04B58e8F","0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", "1")
-//            }.await()
-//        println("Transaction hash: ${tokenForTokenswap}")
-//        /**
-//         * Transaction hash: 0x..
-//         */
-
-//     val tokenForTokenswap =
-//         async {
-//             tokenForTokenswapAsync( "polygon", fromAddress,"0xc2132D05D31c914a87C6611C10748AEb04B58e8F","0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", "1")
-//         }.await()
-//        println("Transaction hash: ${tokenForTokenswap}")
-//        /**
-//         * Transaction hash: 0x..
-//         */
-//
-//        val tokenForCoinswap =
-//            async {
-//                tokenForCoinswapAsync( "polygon", fromAddress,"0xc2132D05D31c914a87C6611C10748AEb04B58e8F","0.0001")
-//            }.await()
-//        println("Transaction hash: ${tokenForCoinswap}")
-//        /**
-//         * Transaction hash: 0x..
-//         */
 
     }
 }
@@ -730,11 +617,11 @@ suspend fun bridgeTokenAsync(
     }
 }
 
-suspend fun tokenSwapAppove(
+suspend fun tokenSwapAppoveAsync(
     network: String,
     fromAddress: String,
     fromTokenId: String,
-    toTokenId : String,
+    toTokenId : String? = null,
     amount: String
 ): JSONObject = withContext(Dispatchers.IO){
     networkSettings(network)
@@ -750,11 +637,35 @@ suspend fun tokenSwapAppove(
         null
     }
 
+    var toTokenId = toTokenId
+
+    if(toTokenId == null) {
+        toTokenId = when (network) {
+            "ethereum" -> "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+            "cypress" -> "0"
+            "polygon" -> "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
+            "bnb" -> "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+            else -> throw IllegalArgumentException("Invalid main network type")
+        }
+    }
+
     val web3j = Web3j.build(HttpService(rpcUrl))
     val credentials =
         Credentials.create(privateKey)
 
-    val amountInWei = Convert.toWei(amount, Convert.Unit.ETHER).toBigIntegerExact()
+    val decimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
+    val encodedDecimalsFunction = FunctionEncoder.encode(decimalsFunction)
+    val decimalsResponse = web3j.ethCall(
+        Transaction.createEthCallTransaction(null, fromTokenId, encodedDecimalsFunction),
+        DefaultBlockParameterName.LATEST
+    ).send()
+    val decimalsOutput =
+        FunctionReturnDecoder.decode(decimalsResponse.result, decimalsFunction.outputParameters)
+    val decimals = (decimalsOutput[0].value as BigInteger).toInt()
+    val decimalMultiplier = BigDecimal.TEN.pow(decimals)
+    var amountInWei = BigDecimal(amount).multiply(decimalMultiplier).toBigInteger()
+
+    amountInWei = BigDecimal(amountInWei).multiply(BigDecimal(1.2)).setScale(0, RoundingMode.DOWN).toBigInteger()
 
     val getPairFunction = Function("getPair", listOf(Address(fromTokenId), Address(toTokenId)), emptyList())
 
@@ -878,14 +789,12 @@ suspend fun coinForTokenswapAsync(
 
             val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-            val gasLimit = getEstimateGasAsync(network, "swapToken",fromTokenId,fromAddress,"",amount,"",toTokenId)
-
             val tx =
                 if (network == "bnb" || network == "bnbTest") {
                     RawTransaction.createTransaction(
                         nonce,
                         getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                        gasLimit, // Add 20% to the gas limit
+                        BigInteger("200000"), // Add 20% to the gas limit
                         uniswapV2RouterAddress,
                         encodedFunction
                     )
@@ -893,7 +802,7 @@ suspend fun coinForTokenswapAsync(
                     RawTransaction.createTransaction(
                         chainId,
                         nonce,
-                        gasLimit, // Add 20% to the gas limit
+                        BigInteger("200000"), // Add 20% to the gas limit
                         uniswapV2RouterAddress,
                         amountInWei, // value
                         encodedFunction,
@@ -985,7 +894,9 @@ suspend fun tokenForTokenswapAsync(
                 .get()
                 .transactionCount
 
-            val gasLimit = getEstimateGasAsync(network, "swapToken",fromTokenId,fromAddress,"",amount,"",toTokenId)
+            val gasLimit = getEstimateGasAsync(network, "swapToken",fromTokenId, fromAddress,"", amountInWei.toString(),"", toTokenId)
+
+            print("gasLimit: $gasLimit")
 
             val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
@@ -994,7 +905,7 @@ suspend fun tokenForTokenswapAsync(
                     RawTransaction.createTransaction(
                         nonce,
                         getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                        BigInteger("500000"), // Add 20% to the gas limit
+                        gasLimit, // Add 20% to the gas limit
                         uniswapV2RouterAddress,
                         encodedFunction
                     )
@@ -1002,7 +913,7 @@ suspend fun tokenForTokenswapAsync(
                     RawTransaction.createTransaction(
                         chainId,
                         nonce,
-                        BigInteger("500000"), // Add 20% to the gas limit,
+                        gasLimit, // Add 20% to the gas limit,
                         uniswapV2RouterAddress,
                         BigInteger.ZERO, // value
                         encodedFunction,
@@ -1067,6 +978,8 @@ suspend fun tokenForCoinswapAsync(
         val decimalMultiplier = BigDecimal.TEN.pow(decimals)
         val amountInWei = BigDecimal(amount).multiply(decimalMultiplier).toBigInteger()
 
+        println("amountInWei $amountInWei")
+
         val toTokenId = when (network) {
             "ethereum" -> "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
             "cypress" -> "0"
@@ -1101,16 +1014,16 @@ suspend fun tokenForCoinswapAsync(
                 .get()
                 .transactionCount
 
-            val gasLimit = getEstimateGasAsync(network, "swapToken",fromTokenId,fromAddress,"",amount,"",toTokenId)
-
             val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+            val gasLimit = getEstimateGasAsync(network, "swapToken",fromTokenId,fromAddress,"",amountInWei.toString(),"",toTokenId)
 
             val tx =
                 if (network == "bnb" || network == "bnbTest") {
                     RawTransaction.createTransaction(
                         nonce,
                         getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                        BigInteger("200000"), // Add 20% to the gas limit
+                        gasLimit, // Add 20% to the gas limit
                         uniswapV2RouterAddress,
                         encodedFunction
                     )
@@ -1118,7 +1031,7 @@ suspend fun tokenForCoinswapAsync(
                     RawTransaction.createTransaction(
                         chainId,
                         nonce,
-                        BigInteger("200000"), // Add 20% to the gas limit,
+                        gasLimit, // Add 20% to the gas limit,
                         uniswapV2RouterAddress,
                         BigInteger.ZERO, // value
                         encodedFunction,
@@ -1144,5 +1057,24 @@ suspend fun tokenForCoinswapAsync(
     } catch (e: Exception) {
         jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+    }
+}
+
+suspend fun checkTransactionStatus(network: String, txHash: String): String? {
+    networkSettings(network)
+    val web3j = Web3j.build(HttpService(rpcUrl))
+    val receipt = web3j.ethGetTransactionReceipt(txHash).send()
+
+    if (receipt.transactionReceipt.isPresent) {
+        val status = receipt.transactionReceipt.get().status
+        return if (status == "0x1" || status == "0x01") {
+            "Transaction Successful"
+        } else if (status == "0x0" || status == "0x00") {
+            "Transaction Failed"
+        } else {
+            "Unknown Status: $status"
+        }
+    } else {
+        return "Transaction not yet mined"
     }
 }
