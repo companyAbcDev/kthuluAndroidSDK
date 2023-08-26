@@ -35,12 +35,126 @@ import java.time.Instant
 suspend fun transaction() = runBlocking<Unit> {
     // Initialize the coroutine context
     coroutineScope {
+//        val network = "ethereum"
+//        val fromAddress = "0x54fbF887EdB01983DD373E79a0f37413B4565De3"
         // test
         val fromAddress = "0xeC4eC414c1f6a0759e5d184E17dB45cCd87E09FD"
         val toAddress = "0x0eae45485F2D14FDEB3dAa1143E5170752D5EAe8"
         val amount = "0.000001"
         val contractAddress = "0x02cbe46fb8a1f579254a9b485788f2d86cad51aa"
         val decimals = 18
+
+        // Send Coin transaction asynchronously
+//        val sendCoinTransaction =
+//            async { sendTransactionAsync("bnb", fromAddress, toAddress, amount) }.await()
+//        if (sendCoinTransaction.getString("result") == "OK") {
+//            println("Transaction hash: ${sendCoinTransaction.getString("transactionHash")}")
+//            /**
+//              Transaction hash: 0x..
+//             */
+//        } else {
+//            println("Error sending Coin: ${sendCoinTransaction.getString("error")}")
+//        }
+//
+//        // Send token transaction asynchronously
+//        val sendErc20Transaction =
+//            async {
+//                sendTokenTransactionAsync(
+//                    "cypress",
+//                    fromAddress,
+//                    toAddress,
+//                    "0.0001",
+//                    "0x02cbe46fb8a1f579254a9b485788f2d86cad51aa"
+//                )
+//            }.await()
+//        if (sendErc20Transaction.getString("result") == "OK") {
+//            println("Transaction hash: ${sendErc20Transaction.getString("transactionHash")}")
+//            /**
+//             * Transaction hash: 0x..
+//             */
+//        } else {
+//            println("Error sending Token: ${sendErc20Transaction.getString("error")}")
+//        }
+////
+//        val deployErc20 =
+//            async {
+//                deployErc20Async(
+//                    "polygon",
+//                    fromAddress,
+//                    "AbcUseToken",
+//                    "AUT",
+//                    "50000"
+//                )
+//            }.await()
+//        println("Transaction hash: ${deployErc20}")
+//        /**
+//         * Transaction hash: 0x..
+//         */
+
+//         val bridgeToken =
+//             async {
+//                 bridgeTokenAsync(
+//                     "polygon",
+//                     fromAddress,
+//                     "ETHEREUM",
+//                     "11"
+//                 )
+//             }.await()
+//         println("Transaction hash: ${bridgeToken}")
+//         /**
+//          * Transaction hash: 0x..
+//          */
+
+        //  val bridgeToken =
+        //     async {
+        //         bridgeTokenAsync(
+        //             "cypress",
+        //             fromAddress,
+        //             "POLYGON",
+        //             "10000000000000000",
+        //             "0x085AB24e511bEa905bDe815FA38a11eEB507E206"
+        //         )
+        //     }.await()
+        // println("Transaction hash: ${bridgeToken}")
+        // /**
+        //  * Transaction hash: 0x..
+        //  */
+
+//      val coinForTokenswap =
+//      async {
+//         coinForTokenswapAsync( "polygon", fromAddress,"0xD6DF932A45C0f255f85145f286eA0b292B21C90B", "5")
+//     }.await()
+//     println("Transaction hash: ${coinForTokenswap}")
+//     /**
+//      * Transaction hash: 0x..
+//      */
+
+//        val tokenSwapAppove =
+//            async {
+//                tokenSwapAppoveAsync( "polygon", fromAddress,"0xc2132D05D31c914a87C6611C10748AEb04B58e8F","0xD6DF932A45C0f255f85145f286eA0b292B21C90B", "1")
+//            }.await()
+//        println("Transaction hash: ${tokenSwapAppove}")
+//        /**
+//         * Transaction hash: 0x..
+//         */
+
+//     val tokenForTokenswap =
+//         async {
+//             tokenForTokenswapAsync( "polygon", fromAddress,"0xD6DF932A45C0f255f85145f286eA0b292B21C90B","0xc2132D05D31c914a87C6611C10748AEb04B58e8F", "0.04")
+//         }.await()
+//        println("Transaction hash: ${tokenForTokenswap}")
+//        /**
+//         * Transaction hash: 0x..
+//         */
+
+        val tokenForCoinswap =
+            async {
+                tokenForCoinswapAsync( "polygon", fromAddress,"0xc2132D05D31c914a87C6611C10748AEb04B58e8F","1")
+            }.await()
+        println("Transaction hash: ${tokenForCoinswap}")
+        /**
+         * Transaction hash: 0x..
+         */
 
     }
 }
