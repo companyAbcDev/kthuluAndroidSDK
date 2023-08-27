@@ -15,6 +15,7 @@ import org.web3j.abi.datatypes.Function
 import org.web3j.abi.datatypes.Utf8String
 import org.web3j.abi.datatypes.generated.Bytes4
 import org.web3j.abi.datatypes.generated.Uint256
+import org.web3j.abi.datatypes.generated.Uint32
 import org.web3j.abi.datatypes.generated.Uint8
 import org.web3j.crypto.Credentials
 import org.web3j.crypto.RawTransaction
@@ -60,7 +61,7 @@ suspend fun getMintableAddress(
                 "slug, " +
                 "category, "+
                 "logo_url, "+
-                "image_s3_url, "+
+                "s3_image_url, "+
                 "isverified, "+
                 "numOwners, "+
                 "currency, "+
@@ -101,7 +102,7 @@ suspend fun getMintableAddress(
                         val slug = getCA.getString("slug")
                         val category = getCA.getString("category")
                         val logo_url = getCA.getString("logo_url")
-                        val image_s3_url = getCA.getString("image_s3_url")
+                        val s3_image_url = getCA.getString("s3_image_url")
                         val isverified = getCA.getString("isverified")
                         val numOwners = getCA.getInt("numOwners")
                         val currency = getCA.getString("currency")
@@ -124,7 +125,7 @@ suspend fun getMintableAddress(
                         objRes.put("slug", slug)
                         objRes.put("category", category)
                         objRes.put("logo_url", logo_url)
-                        objRes.put("image_s3_url", image_s3_url)
+                        objRes.put("s3_image_url", s3_image_url)
                         objRes.put("isverified", isverified)
                         objRes.put("numOwners", numOwners)
                         objRes.put("currency", currency)
@@ -305,10 +306,8 @@ suspend fun getNFTsByWallet(
                 " owner.balance AS balance," +
                 " token.token_uri AS token_uri," +
                 " token.nft_name AS nft_name," +
-                " token.description AS description," +
                 " token.image_url AS image_url," +
                 " token.external_url AS external_url," +
-                " token.attribute AS attribute," +
                 " token.token_info AS token_info" +
                 " FROM " +
                 "nft_owner_table AS owner" +
@@ -410,11 +409,16 @@ suspend fun getNFTsByWallet(
                         val balance = getNFT.getString("balance")
                         val token_uri = getNFT.getString("token_uri")
                         val nft_name = getNFT.getString("nft_name")
-                        val description = getNFT.getString("description")
                         val image_url = getNFT.getString("image_url")
                         val external_url = getNFT.getString("external_url")
-                        val attribute = getNFT.getString("attribute")
                         val token_info = getNFT.getString("token_info")
+                        var description: String? = null
+                        var attribute: JSONArray? = null
+                        if (!token_info.isNullOrBlank()) {
+                            val metadataJSON = JSONObject(token_info)
+                            description = metadataJSON.optString("description")
+                            attribute = metadataJSON.optJSONArray("attributes")
+                        }
 
 //                        val replace_attributes = JSONArray(attribute ?: "[]")
 //                        val replace_metadata = JSONObject(token_info ?: "{}")
@@ -531,10 +535,8 @@ suspend fun getNFTsByWalletArray(
                 " owner.balance AS balance," +
                 " token.token_uri AS token_uri," +
                 " token.nft_name AS nft_name," +
-                " token.description AS description," +
                 " token.image_url AS image_url," +
                 " token.external_url AS external_url," +
-                " token.attribute AS attribute," +
                 " token.token_info AS token_info" +
                 " FROM " +
                 "nft_owner_table AS owner" +
@@ -636,11 +638,16 @@ suspend fun getNFTsByWalletArray(
                         val balance = getNFT.getString("balance")
                         val token_uri = getNFT.getString("token_uri")
                         val nft_name = getNFT.getString("nft_name")
-                        val description = getNFT.getString("description")
                         val image_url = getNFT.getString("image_url")
                         val external_url = getNFT.getString("external_url")
-                        val attribute = getNFT.getString("attribute")
                         val token_info = getNFT.getString("token_info")
+                        var description: String? = null
+                        var attribute: JSONArray? = null
+                        if (!token_info.isNullOrBlank()) {
+                            val metadataJSON = JSONObject(token_info)
+                            description = metadataJSON.optString("description")
+                            attribute = metadataJSON.optJSONArray("attributes")
+                        }
 
 //                        val replace_attributes = JSONArray(attribute ?: "[]")
 //                        val replace_metadata = JSONObject(token_info ?: "{}")
@@ -743,67 +750,48 @@ suspend fun getNFTsTransferHistory(
 
     var transferQuery =
         " SELECT" +
-                " transfer.network AS network," +
-                " sales.buyer_account AS buyer_account," +
-                " transfer.`from` AS from_address," +
-                " transfer.`to` AS to_address," +
-                " transfer.collection_id AS collection_id," +
-                " transfer.block_number AS block_number," +
-                " transfer.`timestamp` AS timestamp," +
-                " transfer.transaction_hash AS transaction_hash," +
-                " transfer.log_id AS log_id," +
-                " transfer.token_id AS token_id," +
-                " transfer.amount AS amount," +
-                " sales.currency AS currency," +
-                " sales.currency_symbol AS currency_symbol," +
-                " sales.decimals AS decimals," +
-                " sales.price AS price," +
-                " sales.market AS market," +
-                " sales.sales_info AS sales_info," +
-                " CASE" +
-                " WHEN" +
-                " sales.sales_info IS NOT NULL THEN 'sales'" +
-                " ELSE" +
-                " 'transfer'" +
-                " END AS" +
-                " transaction_type" +
-                " FROM" +
-                " nft_transfer_table AS transfer" +
-                " LEFT OUTER JOIN" +
-                " nft_sales_table AS sales" +
-                " ON" +
-                " transfer.transaction_hash = sales.transaction_hash" +
-                " AND" +
-                " transfer.network = sales.network" +
-                " LEFT JOIN" +
-                " nft_transaction_type_table AS type" +
-                " ON" +
-                " transfer.transaction_hash = type.transaction_hash" +
-                " AND" +
-                " transfer.network = type.network" +
+                " transaction.network AS network," +
+                " transaction.`from` AS from_address," +
+                " transaction.`to` AS to_address," +
+                " transaction.collection_id AS collection_id," +
+                " transaction.block_number AS block_number," +
+                " transaction.`timestamp` AS timestamp," +
+                " transaction.transaction_hash AS transaction_hash," +
+                " transaction.log_id AS log_id," +
+                " transaction.token_id AS token_id," +
+                " transaction.amount AS amount," +
+                " transaction.currency AS currency," +
+                " transaction.currency_symbol AS currency_symbol," +
+                " transaction.decimals AS decimals," +
+                " transaction.price AS price," +
+                " transaction.market AS market," +
+                " transaction.sales_info AS sales_info," +
+                " transaction.transaction_type AS type" +
+                " FROM " +
+                " nft_transaction_table AS transaction" +
                 " WHERE" +
-                " transfer.network = '${network}'"
+                " transaction.network = '${network}'"
     if(token_id != null){
-        transferQuery += " AND transfer.token_id = '${token_id}' "
+        transferQuery += " AND transaction.token_id = '${token_id}' "
     }
     if(collection_id != null){
-        transferQuery += " AND transfer.collection_id= '${collection_id}' "
+        transferQuery += " AND transaction.collection_id= '${collection_id}' "
     }
     if(type=="transfer"){
-        transferQuery += "AND type.transaction_type = 'transfer' ORDER BY transfer.block_number"
+        transferQuery += "AND transaction.transaction_type = 'transfer' ORDER BY transaction.block_number"
     }
     else if(type=="sales"){
-        transferQuery += "AND type.transaction_type = 'sales' ORDER BY transfer.block_number"
+        transferQuery += "AND transaction.transaction_type = 'sales' ORDER BY transaction.block_number"
     }
     else{
-        transferQuery += " ORDER BY transfer.block_number"
+        transferQuery += " ORDER BY transaction.block_number"
     }
     if(sort == "asc"){
         transferQuery += " asc"
     } else {
         transferQuery += " desc"
     }
-    transferQuery += ", CAST(transfer.token_id AS SIGNED) desc"
+    transferQuery += ", CAST(transaction.token_id AS SIGNED) desc"
     if (limit != null) {
         transferQuery += " LIMIT ${limit} OFFSET ${offset}"
     }
@@ -813,29 +801,17 @@ suspend fun getNFTsTransferHistory(
         "SELECT" +
                 " count(*) AS sum" +
                 " FROM " +
-                " nft_transfer_table AS transfer" +
-                " LEFT JOIN " +
-                " nft_sales_table AS sales" +
-                " ON " +
-                " transfer.transaction_hash = sales.transaction_hash" +
-                " AND" +
-                " transfer.network = sales.network" +
-                " LEFT JOIN " +
-                " nft_transaction_type_table AS type" +
-                " ON " +
-                " transfer.transaction_hash = type.transaction_hash" +
-                " AND" +
-                " transfer.network = type.network" +
+                " nft_transaction_table AS transaction" +
                 " WHERE " +
-                " transfer.network = '$network'"
+                " transaction.network = '$network'"
     if (token_id != null) {
-        sumQuery += " AND transfer.token_id = '$token_id' "
+        sumQuery += " AND transaction.token_id = '$token_id' "
     }
     if (collection_id != null) {
-        sumQuery += " AND transfer.collection_id = '$collection_id' "
+        sumQuery += " AND transaction.collection_id = '$collection_id' "
     }
     if(type != null){
-        sumQuery += " AND type.transaction_type = '${type}'"
+        sumQuery += " AND transaction.transaction_type = '${type}'"
     }
     println(sumQuery)
     try {
@@ -853,7 +829,6 @@ suspend fun getNFTsTransferHistory(
                         val jsonData = JSONObject()
                         // Select data = network, from, to, collection_id, block_number, timestamp, transaction_hash, log_id, token_id, amount, transaction_type
                         val network = getTransaction1.getString("network")
-                        val buyer_account = getTransaction1.getString("buyer_account")
                         val from_address = getTransaction1.getString("from_address")
                         val to_address = getTransaction1.getString("to_address")
                         val collection_id = getTransaction1.getString("collection_id")
@@ -869,12 +844,11 @@ suspend fun getNFTsTransferHistory(
                         val price = getTransaction1.getString("price")
                         val market = getTransaction1.getString("market")
                         val sales_info = getTransaction1.getString("sales_info")
-                        val transaction_type = getTransaction1.getString("transaction_type")
+                        val transaction_type = getTransaction1.getString("type")
 
                         val replace_sales_info = JSONArray(sales_info ?: "[]")
 
                         jsonData.put("network", network)
-                        jsonData.put("buyer", buyer_account)
                         jsonData.put("from", from_address)
                         jsonData.put("to", to_address)
                         jsonData.put("collection_id", collection_id)
@@ -1479,7 +1453,6 @@ suspend fun deployErc721Async(
     name: String,
     symbol: String,
     token_base_uri: String,
-    owner: String,
     uri_type: String
 ): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
@@ -1506,7 +1479,6 @@ suspend fun deployErc721Async(
                 Utf8String(name),
                 Utf8String(symbol),
                 Utf8String(token_base_uri),
-                Address(owner),
                 Uint8(BigInteger(uri_type))
             ),
             emptyList()
@@ -1536,9 +1508,9 @@ suspend fun deployErc721Async(
                     null,
                     null,
                     null,
-                    name, symbol, owner, token_base_uri, uri_type
+                    name, symbol, null, token_base_uri, uri_type
                 ), // Add 20% to the gas limit
-                bridgeContractAddress,
+                nftTransferContractAddress,
                 encodedFunction
             )
         } else {
@@ -1558,9 +1530,9 @@ suspend fun deployErc721Async(
                     null,
                     null,
                     null,
-                    name, symbol, owner, token_base_uri, uri_type
+                    name, symbol, null, token_base_uri, uri_type
                 ),
-                bridgeContractAddress,
+                nftTransferContractAddress,
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
@@ -1587,7 +1559,6 @@ suspend fun deployErc1155Async(
     name: String,
     symbol: String,
     token_base_uri: String,
-    owner: String,
     uri_type: String
 ): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
@@ -1614,7 +1585,6 @@ suspend fun deployErc1155Async(
                 Utf8String(name),
                 Utf8String(symbol),
                 Utf8String(token_base_uri),
-                Address(owner),
                 Uint8(BigInteger(uri_type))
             ),
             emptyList()
@@ -1644,9 +1614,9 @@ suspend fun deployErc1155Async(
                     null,
                     null,
                     null,
-                    name, symbol, owner, token_base_uri, uri_type
+                    name, symbol, null, token_base_uri, uri_type
                 ), // Add 20% to the gas limit
-                bridgeContractAddress,
+                nftTransferContractAddress,
                 encodedFunction
             )
         } else {
@@ -1666,9 +1636,9 @@ suspend fun deployErc1155Async(
                     null,
                     null,
                     null,
-                    name, symbol, owner, token_base_uri, uri_type
+                    name, symbol, null, token_base_uri, uri_type
                 ),
-                bridgeContractAddress,
+                nftTransferContractAddress,
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
@@ -1683,6 +1653,7 @@ suspend fun deployErc1155Async(
         val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
         jsonData.put("result", "OK")
         jsonData.put("transactionHash", txHash)
+        jsonData.put("maxPriorityFeePerGas", maxPriorityFeePerGas)
     } catch (e: Exception) {
         jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
@@ -1967,6 +1938,7 @@ suspend fun batchMintErc721Async(
         val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
         jsonData.put("result","OK")
         jsonData.put("transactionHash",txHash)
+        jsonData.put("maxPriorityFeePerGas",maxPriorityFeePerGas)
     } catch (e: Exception) {
         jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
@@ -2247,6 +2219,116 @@ suspend fun burnErc1155Async(
         val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
         jsonData.put("result","OK")
         jsonData.put("transactionHash",txHash)
+    } catch (e: Exception) {
+        jsonData.put("result", "FAIL")
+        jsonData.put("error", e.message)
+    }
+}
+
+suspend fun bridgeErc721Async(
+    network: String,
+    fromAddress: String,
+    toNetwork: String,
+    token_id: String,
+    token_address: String
+): JSONObject = withContext(Dispatchers.IO) {
+    val jsonData = JSONObject()
+    networkSettings(network)
+    val getAddressInfo = getAccountInfoAsync(fromAddress)
+    val privateKey = runCatching {
+        getAddressInfo.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("private")
+    }.getOrElse {
+        // handle error here
+        println("Error while fetching the private key: ${it.message}")
+        null
+    }
+
+    try {
+        val web3j = Web3j.build(HttpService(rpcUrl))
+        val credentials =
+            Credentials.create(privateKey)
+
+        val hex = textToHex(toNetwork)
+
+        // Convert hex string to BigInteger
+        val toNetworkHex = BigInteger(hex, 16)
+
+        val function = Function(
+            "moveFromERC721",
+            listOf(Uint256(toNetworkHex), Address(token_address), Uint256(BigInteger(token_id))),
+            emptyList()
+        )
+
+        val networkFeeIdxFunction = Function("getNetworkFeeIdxByName", listOf(Uint256(toNetworkHex)), emptyList())
+        val encodedNetworkFeeIdxFunction = FunctionEncoder.encode(networkFeeIdxFunction)
+        val networkFeeIdxResponse = web3j.ethCall(
+            Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeIdxFunction),
+            DefaultBlockParameterName.LATEST
+        ).send()
+
+        val networkFeeIdx = BigInteger(networkFeeIdxResponse.result.replace("0x", ""), 16)
+
+        val networkFeeFunction = Function("getNetworkFeeByIdx", listOf(Uint32(networkFeeIdx)), emptyList())
+        val encodedNetworkFeeFunction = FunctionEncoder.encode(networkFeeFunction)
+        val networkFeeResponse = web3j.ethCall(
+            Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeFunction),
+            DefaultBlockParameterName.LATEST
+        ).send()
+
+        // Assuming each value is of length 64 characters (32 bytes, which is standard for Ethereum)
+//        val networkHex = networkFeeResponse.result.substring(2, 66)
+//        val tokenFeeHex = networkFeeResponse.result.substring(66, 130)
+        val nftFeeHex = networkFeeResponse.result.substring(130, 194)
+//        val regFeeHex = networkFeeResponse.result.substring(194, 258)
+
+//        val network = String(BigInteger(networkHex, 16).toByteArray())
+//        val tokenFee = BigInteger(tokenFeeHex, 16)
+        val nftFee = BigInteger(nftFeeHex, 16)
+//        val regFee = BigInteger(regFeeHex, 16)
+
+        val encodedFunction = FunctionEncoder.encode(function)
+
+        val nonce = web3j.ethGetTransactionCount(fromAddress, DefaultBlockParameterName.PENDING)
+            .sendAsync()
+            .get()
+            .transactionCount
+
+        val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val tx =
+            if (network == "bnb" || network == "bnbTest") {
+                RawTransaction.createTransaction(
+                    nonce,
+                    getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
+                    BigInteger.valueOf(200000), // Add 20% to the gas limit
+                    nftTransferContractAddress,
+                    encodedFunction
+                )
+            } else {
+                RawTransaction.createTransaction(
+                    chainId,
+                    nonce,
+                    BigInteger.valueOf(200000), // Add 20% to the gas limit
+                    nftTransferContractAddress,
+                    nftFee, // value
+                    encodedFunction,
+                    BigInteger(maxPriorityFeePerGas), // 35 Gwei maxPriorityFeePerGas
+                    getEstimateGasAsync(network, "baseFee") // Add 20% to the gas price
+                )
+            }
+        val signedMessage = TransactionEncoder.signMessage(tx, credentials)
+        val signedTx = Numeric.toHexString(signedMessage)
+
+        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (txHash != null) {
+            jsonData.put("result", "OK")
+            jsonData.put("transactionHash", txHash)
+        } else {
+            jsonData.put("result", "FAIL")
+            jsonData.put("error", "insufficient funds")
+        }
     } catch (e: Exception) {
         jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)

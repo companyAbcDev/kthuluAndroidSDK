@@ -4,9 +4,11 @@ import com.klaytn.caver.Caver
 import com.klaytn.caver.contract.SendOptions
 import com.klaytn.caver.kct.kip7.KIP7
 import com.klaytn.caver.methods.request.CallObject
+import com.klaytn.caver.transaction.type.SmartContractExecution
 import com.klaytn.caver.transaction.type.ValueTransfer
 import com.klaytn.caver.wallet.keyring.KeyringFactory
 import kotlinx.coroutines.*
+import org.json.JSONArray
 import org.json.JSONObject
 import org.web3j.abi.FunctionEncoder
 import org.web3j.abi.FunctionReturnDecoder
@@ -46,50 +48,76 @@ suspend fun transaction() = runBlocking<Unit> {
 
         // Send Coin transaction asynchronously
 //        val sendCoinTransaction =
-//            async { sendTransactionAsync("bnb", fromAddress, toAddress, amount) }.await()
-//        if (sendCoinTransaction.getString("result") == "OK") {
-//            println("Transaction hash: ${sendCoinTransaction.getString("transactionHash")}")
-//            /**
-//              Transaction hash: 0x..
-//             */
-//        } else {
-//            println("Error sending Coin: ${sendCoinTransaction.getString("error")}")
-//        }
+//            async { sendTransactionAsync("polygon", fromAddress, toAddress, amount) }.await()
 //
-//        // Send token transaction asynchronously
+//        if (sendCoinTransaction.getString("result") == "OK") {
+//            println("result : ${sendCoinTransaction.getString("result")}")
+//            println(
+//                "transactionHash : ${
+//                    sendCoinTransaction.getJSONArray("value").getJSONObject(0).getString("transaction_hash")
+//                }"
+//            )
+//        } else {
+//            println("result : ${sendCoinTransaction.getString("result")}")
+//            println(
+//                "transactionHash : ${
+//                    sendCoinTransaction.getJSONArray("value").getJSONObject(0).getString("error")
+//                }"
+//            )
+//        }
+
+        // Send token transaction asynchronously
 //        val sendErc20Transaction =
 //            async {
 //                sendTokenTransactionAsync(
 //                    "cypress",
 //                    fromAddress,
 //                    toAddress,
-//                    "0.0001",
+//                    "0.00001",
 //                    "0x02cbe46fb8a1f579254a9b485788f2d86cad51aa"
 //                )
 //            }.await()
 //        if (sendErc20Transaction.getString("result") == "OK") {
-//            println("Transaction hash: ${sendErc20Transaction.getString("transactionHash")}")
-//            /**
-//             * Transaction hash: 0x..
-//             */
+//            println("result : ${sendErc20Transaction.getString("result")}")
+//            println(
+//                "transactionHash : ${
+//                    sendErc20Transaction.getJSONArray("value").getJSONObject(0).getString("transaction_hash")
+//                }"
+//            )
 //        } else {
-//            println("Error sending Token: ${sendErc20Transaction.getString("error")}")
+//            println("result : ${sendErc20Transaction.getString("result")}")
+//            println(
+//                "transactionHash : ${
+//                    sendErc20Transaction.getJSONArray("value").getJSONObject(0).getString("error")
+//                }"
+//            )
 //        }
-////
+
 //        val deployErc20 =
 //            async {
 //                deployErc20Async(
-//                    "polygon",
+//                    "cypress",
 //                    fromAddress,
-//                    "AbcUseToken",
-//                    "AUT",
-//                    "50000"
+//                    "YGToken",
+//                    "YGT",
+//                    "5000000"
 //                )
 //            }.await()
-//        println("Transaction hash: ${deployErc20}")
-//        /**
-//         * Transaction hash: 0x..
-//         */
+//        if (deployErc20.getString("result") == "OK") {
+//            println("result : ${deployErc20.getString("result")}")
+//            println(
+//                "transactionHash : ${
+//                    deployErc20.getJSONArray("value").getJSONObject(0).getString("transaction_hash")
+//                }"
+//            )
+//        } else {
+//            println("result : ${deployErc20.getString("result")}")
+//            println(
+//                "transactionHash : ${
+//                    deployErc20.getJSONArray("value").getJSONObject(0).getString("error")
+//                }"
+//            )
+//        }
 
 //         val bridgeToken =
 //             async {
@@ -105,29 +133,40 @@ suspend fun transaction() = runBlocking<Unit> {
 //          * Transaction hash: 0x..
 //          */
 
-        //  val bridgeToken =
-        //     async {
-        //         bridgeTokenAsync(
-        //             "cypress",
-        //             fromAddress,
-        //             "POLYGON",
-        //             "10000000000000000",
-        //             "0x085AB24e511bEa905bDe815FA38a11eEB507E206"
-        //         )
-        //     }.await()
-        // println("Transaction hash: ${bridgeToken}")
-        // /**
-        //  * Transaction hash: 0x..
-        //  */
+//          val bridgeToken =
+//             async {
+//                 bridgeTokenAsync(
+//                     "cypress",
+//                     fromAddress,
+//                     "POLYGON",
+//                     "10000000000000000",
+//                     "0x085AB24e511bEa905bDe815FA38a11eEB507E206"
+//                 )
+//             }.await()
+//         println("Transaction hash: ${bridgeToken}")
+//         /**
+//          * Transaction hash: 0x..
+//          */
 
-//      val coinForTokenswap =
-//      async {
-//         coinForTokenswapAsync( "polygon", fromAddress,"0xD6DF932A45C0f255f85145f286eA0b292B21C90B", "5")
-//     }.await()
-//     println("Transaction hash: ${coinForTokenswap}")
-//     /**
-//      * Transaction hash: 0x..
-//      */
+//          val coinForTokenswap =
+//          async {
+//             coinForTokenswapAsync( "polygon", fromAddress,"0xD6DF932A45C0f255f85145f286eA0b292B21C90B", "20")
+//         }.await()
+//        if (coinForTokenswap.getString("result") == "OK") {
+//            println("result : ${coinForTokenswap.getString("result")}")
+//            println(
+//                "transactionHash : ${
+//                    coinForTokenswap.getJSONArray("value").getJSONObject(0).getString("transaction_hash")
+//                }"
+//            )
+//        } else {
+//            println("result : ${coinForTokenswap.getString("result")}")
+//            println(
+//                "transactionHash : ${
+//                    coinForTokenswap.getJSONArray("value").getJSONObject(0).getString("error")
+//                }"
+//            )
+//        }
 
 //        val tokenSwapAppove =
 //            async {
@@ -147,14 +186,14 @@ suspend fun transaction() = runBlocking<Unit> {
 //         * Transaction hash: 0x..
 //         */
 
-        val tokenForCoinswap =
-            async {
-                tokenForCoinswapAsync( "polygon", fromAddress,"0xc2132D05D31c914a87C6611C10748AEb04B58e8F","1")
-            }.await()
-        println("Transaction hash: ${tokenForCoinswap}")
-        /**
-         * Transaction hash: 0x..
-         */
+//        val tokenForCoinswap =
+//            async {
+//                tokenForCoinswapAsync( "polygon", fromAddress,"0xc2132D05D31c914a87C6611C10748AEb04B58e8F","1")
+//            }.await()
+//        println("Transaction hash: ${tokenForCoinswap}")
+//        /**
+//         * Transaction hash: 0x..
+//         */
 
     }
 }
@@ -167,6 +206,14 @@ suspend fun sendTransactionAsync(
     amount: String,
 ): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
+    val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
+
     val getAddressInfo = getAccountInfoAsync(fromAddress)
     val privateKey = runCatching {
         getAddressInfo.getJSONArray("value")
@@ -177,7 +224,7 @@ suspend fun sendTransactionAsync(
         println("Error while fetching the private key: ${it.message}")
         null
     }
-    val jsonData = JSONObject()
+
     try {
         // Ensure amount is a valid number
         if (BigDecimal(amount) <= BigDecimal.ZERO) {
@@ -274,16 +321,23 @@ suspend fun sendTransactionAsync(
                 .transactionHash
         }
 
-        if(transactionHash != "") {
-            jsonData.put("result", "OK")
-            jsonData.put("transactionHash", transactionHash)
+        if (transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
         } else {
-            jsonData.put("result", "FAIL")
             jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -297,6 +351,12 @@ suspend fun sendTokenTransactionAsync(
 ): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
     try {
         val getAddressInfo = getAccountInfoAsync(fromAddress)
         val privateKey = runCatching {
@@ -425,16 +485,23 @@ suspend fun sendTokenTransactionAsync(
                 .transactionHash
         }
 
-        if(transactionHash != "") {
-            jsonData.put("result", "OK")
-            jsonData.put("transactionHash", transactionHash)
+        if (transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
         } else {
-            jsonData.put("result", "FAIL")
             jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -444,97 +511,159 @@ suspend fun deployErc20Async(
     name: String,
     symbol: String,
     totalSupply: String
-): JSONObject = withContext(Dispatchers.IO){
+): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
-
-    val getAddressInfo = getAccountInfoAsync(ownerAddress)
-    val privateKey = runCatching {
-        getAddressInfo.getJSONArray("value")
-            .getJSONObject(0)
-            .getString("private")
-    }.getOrElse {
-        // handle error here
-        println("Error while fetching the private key: ${it.message}")
-        null
-    }
-
-    val decimals = "18"
     val jsonData = JSONObject()
-    val decimalMultiplier = BigDecimal.TEN.pow(decimals.toInt())
-    val tokenAmount = BigDecimal(totalSupply).multiply(decimalMultiplier).toString()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
 
     try {
-        val web3j = Web3j.build(HttpService(rpcUrl))
-        val credentials =
-            Credentials.create(privateKey)
-
-
-        val function = Function(
-            "deployWrapped20",
-            listOf(Utf8String(name), Utf8String(symbol), Uint8(BigInteger(decimals)), Uint256(BigInteger(tokenAmount))),
-            emptyList()
-        )
-
-        val encodedFunction = FunctionEncoder.encode(function)
-
-        val nonce = web3j.ethGetTransactionCount(ownerAddress, DefaultBlockParameterName.PENDING)
-            .sendAsync()
-            .get()
-            .transactionCount
-
-        val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
-
-        val gasLimit = getEstimateGasAsync(
-            network,
-            "deployERC20",
-            null,
-            ownerAddress,
-            null,
-            totalSupply,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            name, symbol
-        )
-
-        val tx = if (network == "bnb" || network == "bnbTest") {
-            RawTransaction.createTransaction(
-                nonce,
-                getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                gasLimit, // Add 20% to the gas limit
-                bridgeContractAddress,
-                encodedFunction
-            )
-        } else {
-            RawTransaction.createTransaction(
-                chainId,
-                nonce,
-                gasLimit, // Add 20% to the gas limit
-                bridgeContractAddress,
-                BigInteger.ZERO,
-                encodedFunction,
-                BigInteger(maxPriorityFeePerGas), // 35 Gwei maxPriorityFeePerGas
-                getEstimateGasAsync(network, "baseFee") // Add 20% to the gas price
-            )
+        val getAddressInfo = getAccountInfoAsync(ownerAddress)
+        val privateKey = runCatching {
+            getAddressInfo.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("private")
+        }.getOrElse {
+            // handle error here
+            println("Error while fetching the private key: ${it.message}")
+            null
         }
-        val signedMessage = TransactionEncoder.signMessage(tx, credentials)
-        val signedTx = Numeric.toHexString(signedMessage)
+        var transactionHash = "";
+        val decimals = "18"
+        val decimalMultiplier = BigDecimal.TEN.pow(decimals.toInt())
+        val tokenAmount = BigDecimal(totalSupply).multiply(decimalMultiplier).toBigInteger()
+        if (network == "cypress") {
+            val caver = Caver(rpcUrl)
+            val keyring = KeyringFactory.createFromPrivateKey(privateKey)
+            caver.wallet.add(keyring)
 
-        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if(txHash != null) {
-            jsonData.put("result", "OK")
-            jsonData.put("transactionHash", txHash)
+            val function = Function(
+                "deployWrapped20",
+                listOf(Utf8String(name), Utf8String(symbol), Uint8(BigInteger(decimals)), Uint256(tokenAmount)),
+                emptyList()
+            )
+            val encodedFunction = FunctionEncoder.encode(function)
+
+            // Estimate gas
+            var gasLimit: BigInteger
+            try {
+                val callObject = CallObject.createCallObject(
+                    ownerAddress,
+                    bridgeContractAddress,
+                    null,
+                    null,
+                    null,
+                    encodedFunction
+                )
+                gasLimit = caver.rpc.klay.estimateGas(callObject).send().value
+            } catch (ex: Exception) {
+                // Handle the exception appropriately
+                gasLimit = BigInteger.ZERO
+            }
+
+            // Create a smart contract execution transaction
+            val smartContractExecution = SmartContractExecution.Builder()
+                .setKlaytnCall(caver.rpc.getKlay())
+                .setFrom(keyring.address)
+                .setTo(bridgeContractAddress)
+                .setValue(BigInteger.ZERO)
+                .setInput(encodedFunction)
+                .setGas(gasLimit)
+                .build()
+
+            //Sign to the transaction
+            smartContractExecution.sign(keyring)
+
+            //Send a transaction to the klaytn blockchain platform (Klaytn)
+            transactionHash = caver.rpc.klay.sendRawTransaction(smartContractExecution.rawTransaction).send().result
+
         } else {
-            jsonData.put("result", "FAIL")
+            val web3j = Web3j.build(HttpService(rpcUrl))
+            val credentials =
+                Credentials.create(privateKey)
+
+
+            val function = Function(
+                "deployWrapped20",
+                listOf(Utf8String(name), Utf8String(symbol), Uint8(BigInteger(decimals)), Uint256(tokenAmount)),
+                emptyList()
+            )
+
+            val encodedFunction = FunctionEncoder.encode(function)
+
+            val nonce = web3j.ethGetTransactionCount(ownerAddress, DefaultBlockParameterName.PENDING)
+                .sendAsync()
+                .get()
+                .transactionCount
+
+            val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+            val gasLimit = getEstimateGasAsync(
+                network,
+                "deployERC20",
+                null,
+                ownerAddress,
+                null,
+                totalSupply,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                name, symbol
+            )
+
+            val tx = if (network == "bnb" || network == "bnbTest") {
+                RawTransaction.createTransaction(
+                    nonce,
+                    getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
+                    gasLimit, // Add 20% to the gas limit
+                    bridgeContractAddress,
+                    encodedFunction
+                )
+            } else {
+                RawTransaction.createTransaction(
+                    chainId,
+                    nonce,
+                    gasLimit, // Add 20% to the gas limit
+                    bridgeContractAddress,
+                    BigInteger.ZERO,
+                    encodedFunction,
+                    BigInteger(maxPriorityFeePerGas), // 35 Gwei maxPriorityFeePerGas
+                    getEstimateGasAsync(network, "baseFee") // Add 20% to the gas price
+                )
+            }
+            val signedMessage = TransactionEncoder.signMessage(tx, credentials)
+            val signedTx = Numeric.toHexString(signedMessage)
+
+            transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        }
+
+        if (transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
             jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
+
 }
 
 suspend fun bridgeTokenAsync(
@@ -542,7 +671,7 @@ suspend fun bridgeTokenAsync(
     fromAddress: String,
     toNetwork: String,
     amount: String,
-): JSONObject = withContext(Dispatchers.IO){
+): JSONObject = withContext(Dispatchers.IO) {
     val jsonData = JSONObject()
     networkSettings(network)
     val getAddressInfo = getAccountInfoAsync(fromAddress)
@@ -608,7 +737,7 @@ suspend fun bridgeTokenAsync(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if(txHash != null) {
+        if (txHash != null) {
             jsonData.put("result", "OK")
             jsonData.put("transactionHash", txHash)
         } else {
@@ -627,7 +756,7 @@ suspend fun bridgeTokenAsync(
     toNetwork: String,
     amount: String,
     token_address: String
-): JSONObject = withContext(Dispatchers.IO){
+): JSONObject = withContext(Dispatchers.IO) {
     val jsonData = JSONObject()
     networkSettings(network)
     val getAddressInfo = getAccountInfoAsync(fromAddress)
@@ -718,7 +847,7 @@ suspend fun bridgeTokenAsync(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if(txHash != null) {
+        if (txHash != null) {
             jsonData.put("result", "OK")
             jsonData.put("transactionHash", txHash)
         } else {
@@ -735,144 +864,173 @@ suspend fun tokenSwapAppoveAsync(
     network: String,
     fromAddress: String,
     fromTokenId: String,
-    toTokenId : String? = null,
+    toTokenId: String? = null,
     amount: String
-): JSONObject = withContext(Dispatchers.IO){
+): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
-    val getAddressInfo = getAccountInfoAsync(fromAddress)
-    val privateKey = runCatching {
-        getAddressInfo.getJSONArray("value")
-            .getJSONObject(0)
-            .getString("private")
-    }.getOrElse {
-        // handle error here
-        println("Error while fetching the private key: ${it.message}")
-        null
-    }
 
-    var toTokenId = toTokenId
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
 
-    if(toTokenId == null) {
-        toTokenId = when (network) {
-            "ethereum" -> "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-            "cypress" -> "0"
-            "polygon" -> "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
-            "bnb" -> "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
-            else -> throw IllegalArgumentException("Invalid main network type")
+
+    try {
+        val getAddressInfo = getAccountInfoAsync(fromAddress)
+        val privateKey = runCatching {
+            getAddressInfo.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("private")
+        }.getOrElse {
+            // handle error here
+            println("Error while fetching the private key: ${it.message}")
+            null
         }
-    }
+        var transactionHash = "";
+        var toTokenId = toTokenId
 
-    val web3j = Web3j.build(HttpService(rpcUrl))
-    val credentials =
-        Credentials.create(privateKey)
-
-    val decimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
-    val encodedDecimalsFunction = FunctionEncoder.encode(decimalsFunction)
-    val decimalsResponse = web3j.ethCall(
-        Transaction.createEthCallTransaction(null, fromTokenId, encodedDecimalsFunction),
-        DefaultBlockParameterName.LATEST
-    ).send()
-    val decimalsOutput =
-        FunctionReturnDecoder.decode(decimalsResponse.result, decimalsFunction.outputParameters)
-    val decimals = (decimalsOutput[0].value as BigInteger).toInt()
-    val decimalMultiplier = BigDecimal.TEN.pow(decimals)
-    var amountInWei = BigDecimal(amount).multiply(decimalMultiplier).toBigInteger()
-
-    amountInWei = BigDecimal(amountInWei).multiply(BigDecimal(1.2)).setScale(0, RoundingMode.DOWN).toBigInteger()
-
-    val getPairFunction = Function("getPair", listOf(Address(fromTokenId), Address(toTokenId)), emptyList())
-
-    val encodedGetPairFunction = FunctionEncoder.encode(getPairFunction)
-
-    val getPairResponse = web3j.ethCall(
-        Transaction.createEthCallTransaction(null, uniswapV2FactoryAddress, encodedGetPairFunction),
-        DefaultBlockParameterName.LATEST
-    ).send()
-
-    val getPair = BigInteger(getPairResponse.result.replace("0x", ""), 16)
-
-    if(getPair != BigInteger.ZERO) {
-        val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
-        val approveTokenFunction =
-            Function("approve", listOf(Address(uniswapV2RouterAddress), Uint256(amountInWei)), emptyList())
-        val arroveTokenEncodedFunction = FunctionEncoder.encode(approveTokenFunction)
-        val nonce = web3j.ethGetTransactionCount(fromAddress, DefaultBlockParameterName.PENDING)
-            .sendAsync()
-            .get()
-            .transactionCount
-
-        val tx =
-            if (network == "bnb" || network == "bnbTest") {
-                RawTransaction.createTransaction(
-                    nonce,
-                    getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                    BigInteger("200000"), // Add 20% to the gas limit
-                    fromTokenId,
-                    arroveTokenEncodedFunction
-                )
-            } else {
-                RawTransaction.createTransaction(
-                    chainId,
-                    nonce,
-                    BigInteger("200000"), // Add 20% to the gas limit
-                    fromTokenId,
-                    BigInteger.ZERO, // value
-                    arroveTokenEncodedFunction,
-                    BigInteger(maxPriorityFeePerGas), // maxPriorityFeePerGas
-                    getEstimateGasAsync(network, "baseFee") // Add 20% to the gas price
-                )
+        if (toTokenId == null) {
+            toTokenId = when (network) {
+                "ethereum" -> "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+                "cypress" -> "0"
+                "polygon" -> "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
+                "bnb" -> "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+                else -> throw IllegalArgumentException("Invalid main network type")
             }
-        val signedMessage = TransactionEncoder.signMessage(tx, credentials)
-        val signedTx = Numeric.toHexString(signedMessage)
-
-        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (txHash != null) {
-            jsonData.put("result", "OK")
-            jsonData.put("transactionHash", txHash)
-        } else {
-            jsonData.put("result", "FAIL")
-            jsonData.put("error", "insufficient funds")
         }
-    } else {
-        jsonData.put("result", "FAIL")
-        jsonData.put("error", "pair not found")
+        val web3j = Web3j.build(HttpService(rpcUrl))
+        val credentials =
+            Credentials.create(privateKey)
+
+        val decimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
+        val encodedDecimalsFunction = FunctionEncoder.encode(decimalsFunction)
+        val decimalsResponse = web3j.ethCall(
+            Transaction.createEthCallTransaction(null, fromTokenId, encodedDecimalsFunction),
+            DefaultBlockParameterName.LATEST
+        ).send()
+        val decimalsOutput =
+            FunctionReturnDecoder.decode(decimalsResponse.result, decimalsFunction.outputParameters)
+        val decimals = (decimalsOutput[0].value as BigInteger).toInt()
+        val decimalMultiplier = BigDecimal.TEN.pow(decimals)
+        var amountInWei = BigDecimal(amount).multiply(decimalMultiplier).toBigInteger()
+
+        amountInWei = BigDecimal(amountInWei).multiply(BigDecimal(1.2)).setScale(0, RoundingMode.DOWN).toBigInteger()
+
+        val getPairFunction = Function("getPair", listOf(Address(fromTokenId), Address(toTokenId)), emptyList())
+
+        val encodedGetPairFunction = FunctionEncoder.encode(getPairFunction)
+
+        val getPairResponse = web3j.ethCall(
+            Transaction.createEthCallTransaction(null, uniswapV2FactoryAddress, encodedGetPairFunction),
+            DefaultBlockParameterName.LATEST
+        ).send()
+
+        val getPair = BigInteger(getPairResponse.result.replace("0x", ""), 16)
+
+        if (getPair != BigInteger.ZERO) {
+            val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+            val approveTokenFunction =
+                Function("approve", listOf(Address(uniswapV2RouterAddress), Uint256(amountInWei)), emptyList())
+            val arroveTokenEncodedFunction = FunctionEncoder.encode(approveTokenFunction)
+            val nonce = web3j.ethGetTransactionCount(fromAddress, DefaultBlockParameterName.PENDING)
+                .sendAsync()
+                .get()
+                .transactionCount
+
+            val tx =
+                if (network == "bnb" || network == "bnbTest") {
+                    RawTransaction.createTransaction(
+                        nonce,
+                        getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
+                        BigInteger("200000"), // Add 20% to the gas limit
+                        fromTokenId,
+                        arroveTokenEncodedFunction
+                    )
+                } else {
+                    RawTransaction.createTransaction(
+                        chainId,
+                        nonce,
+                        BigInteger("200000"), // Add 20% to the gas limit
+                        fromTokenId,
+                        BigInteger.ZERO, // value
+                        arroveTokenEncodedFunction,
+                        BigInteger(maxPriorityFeePerGas), // maxPriorityFeePerGas
+                        getEstimateGasAsync(network, "baseFee") // Add 20% to the gas price
+                    )
+                }
+            val signedMessage = TransactionEncoder.signMessage(tx, credentials)
+            val signedTx = Numeric.toHexString(signedMessage)
+
+            transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+            if(transactionHash != "") {
+                jsonData.put("transaction_hash", transactionHash)
+                resultArray.put(jsonData)
+                resultData.put("result", "OK")
+                resultData.put("value", resultArray)
+            } else {
+                jsonData.put("error", "insufficient funds")
+                jsonData.put("transaction_hash", transactionHash)
+                resultArray.put(jsonData)
+                resultData.put("result", "FAIL")
+                resultData.put("value", resultArray)
+            }
+
+        } else {
+            jsonData.put("error", "pair not found")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
+    } catch (e: Exception) {
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
+
 }
 
 // coin to token swap
 suspend fun coinForTokenswapAsync(
     network: String,
     fromAddress: String,
-    toTokenId : String,
+    toTokenId: String,
     amount: String
-): JSONObject = withContext(Dispatchers.IO){
-    val jsonData = JSONObject()
+): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
-    val getAddressInfo = getAccountInfoAsync(fromAddress)
-    val privateKey = runCatching {
-        getAddressInfo.getJSONArray("value")
-            .getJSONObject(0)
-            .getString("private")
-    }.getOrElse {
-        // handle error here
-        println("Error while fetching the private key: ${it.message}")
-        null
-    }
+    val jsonData = JSONObject()
 
-    val fromTokenId = when (network) {
-        "ethereum" -> "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-        "cypress" -> "0"
-        "polygon" -> "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
-        "bnb" -> "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
-        else -> throw IllegalArgumentException("Invalid main network type")
-    }
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
 
     try {
+        val getAddressInfo = getAccountInfoAsync(fromAddress)
+        val privateKey = runCatching {
+            getAddressInfo.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("private")
+        }.getOrElse {
+            // handle error here
+            println("Error while fetching the private key: ${it.message}")
+            null
+        }
+
+        val fromTokenId = when (network) {
+            "ethereum" -> "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+            "cypress" -> "0"
+            "polygon" -> "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270"
+            "bnb" -> "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+            else -> throw IllegalArgumentException("Invalid main network type")
+        }
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
             Credentials.create(privateKey)
-
+        var transactionHash = "";
         val amountInWei = Convert.toWei(amount, Convert.Unit.ETHER).toBigIntegerExact()
 
         // Deadline is the current time + 10 minutes in seconds
@@ -891,8 +1049,12 @@ suspend fun coinForTokenswapAsync(
 
         val getPair = BigInteger(getPairResponse.result.replace("0x", ""), 16)
 
-        if(getPair != BigInteger.ZERO) {
-            val swapExactETHForTokensFunction = Function("swapExactETHForTokens", listOf(Uint256(BigInteger.ZERO), path, Address(fromAddress), Uint256(deadline)), emptyList())
+        if (getPair != BigInteger.ZERO) {
+            val swapExactETHForTokensFunction = Function(
+                "swapExactETHForTokens",
+                listOf(Uint256(BigInteger.ZERO), path, Address(fromAddress), Uint256(deadline)),
+                emptyList()
+            )
 
             val encodedFunction = FunctionEncoder.encode(swapExactETHForTokensFunction)
 
@@ -927,21 +1089,31 @@ suspend fun coinForTokenswapAsync(
             val signedMessage = TransactionEncoder.signMessage(tx, credentials)
             val signedTx = Numeric.toHexString(signedMessage)
 
-            val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-            if(txHash != null) {
-                jsonData.put("result", "OK")
-                jsonData.put("transactionHash", txHash)
+            transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+            if(transactionHash != "") {
+                jsonData.put("transaction_hash", transactionHash)
+                resultArray.put(jsonData)
+                resultData.put("result", "OK")
+                resultData.put("value", resultArray)
             } else {
-                jsonData.put("result", "FAIL")
                 jsonData.put("error", "insufficient funds")
+                jsonData.put("transaction_hash", transactionHash)
+                resultArray.put(jsonData)
+                resultData.put("result", "FAIL")
+                resultData.put("value", resultArray)
             }
+
         } else {
-            jsonData.put("result", "FAIL")
-            jsonData.put("error", "non swappable token")
+            jsonData.put("error", "pair not found")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -949,26 +1121,35 @@ suspend fun coinForTokenswapAsync(
 suspend fun tokenForTokenswapAsync(
     network: String,
     fromAddress: String,
-    fromTokenId : String,
-    toTokenId : String,
+    fromTokenId: String,
+    toTokenId: String,
     amount: String
 ): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
-    val getAddressInfo = getAccountInfoAsync(fromAddress)
-    val privateKey = runCatching {
-        getAddressInfo.getJSONArray("value")
-            .getJSONObject(0)
-            .getString("private")
-    }.getOrElse {
-        // handle error here
-        println("Error while fetching the private key: ${it.message}")
-        null
-    }
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
+
     try {
+        val getAddressInfo = getAccountInfoAsync(fromAddress)
+        val privateKey = runCatching {
+            getAddressInfo.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("private")
+        }.getOrElse {
+            // handle error here
+            println("Error while fetching the private key: ${it.message}")
+            null
+        }
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
             Credentials.create(privateKey)
+
+        var transactionHash = "";
 
         val decimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
         val encodedDecimalsFunction = FunctionEncoder.encode(decimalsFunction)
@@ -998,8 +1179,12 @@ suspend fun tokenForTokenswapAsync(
 
         val getPair = BigInteger(getPairResponse.result.replace("0x", ""), 16)
 
-        if(getPair != BigInteger.ZERO) {
-            val swapExactETHForTokensFunction = Function("swapExactTokensForTokens", listOf(Uint256(amountInWei), Uint256(BigInteger.ZERO), path, Address(fromAddress), Uint256(deadline)), emptyList())
+        if (getPair != BigInteger.ZERO) {
+            val swapExactETHForTokensFunction = Function(
+                "swapExactTokensForTokens",
+                listOf(Uint256(amountInWei), Uint256(BigInteger.ZERO), path, Address(fromAddress), Uint256(deadline)),
+                emptyList()
+            )
 
             val encodedFunction = FunctionEncoder.encode(swapExactETHForTokensFunction)
 
@@ -1008,9 +1193,16 @@ suspend fun tokenForTokenswapAsync(
                 .get()
                 .transactionCount
 
-            val gasLimit = getEstimateGasAsync(network, "swapToken",fromTokenId, fromAddress,"", amountInWei.toString(),"", toTokenId)
-
-            print("gasLimit: $gasLimit")
+            val gasLimit = getEstimateGasAsync(
+                network,
+                "swapToken",
+                fromTokenId,
+                fromAddress,
+                "",
+                amountInWei.toString(),
+                "",
+                toTokenId
+            )
 
             val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
@@ -1038,47 +1230,67 @@ suspend fun tokenForTokenswapAsync(
             val signedMessage = TransactionEncoder.signMessage(tx, credentials)
             val signedTx = Numeric.toHexString(signedMessage)
 
-            val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-            if(txHash != null) {
-                jsonData.put("result", "OK")
-                jsonData.put("transactionHash", txHash)
+            transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+            if(transactionHash != "") {
+                jsonData.put("transaction_hash", transactionHash)
+                resultArray.put(jsonData)
+                resultData.put("result", "OK")
+                resultData.put("value", resultArray)
             } else {
-                jsonData.put("result", "FAIL")
                 jsonData.put("error", "insufficient funds")
+                jsonData.put("transaction_hash", transactionHash)
+                resultArray.put(jsonData)
+                resultData.put("result", "FAIL")
+                resultData.put("value", resultArray)
             }
+
         } else {
-            jsonData.put("result", "FAIL")
-            jsonData.put("error", "non swappable token")
+            jsonData.put("error", "pair not found")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
+
 }
 
 // token to coin swap
 suspend fun tokenForCoinswapAsync(
     network: String,
     fromAddress: String,
-    fromTokenId : String,
+    fromTokenId: String,
     amount: String
 ): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
-    val getAddressInfo = getAccountInfoAsync(fromAddress)
-    val privateKey = runCatching {
-        getAddressInfo.getJSONArray("value")
-            .getJSONObject(0)
-            .getString("private")
-    }.getOrElse {
-        // handle error here
-        println("Error while fetching the private key: ${it.message}")
-        null
-    }
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
+
     try {
+        val getAddressInfo = getAccountInfoAsync(fromAddress)
+        val privateKey = runCatching {
+            getAddressInfo.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("private")
+        }.getOrElse {
+            // handle error here
+            println("Error while fetching the private key: ${it.message}")
+            null
+        }
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
             Credentials.create(privateKey)
+
+        var transactionHash = "";
 
         val decimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
         val encodedDecimalsFunction = FunctionEncoder.encode(decimalsFunction)
@@ -1091,8 +1303,6 @@ suspend fun tokenForCoinswapAsync(
         val decimals = (decimalsOutput[0].value as BigInteger).toInt()
         val decimalMultiplier = BigDecimal.TEN.pow(decimals)
         val amountInWei = BigDecimal(amount).multiply(decimalMultiplier).toBigInteger()
-
-        println("amountInWei $amountInWei")
 
         val toTokenId = when (network) {
             "ethereum" -> "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
@@ -1118,8 +1328,12 @@ suspend fun tokenForCoinswapAsync(
 
         val getPair = BigInteger(getPairResponse.result.replace("0x", ""), 16)
 
-        if(getPair != BigInteger.ZERO) {
-            val swapExactETHForTokensFunction = Function("swapExactTokensForETH", listOf(Uint256(amountInWei), Uint256(BigInteger.ZERO), path, Address(fromAddress), Uint256(deadline)), emptyList())
+        if (getPair != BigInteger.ZERO) {
+            val swapExactETHForTokensFunction = Function(
+                "swapExactTokensForETH",
+                listOf(Uint256(amountInWei), Uint256(BigInteger.ZERO), path, Address(fromAddress), Uint256(deadline)),
+                emptyList()
+            )
 
             val encodedFunction = FunctionEncoder.encode(swapExactETHForTokensFunction)
 
@@ -1130,7 +1344,16 @@ suspend fun tokenForCoinswapAsync(
 
             val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-            val gasLimit = getEstimateGasAsync(network, "swapToken",fromTokenId,fromAddress,"",amountInWei.toString(),"",toTokenId)
+            val gasLimit = getEstimateGasAsync(
+                network,
+                "swapToken",
+                fromTokenId,
+                fromAddress,
+                "",
+                amountInWei.toString(),
+                "",
+                toTokenId
+            )
 
             val tx =
                 if (network == "bnb" || network == "bnbTest") {
@@ -1145,7 +1368,7 @@ suspend fun tokenForCoinswapAsync(
                     RawTransaction.createTransaction(
                         chainId,
                         nonce,
-                        gasLimit, // Add 20% to the gas limit,
+                        BigInteger("200000"), // Add 20% to the gas limit,
                         uniswapV2RouterAddress,
                         BigInteger.ZERO, // value
                         encodedFunction,
@@ -1156,25 +1379,35 @@ suspend fun tokenForCoinswapAsync(
             val signedMessage = TransactionEncoder.signMessage(tx, credentials)
             val signedTx = Numeric.toHexString(signedMessage)
 
-            val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-            if(txHash != null) {
-                jsonData.put("result", "OK")
-                jsonData.put("transactionHash", txHash)
+            transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+            if(transactionHash != "") {
+                jsonData.put("transaction_hash", transactionHash)
+                resultArray.put(jsonData)
+                resultData.put("result", "OK")
+                resultData.put("value", resultArray)
             } else {
-                jsonData.put("result", "FAIL")
                 jsonData.put("error", "insufficient funds")
+                jsonData.put("transaction_hash", transactionHash)
+                resultArray.put(jsonData)
+                resultData.put("result", "FAIL")
+                resultData.put("value", resultArray)
             }
+
         } else {
-            jsonData.put("result", "FAIL")
-            jsonData.put("error", "non swappable token")
+            jsonData.put("error", "pair not found")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
-suspend fun checkTransactionStatus(network: String, txHash: String): String? {
+suspend fun checkTransactionStatusAsync(network: String, txHash: String): String? {
     networkSettings(network)
     val web3j = Web3j.build(HttpService(rpcUrl))
     val receipt = web3j.ethGetTransactionReceipt(txHash).send()

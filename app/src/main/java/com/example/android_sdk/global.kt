@@ -32,24 +32,23 @@ import java.time.Instant
 import java.util.Base64
 import javax.crypto.Cipher
 
-fun kthuluSdkVersion(){
-    println("SDK version:0.0.75, Connect OK")
+fun sdkConnectTest(){
+    println("SDK version:0.0.71, Connect OK")
 }
 var rpcUrl ="";
 var bridgeConfigContractAddress = "";
 var bridgeContractAddress = "";
-var erc721DeployContractAddress = "";
-var erc1155DeployContractAddress = "";
+var nftTransferContractAddress = "";
 var uniswapV2RouterAddress = "";
 var uniswapV2FactoryAddress = "";
 var maxPriorityFeePerGas = "";
 
 fun networkSettings(network: String) {
     rpcUrl = when (network) {
-        "ethereum" -> "https://mainnet.infura.io/v3/02c509fda7da4fed882ac537046cfd66"
-        "cypress" -> "https://rpc.ankr.com/klaytn"
-        "polygon" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
-        "bnb" -> "https://bsc-dataseed.binance.org"
+        "ethereum" -> "http://210.207.161.11:8545"
+        "cypress" -> "http://210.207.161.12:8551"
+        "polygon" -> "http://210.207.161.13:8545"
+        "bnb" -> "http://210.207.161.24:8545"
         "goerli" -> "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"
         "baobab" -> "https://api.baobab.klaytn.net:8651"
         "mumbai" -> "https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78"
@@ -105,6 +104,17 @@ fun networkSettings(network: String) {
         "cypress" -> ""
         "polygon" -> "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"
         "bnb" -> "0xBCfCcbde45cE874adCB698cC183deBcF17952812"
+        "goerli" -> ""
+        "baobab" -> ""
+        "mumbai" -> ""
+        "tbnb" -> ""
+        else -> throw IllegalArgumentException("Invalid main network type")
+    }
+    nftTransferContractAddress = when (network) {
+        "ethereum" -> "0x9a1c0ef3989f944e692232d491fe5395927be9bd"
+        "cypress" -> ""
+        "polygon" -> "0x9a1c0ef3989f944e692232d491fe5395927be9bd"
+        "bnb" -> "0x534d102f2bf1bcad450c8a5da6e1cfb6cdb93b2f"
         "goerli" -> ""
         "baobab" -> ""
         "mumbai" -> ""
@@ -458,10 +468,10 @@ suspend fun getEstimateGasAsync(
                 }
             }
         "deployERC721" ->
-            if (name != null && symbol != null && fromAddress != null && owner != null && baseURI != null && uriType != null) {
+            if (name != null && symbol != null && fromAddress != null && baseURI != null && uriType != null) {
                 val function = Function(
                     "deployWrapped721",
-                    listOf(Utf8String(name), Utf8String(symbol), Utf8String(baseURI), Address(owner), Uint8(BigInteger(uriType))),
+                    listOf(Utf8String(name), Utf8String(symbol), Utf8String(baseURI), Uint8(BigInteger(uriType))),
                     emptyList()
                 )
                 val encodedFunction = FunctionEncoder.encode(function)
@@ -473,7 +483,7 @@ suspend fun getEstimateGasAsync(
                             BigInteger.ONE,
                             gasPrice,
                             BigInteger.ZERO, // temporary gasLimit
-                            bridgeContractAddress,
+                            nftTransferContractAddress,
                             encodedFunction // data
                         )
                     ).send().amountUsed
@@ -483,10 +493,10 @@ suspend fun getEstimateGasAsync(
                 }
             }
         "deployERC1155" ->
-            if (name != null && symbol != null && fromAddress != null && owner != null && baseURI != null && uriType != null) {
+            if (name != null && symbol != null && fromAddress != null && baseURI != null && uriType != null) {
                 val function = Function(
                     "deployWrapped1155",
-                    listOf(Utf8String(name), Utf8String(symbol), Utf8String(baseURI), Address(owner), Uint8(BigInteger(uriType))),
+                    listOf(Utf8String(name), Utf8String(symbol), Utf8String(baseURI), Uint8(BigInteger(uriType))),
                     emptyList()
                 )
                 val encodedFunction = FunctionEncoder.encode(function)
@@ -498,7 +508,7 @@ suspend fun getEstimateGasAsync(
                             BigInteger.ONE,
                             gasPrice,
                             BigInteger.ZERO, // temporary gasLimit
-                            bridgeContractAddress,
+                            nftTransferContractAddress,
                             encodedFunction // data
                         )
                     ).send().amountUsed
