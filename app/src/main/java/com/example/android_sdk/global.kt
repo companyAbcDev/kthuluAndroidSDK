@@ -3,6 +3,8 @@ package com.example.android_sdk
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
 import org.web3j.abi.FunctionEncoder
 import org.web3j.abi.FunctionReturnDecoder
 import org.web3j.abi.TypeReference
@@ -33,7 +35,7 @@ import java.util.Base64
 import javax.crypto.Cipher
 
 fun kthuluSdkVersion(){
-    println("SDK version:0.0.77, Connect OK")
+    println("SDK version:0.0.80, Connect OK")
 }
 var rpcUrl ="";
 var bridgeConfigContractAddress = "";
@@ -202,480 +204,504 @@ fun removeData(key: String) {
 
 suspend fun getEstimateGasAsync(
     network: String,
-    txType: String,
-    tokenAddress: String? = null,
-    fromAddress: String? = null,
-    toAddress: String? = null,
-    tokenAmount: String? = null,
-    tokenId: String? = null,
-    toTokenAddress: String? = null,
-    toNetwork: String? = null,
-    decimals: Int? = null,
+    tx_type: String,
+    token_id: String? = null,
+    to_network: String? = null,
+    to_token_id: String? = null,
+    from: String? = null,
+    to: String? = null,
+    nft_token_id: String? = null,
+    amount: String? = null,
     batchTokenId: Array<String>? = null,
     batchTokenAmount: Array<String>? = null,
     name: String? = null,
     symbol: String? = null,
-    owner: String? = null,
     baseURI: String? = null,
     uriType: String? = null,
     tokenURI: String? = null,
     batchTokenURI: Array<String>? = null
-): BigInteger = withContext(Dispatchers.IO) {
+): JSONObject = withContext(Dispatchers.IO) {
+
     networkSettings(network)
-    var result = BigInteger.ZERO;
-    val web3 = Web3j.build(HttpService(rpcUrl))
-    val gasPrice = web3.ethGasPrice().sendAsync().get().gasPrice
+    val jsonData = JSONObject()
 
-    when(txType) {
-        "baseFee" -> result = gasPrice
-        "transferCoin" ->
-            try {
-                result = web3.ethEstimateGas(
-                    Transaction.createEtherTransaction(
-                        fromAddress,
-                        BigInteger.ONE,
-                        gasPrice,
-                        BigInteger.ZERO, // temporary gasLimit
-                        toAddress,
-                        Convert.toWei(tokenAmount, Convert.Unit.ETHER).toBigInteger() // value
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
+
+    try{
+        val web3 = Web3j.build(HttpService(rpcUrl))
+        val gasPrice = web3.ethGasPrice().sendAsync().get().gasPrice
+        var result = BigInteger.ZERO;
+        when(tx_type) {
+            "baseFee" -> result = gasPrice
+            "transferCoin" ->
+                try {
+                    result = web3.ethEstimateGas(
+                        Transaction.createEtherTransaction(
+                            from,
+                            BigInteger.ONE,
+                            gasPrice,
+                            BigInteger.ZERO, // temporary gasLimit
+                            to,
+                            Convert.toWei(amount, Convert.Unit.ETHER).toBigInteger() // value
+                        )
+                    ).send().amountUsed
+                } catch (ex: Exception) {
+                    // Handle the exception appropriately
+                    result = BigInteger.ZERO
+                }
+            "transferERC20" ->
+                if (token_id != null && to != null && from != null && amount != null) {
+                    // Ensure amount is a valid number
+                    if (BigDecimal(amount) <= BigDecimal.ZERO) BigInteger.ZERO
+
+                    val decimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
+                    val encodedDecimalsFunction = FunctionEncoder.encode(decimalsFunction)
+                    val decimalsResponse = web3.ethCall(
+                        Transaction.createEthCallTransaction(null, token_id, encodedDecimalsFunction),
+                        DefaultBlockParameterName.LATEST
+                    ).send()
+                    val decimalsOutput =
+                        FunctionReturnDecoder.decode(decimalsResponse.result, decimalsFunction.outputParameters)
+                    val decimals = (decimalsOutput[0].value as BigInteger).toInt()
+                    val decimalMultiplier = BigDecimal.TEN.pow(decimals.toInt())
+                    val tokenAmount = BigDecimal(amount).multiply(decimalMultiplier).toBigInteger()
+
+                    val function = Function(
+                        "transfer",
+                        listOf(Address(to), Uint256(tokenAmount)),
+                        emptyList()
                     )
-                ).send().amountUsed
-            } catch (ex: Exception) {
-                // Handle the exception appropriately
-                result = BigInteger.ZERO
-            }
-        "transferERC20" ->
-            if (tokenAddress != null && toAddress != null && fromAddress != null && tokenAmount != null) {
-                // Ensure amount is a valid number
-                if (BigDecimal(tokenAmount) <= BigDecimal.ZERO) BigInteger.ZERO
+                    val encodedFunction = FunctionEncoder.encode(function)
 
-                val decimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
-                val encodedDecimalsFunction = FunctionEncoder.encode(decimalsFunction)
-                val decimalsResponse = web3.ethCall(
-                    Transaction.createEthCallTransaction(null, tokenAddress, encodedDecimalsFunction),
-                    DefaultBlockParameterName.LATEST
-                ).send()
-                val decimalsOutput =
-                    FunctionReturnDecoder.decode(decimalsResponse.result, decimalsFunction.outputParameters)
-                val decimals = (decimalsOutput[0].value as BigInteger).toInt()
-                val decimalMultiplier = BigDecimal.TEN.pow(decimals.toInt())
-                val tokenAmount = BigDecimal(tokenAmount).multiply(decimalMultiplier).toBigInteger()
-
-                val function = Function(
-                    "transfer",
-                    listOf(Address(toAddress), Uint256(tokenAmount)),
-                    emptyList()
-                )
-                val encodedFunction = FunctionEncoder.encode(function)
-
-                try {
-                    result = web3.ethEstimateGas(
-                        Transaction.createFunctionCallTransaction(
-                            fromAddress,
-                            BigInteger.ONE,
-                            gasPrice,
-                            BigInteger.ZERO, // temporary gasLimit
-                            tokenAddress,
-                            encodedFunction // data
-                        )
-                    ).send().amountUsed
-                } catch (ex: Exception) {
-                    // Handle the exception appropriately
-                    result = BigInteger.ZERO
+                    try {
+                        result = web3.ethEstimateGas(
+                            Transaction.createFunctionCallTransaction(
+                                from,
+                                BigInteger.ONE,
+                                gasPrice,
+                                BigInteger.ZERO, // temporary gasLimit
+                                token_id,
+                                encodedFunction // data
+                            )
+                        ).send().amountUsed
+                    } catch (ex: Exception) {
+                        // Handle the exception appropriately
+                        result = BigInteger.ZERO
+                    }
                 }
-            }
-        "deployERC20" ->
-            if (name != null && symbol != null && fromAddress != null && tokenAmount != null) {
-                val function = Function(
-                    "deployWrapped20",
-                    listOf(Utf8String(name), Utf8String(symbol), Uint8(BigInteger("18")), Uint256(BigInteger(tokenAmount))),
-                    emptyList()
-                )
-                val encodedFunction = FunctionEncoder.encode(function)
-                try {
-                    result = web3.ethEstimateGas(
-                        Transaction.createFunctionCallTransaction(
-                            fromAddress,
-                            BigInteger.ONE,
-                            gasPrice,
-                            BigInteger.ZERO, // temporary gasLimit
-                            bridgeContractAddress,
-                            encodedFunction // data
-                        )
-                    ).send().amountUsed
-                } catch (ex: Exception) {
-                    // Handle the exception appropriately
-                    result = BigInteger.ZERO
+            "deployERC20" ->
+                if (name != null && symbol != null && from != null && amount != null) {
+                    val function = Function(
+                        "deployWrapped20",
+                        listOf(Utf8String(name), Utf8String(symbol), Uint8(BigInteger("18")), Uint256(BigInteger(amount))),
+                        emptyList()
+                    )
+                    val encodedFunction = FunctionEncoder.encode(function)
+                    try {
+                        result = web3.ethEstimateGas(
+                            Transaction.createFunctionCallTransaction(
+                                from,
+                                BigInteger.ONE,
+                                gasPrice,
+                                BigInteger.ZERO, // temporary gasLimit
+                                bridgeContractAddress,
+                                encodedFunction // data
+                            )
+                        ).send().amountUsed
+                    } catch (ex: Exception) {
+                        // Handle the exception appropriately
+                        result = BigInteger.ZERO
+                    }
                 }
-            }
-        "bridgeToken" ->
-            if (fromAddress != null && tokenAmount != null) {
-                val function = Function(
-                    "moveFromETHER",
-                    listOf(Uint256("KLAYTNs".toBigInteger())),
-                    emptyList()
-                )
-                val encodedFunction = FunctionEncoder.encode(function)
-                try {
-                    result = web3.ethEstimateGas(
-                        Transaction.createFunctionCallTransaction(
-                            fromAddress,
-                            BigInteger.ONE,
-                            gasPrice,
-                            BigInteger.ZERO, // temporary gasLimit
-                            bridgeContractAddress,
-                            encodedFunction // data
-                        )
-                    ).send().amountUsed
-                } catch (ex: Exception) {
-                    // Handle the exception appropriately
-                    result = BigInteger.ZERO
+            "bridgeToken" ->
+                if (from != null && amount != null) {
+                    val function = Function(
+                        "moveFromETHER",
+                        listOf(Uint256("KLAYTNs".toBigInteger())),
+                        emptyList()
+                    )
+                    val encodedFunction = FunctionEncoder.encode(function)
+                    try {
+                        result = web3.ethEstimateGas(
+                            Transaction.createFunctionCallTransaction(
+                                from,
+                                BigInteger.ONE,
+                                gasPrice,
+                                BigInteger.ZERO, // temporary gasLimit
+                                bridgeContractAddress,
+                                encodedFunction // data
+                            )
+                        ).send().amountUsed
+                    } catch (ex: Exception) {
+                        // Handle the exception appropriately
+                        result = BigInteger.ZERO
+                    }
                 }
-            }
-        "swapToken" ->
-            if (fromAddress != null && tokenAddress != null && tokenAmount != null && toTokenAddress != null) {
-                val path = DynamicArray(Address::class.java, listOf(Address(tokenAddress), Address(toTokenAddress)))
-                // Deadline is the current time + 10 minutes in seconds
-                val deadline = Instant.now().epochSecond + 600
-                val function = Function("swapExactTokensForTokens", listOf(Uint256(BigInteger(tokenAmount)), Uint256(BigInteger.ZERO), path, Address(fromAddress), Uint256(deadline)), emptyList())
+            "swapToken" ->
+                if (from != null && token_id != null && amount != null && to_token_id != null) {
+                    val path = DynamicArray(Address::class.java, listOf(Address(token_id), Address(to_token_id)))
+                    // Deadline is the current time + 10 minutes in seconds
+                    val deadline = Instant.now().epochSecond + 600
+                    val function = Function("swapExactTokensForTokens", listOf(Uint256(BigInteger(amount)), Uint256(BigInteger.ZERO), path, Address(from), Uint256(deadline)), emptyList())
 
-                val encodedFunction = FunctionEncoder.encode(function)
-                try {
-                    result = web3.ethEstimateGas(
-                        Transaction.createFunctionCallTransaction(
-                            fromAddress,
-                            BigInteger.ONE,
-                            gasPrice,
-                            BigInteger.ZERO, // temporary gasLimit
-                            uniswapV2RouterAddress,
-                            BigInteger.ZERO, // value
-                            encodedFunction // data
-                        )
-                    ).send().amountUsed
-                } catch (ex: Exception) {
-                    // Handle the exception appropriately
-                    result = BigInteger.ZERO
+                    val encodedFunction = FunctionEncoder.encode(function)
+                    try {
+                        result = web3.ethEstimateGas(
+                            Transaction.createFunctionCallTransaction(
+                                from,
+                                BigInteger.ONE,
+                                gasPrice,
+                                BigInteger.ZERO, // temporary gasLimit
+                                uniswapV2RouterAddress,
+                                BigInteger.ZERO, // value
+                                encodedFunction // data
+                            )
+                        ).send().amountUsed
+                    } catch (ex: Exception) {
+                        // Handle the exception appropriately
+                        result = BigInteger.ZERO
+                    }
                 }
-            }
-        "transferERC721" ->
-            if (tokenAddress != null && toAddress != null && fromAddress != null && tokenId != null) {
-                val function = Function(
-                    "safeTransferFrom",
-                    listOf(Address(fromAddress), Address(toAddress), Uint256(BigInteger(tokenId))),
-                    emptyList()
-                )
-                val encodedFunction = FunctionEncoder.encode(function)
+            "transferERC721" ->
+                if (token_id != null && to != null && from != null && nft_token_id != null) {
+                    val function = Function(
+                        "safeTransferFrom",
+                        listOf(Address(from), Address(to), Uint256(BigInteger(nft_token_id))),
+                        emptyList()
+                    )
+                    val encodedFunction = FunctionEncoder.encode(function)
 
-                try {
-                    result = web3.ethEstimateGas(
-                        Transaction.createFunctionCallTransaction(
-                            fromAddress,
-                            BigInteger.ONE,
-                            gasPrice,
-                            BigInteger.ZERO, // temporary gasLimit
-                            tokenAddress,
-                            encodedFunction // data
-                        )
-                    ).send().amountUsed
-                } catch (ex: Exception) {
-                    // Handle the exception appropriately
-                    result = BigInteger.ZERO
+                    try {
+                        result = web3.ethEstimateGas(
+                            Transaction.createFunctionCallTransaction(
+                                from,
+                                BigInteger.ONE,
+                                gasPrice,
+                                BigInteger.ZERO, // temporary gasLimit
+                                token_id,
+                                encodedFunction // data
+                            )
+                        ).send().amountUsed
+                    } catch (ex: Exception) {
+                        // Handle the exception appropriately
+                        result = BigInteger.ZERO
+                    }
                 }
-            }
-        "transferERC1155" ->
-            if (tokenAddress != null && toAddress != null && fromAddress != null && tokenId != null && tokenAmount != null) {
-                val function = Function(
-                    "safeTransferFrom",
-                    listOf(
-                        Address(fromAddress), Address(toAddress), Uint256(BigInteger(tokenId)),
-                        Uint256(BigInteger(tokenAmount)), DynamicBytes(byteArrayOf(0))
-                    ),
-                    emptyList()
-                )
-                val encodedFunction = FunctionEncoder.encode(function)
+            "transferERC1155" ->
+                if (token_id != null && to != null && from != null && nft_token_id != null && amount != null) {
+                    val function = Function(
+                        "safeTransferFrom",
+                        listOf(
+                            Address(from), Address(to), Uint256(BigInteger(nft_token_id)),
+                            Uint256(BigInteger(amount)), DynamicBytes(byteArrayOf(0))
+                        ),
+                        emptyList()
+                    )
+                    val encodedFunction = FunctionEncoder.encode(function)
 
-                try {
-                    result = web3.ethEstimateGas(
-                        Transaction.createFunctionCallTransaction(
-                            fromAddress,
-                            BigInteger.ONE,
-                            gasPrice,
-                            BigInteger.ZERO, // temporary gasLimit
-                            tokenAddress,
-                            encodedFunction // data
-                        )
-                    ).send().amountUsed
-                } catch (ex: Exception) {
-                    // Handle the exception appropriately
-                    result = BigInteger.ZERO
+                    try {
+                        result = web3.ethEstimateGas(
+                            Transaction.createFunctionCallTransaction(
+                                from,
+                                BigInteger.ONE,
+                                gasPrice,
+                                BigInteger.ZERO, // temporary gasLimit
+                                token_id,
+                                encodedFunction // data
+                            )
+                        ).send().amountUsed
+                    } catch (ex: Exception) {
+                        // Handle the exception appropriately
+                        result = BigInteger.ZERO
+                    }
                 }
-            }
-        "batchTransferERC721" ->
-            if (tokenAddress != null && toAddress != null && fromAddress != null && batchTokenId != null) {
-                val batchTokenId = batchTokenId.map { Uint256(BigInteger(it)) }
-                val function = Function(
-                    "safeBatchTransferFrom",
-                    listOf(
-                        Address(fromAddress), Address(toAddress), DynamicArray(batchTokenId)
-                    ),
-                    emptyList()
-                )
-                val encodedFunction = FunctionEncoder.encode(function)
+            "batchTransferERC721" ->
+                if (token_id != null && to != null && from != null && batchTokenId != null) {
+                    val batchTokenId = batchTokenId.map { Uint256(BigInteger(it)) }
+                    val function = Function(
+                        "safeBatchTransferFrom",
+                        listOf(
+                            Address(from), Address(to), DynamicArray(batchTokenId)
+                        ),
+                        emptyList()
+                    )
+                    val encodedFunction = FunctionEncoder.encode(function)
 
-                try {
-                    result = web3.ethEstimateGas(
-                        Transaction.createFunctionCallTransaction(
-                            fromAddress,
-                            BigInteger.ONE,
-                            gasPrice,
-                            BigInteger.ZERO, // temporary gasLimit
-                            tokenAddress,
-                            encodedFunction // data
-                        )
-                    ).send().amountUsed
-                } catch (ex: Exception) {
-                    // Handle the exception appropriately
-                    result = BigInteger.ZERO
+                    try {
+                        result = web3.ethEstimateGas(
+                            Transaction.createFunctionCallTransaction(
+                                from,
+                                BigInteger.ONE,
+                                gasPrice,
+                                BigInteger.ZERO, // temporary gasLimit
+                                token_id,
+                                encodedFunction // data
+                            )
+                        ).send().amountUsed
+                    } catch (ex: Exception) {
+                        // Handle the exception appropriately
+                        result = BigInteger.ZERO
+                    }
                 }
-            }
-        "batchTransferERC1155" ->
-            if (tokenAddress != null && toAddress != null && fromAddress != null && batchTokenId != null && batchTokenAmount != null) {
-                val batchTokenId = batchTokenId.map { Uint256(BigInteger(it)) }
-                val batchAmount = batchTokenAmount.map { Uint256(BigInteger(it)) }
-                val function = Function(
-                    "safeBatchTransferFrom",
-                    listOf(
-                        Address(fromAddress), Address(toAddress), DynamicArray(batchTokenId), DynamicArray(batchAmount), DynamicBytes(byteArrayOf(0))
-                    ),
-                    emptyList()
-                )
-                val encodedFunction = FunctionEncoder.encode(function)
+            "batchTransferERC1155" ->
+                if (token_id != null && to != null && from != null && batchTokenId != null && batchTokenAmount != null) {
+                    val batchTokenId = batchTokenId.map { Uint256(BigInteger(it)) }
+                    val batchAmount = batchTokenAmount.map { Uint256(BigInteger(it)) }
+                    val function = Function(
+                        "safeBatchTransferFrom",
+                        listOf(
+                            Address(from), Address(to), DynamicArray(batchTokenId), DynamicArray(batchAmount), DynamicBytes(byteArrayOf(0))
+                        ),
+                        emptyList()
+                    )
+                    val encodedFunction = FunctionEncoder.encode(function)
 
-                try {
-                    result = web3.ethEstimateGas(
-                        Transaction.createFunctionCallTransaction(
-                            fromAddress,
-                            BigInteger.ONE,
-                            gasPrice,
-                            BigInteger.ZERO, // temporary gasLimit
-                            tokenAddress,
-                            encodedFunction // data
-                        )
-                    ).send().amountUsed
-                } catch (ex: Exception) {
-                    // Handle the exception appropriately
-                    result = BigInteger.ZERO
+                    try {
+                        result = web3.ethEstimateGas(
+                            Transaction.createFunctionCallTransaction(
+                                from,
+                                BigInteger.ONE,
+                                gasPrice,
+                                BigInteger.ZERO, // temporary gasLimit
+                                token_id,
+                                encodedFunction // data
+                            )
+                        ).send().amountUsed
+                    } catch (ex: Exception) {
+                        // Handle the exception appropriately
+                        result = BigInteger.ZERO
+                    }
                 }
-            }
-        "deployERC721" ->
-            if (name != null && symbol != null && fromAddress != null && baseURI != null && uriType != null) {
-                val function = Function(
-                    "deployWrapped721",
-                    listOf(Utf8String(name), Utf8String(symbol), Utf8String(baseURI), Uint8(BigInteger(uriType))),
-                    emptyList()
-                )
-                val encodedFunction = FunctionEncoder.encode(function)
+            "deployERC721" ->
+                if (name != null && symbol != null && from != null && baseURI != null && uriType != null) {
+                    val function = Function(
+                        "deployWrapped721",
+                        listOf(Utf8String(name), Utf8String(symbol), Utf8String(baseURI), Uint8(BigInteger(uriType))),
+                        emptyList()
+                    )
+                    val encodedFunction = FunctionEncoder.encode(function)
 
-                try {
-                    result = web3.ethEstimateGas(
-                        Transaction.createFunctionCallTransaction(
-                            fromAddress,
-                            BigInteger.ONE,
-                            gasPrice,
-                            BigInteger.ZERO, // temporary gasLimit
-                            nftTransferContractAddress,
-                            encodedFunction // data
-                        )
-                    ).send().amountUsed
-                } catch (ex: Exception) {
-                    // Handle the exception appropriately
-                    result = BigInteger.ZERO
+                    try {
+                        result = web3.ethEstimateGas(
+                            Transaction.createFunctionCallTransaction(
+                                from,
+                                BigInteger.ONE,
+                                gasPrice,
+                                BigInteger.ZERO, // temporary gasLimit
+                                nftTransferContractAddress,
+                                encodedFunction // data
+                            )
+                        ).send().amountUsed
+                    } catch (ex: Exception) {
+                        // Handle the exception appropriately
+                        result = BigInteger.ZERO
+                    }
                 }
-            }
-        "deployERC1155" ->
-            if (name != null && symbol != null && fromAddress != null && baseURI != null && uriType != null) {
-                val function = Function(
-                    "deployWrapped1155",
-                    listOf(Utf8String(name), Utf8String(symbol), Utf8String(baseURI), Uint8(BigInteger(uriType))),
-                    emptyList()
-                )
-                val encodedFunction = FunctionEncoder.encode(function)
+            "deployERC1155" ->
+                if (name != null && symbol != null && from != null && baseURI != null && uriType != null) {
+                    val function = Function(
+                        "deployWrapped1155",
+                        listOf(Utf8String(name), Utf8String(symbol), Utf8String(baseURI), Uint8(BigInteger(uriType))),
+                        emptyList()
+                    )
+                    val encodedFunction = FunctionEncoder.encode(function)
 
-                try {
-                    result = web3.ethEstimateGas(
-                        Transaction.createFunctionCallTransaction(
-                            fromAddress,
-                            BigInteger.ONE,
-                            gasPrice,
-                            BigInteger.ZERO, // temporary gasLimit
-                            nftTransferContractAddress,
-                            encodedFunction // data
-                        )
-                    ).send().amountUsed
-                } catch (ex: Exception) {
-                    // Handle the exception appropriately
-                    result = BigInteger.ZERO
+                    try {
+                        result = web3.ethEstimateGas(
+                            Transaction.createFunctionCallTransaction(
+                                from,
+                                BigInteger.ONE,
+                                gasPrice,
+                                BigInteger.ZERO, // temporary gasLimit
+                                nftTransferContractAddress,
+                                encodedFunction // data
+                            )
+                        ).send().amountUsed
+                    } catch (ex: Exception) {
+                        // Handle the exception appropriately
+                        result = BigInteger.ZERO
+                    }
                 }
-            }
-        "mintERC721" ->
-            if (fromAddress != null && toAddress != null && tokenURI != null && tokenId != null && tokenAddress != null) {
-                val function = Function(
-                    "mint",
-                    listOf(Address(toAddress), Uint256(BigInteger(tokenId)), Utf8String(tokenURI)),
-                    emptyList()
-                )
-                val encodedFunction = FunctionEncoder.encode(function)
+            "mintERC721" ->
+                if (from != null && to != null && tokenURI != null && nft_token_id != null && token_id != null) {
+                    val function = Function(
+                        "mint",
+                        listOf(Address(to), Uint256(BigInteger(nft_token_id)), Utf8String(tokenURI)),
+                        emptyList()
+                    )
+                    val encodedFunction = FunctionEncoder.encode(function)
 
-                try {
-                    result = web3.ethEstimateGas(
-                        Transaction.createFunctionCallTransaction(
-                            fromAddress,
-                            BigInteger.ONE,
-                            gasPrice,
-                            BigInteger.ZERO, // temporary gasLimit
-                            tokenAddress,
-                            encodedFunction // data
-                        )
-                    ).send().amountUsed
-                } catch (ex: Exception) {
-                    // Handle the exception appropriately
-                    result = BigInteger.ZERO
+                    try {
+                        result = web3.ethEstimateGas(
+                            Transaction.createFunctionCallTransaction(
+                                from,
+                                BigInteger.ONE,
+                                gasPrice,
+                                BigInteger.ZERO, // temporary gasLimit
+                                token_id,
+                                encodedFunction // data
+                            )
+                        ).send().amountUsed
+                    } catch (ex: Exception) {
+                        // Handle the exception appropriately
+                        result = BigInteger.ZERO
+                    }
                 }
-            }
-        "mintERC1155" ->
-            if (fromAddress != null && toAddress != null && tokenURI != null && tokenId != null && tokenAddress != null && tokenAmount!= null) {
-                val function = Function(
-                    "mint",
-                    listOf(Address(toAddress), Uint256(BigInteger(tokenId)), Uint256(BigInteger(tokenAmount)), Utf8String(tokenURI), DynamicBytes(byteArrayOf(0))),
-                    emptyList()
-                )
-                val encodedFunction = FunctionEncoder.encode(function)
+            "mintERC1155" ->
+                if (from != null && to != null && tokenURI != null && nft_token_id != null && token_id != null && amount!= null) {
+                    val function = Function(
+                        "mint",
+                        listOf(Address(to), Uint256(BigInteger(nft_token_id)), Uint256(BigInteger(amount)), Utf8String(tokenURI), DynamicBytes(byteArrayOf(0))),
+                        emptyList()
+                    )
+                    val encodedFunction = FunctionEncoder.encode(function)
 
-                try {
-                    result = web3.ethEstimateGas(
-                        Transaction.createFunctionCallTransaction(
-                            fromAddress,
-                            BigInteger.ONE,
-                            gasPrice,
-                            BigInteger.ZERO, // temporary gasLimit
-                            tokenAddress,
-                            encodedFunction // data
-                        )
-                    ).send().amountUsed
-                } catch (ex: Exception) {
-                    // Handle the exception appropriately
-                    result = BigInteger.ZERO
+                    try {
+                        result = web3.ethEstimateGas(
+                            Transaction.createFunctionCallTransaction(
+                                from,
+                                BigInteger.ONE,
+                                gasPrice,
+                                BigInteger.ZERO, // temporary gasLimit
+                                token_id,
+                                encodedFunction // data
+                            )
+                        ).send().amountUsed
+                    } catch (ex: Exception) {
+                        // Handle the exception appropriately
+                        result = BigInteger.ZERO
+                    }
                 }
-            }
-        "batchMintERC721" ->
-            if (fromAddress != null && toAddress != null && batchTokenURI != null && batchTokenId != null && tokenAddress != null) {
-                val a = batchTokenId.map { Uint256(BigInteger(it)) }
-                val b = batchTokenURI.map { Utf8String(it) }
+            "batchMintERC721" ->
+                if (from != null && to != null && batchTokenURI != null && batchTokenId != null && token_id != null) {
+                    val a = batchTokenId.map { Uint256(BigInteger(it)) }
+                    val b = batchTokenURI.map { Utf8String(it) }
 
-                val function = Function(
-                    "mintBatch",
-                    listOf(Address(toAddress), DynamicArray(a), DynamicArray(b)),
-                    emptyList()
-                )
-                val encodedFunction = FunctionEncoder.encode(function)
+                    val function = Function(
+                        "mintBatch",
+                        listOf(Address(to), DynamicArray(a), DynamicArray(b)),
+                        emptyList()
+                    )
+                    val encodedFunction = FunctionEncoder.encode(function)
 
-                try {
-                    result = web3.ethEstimateGas(
-                        Transaction.createFunctionCallTransaction(
-                            fromAddress,
-                            BigInteger.ONE,
-                            gasPrice,
-                            BigInteger.ZERO, // temporary gasLimit
-                            tokenAddress,
-                            encodedFunction // data
-                        )
-                    ).send().amountUsed
-                } catch (ex: Exception) {
-                    // Handle the exception appropriately
-                    result = BigInteger.ZERO
+                    try {
+                        result = web3.ethEstimateGas(
+                            Transaction.createFunctionCallTransaction(
+                                from,
+                                BigInteger.ONE,
+                                gasPrice,
+                                BigInteger.ZERO, // temporary gasLimit
+                                token_id,
+                                encodedFunction // data
+                            )
+                        ).send().amountUsed
+                    } catch (ex: Exception) {
+                        // Handle the exception appropriately
+                        result = BigInteger.ZERO
+                    }
                 }
-            }
-        "batchMintERC1155" ->
-            if (fromAddress != null && toAddress != null && batchTokenURI != null && batchTokenId != null && tokenAddress != null && batchTokenAmount!= null) {
-                val a = batchTokenId.map { Uint256(BigInteger(it)) }
-                val b = batchTokenAmount.map { Uint256(BigInteger(it)) }
-                val c = batchTokenURI.map { Utf8String(it) }
+            "batchMintERC1155" ->
+                if (from != null && to != null && batchTokenURI != null && batchTokenId != null && token_id != null && batchTokenAmount!= null) {
+                    val a = batchTokenId.map { Uint256(BigInteger(it)) }
+                    val b = batchTokenAmount.map { Uint256(BigInteger(it)) }
+                    val c = batchTokenURI.map { Utf8String(it) }
 
-                val function = Function(
-                    "mintBatch",
-                    listOf(Address(toAddress), DynamicArray(a), DynamicArray(b), DynamicArray(c), DynamicBytes(byteArrayOf(0))),
-                    emptyList()
-                )
-                val encodedFunction = FunctionEncoder.encode(function)
+                    val function = Function(
+                        "mintBatch",
+                        listOf(Address(to), DynamicArray(a), DynamicArray(b), DynamicArray(c), DynamicBytes(byteArrayOf(0))),
+                        emptyList()
+                    )
+                    val encodedFunction = FunctionEncoder.encode(function)
 
-                try {
-                    result = web3.ethEstimateGas(
-                        Transaction.createFunctionCallTransaction(
-                            fromAddress,
-                            BigInteger.ONE,
-                            gasPrice,
-                            BigInteger.ZERO, // temporary gasLimit
-                            tokenAddress,
-                            encodedFunction // data
-                        )
-                    ).send().amountUsed
-                } catch (ex: Exception) {
-                    // Handle the exception appropriately
-                    result = BigInteger.ZERO
+                    try {
+                        result = web3.ethEstimateGas(
+                            Transaction.createFunctionCallTransaction(
+                                from,
+                                BigInteger.ONE,
+                                gasPrice,
+                                BigInteger.ZERO, // temporary gasLimit
+                                token_id,
+                                encodedFunction // data
+                            )
+                        ).send().amountUsed
+                    } catch (ex: Exception) {
+                        // Handle the exception appropriately
+                        result = BigInteger.ZERO
+                    }
                 }
-            }
-        "burnERC721" ->
-            if (fromAddress != null && tokenId != null && tokenAddress != null) {
-                val function = Function(
-                    "burn",
-                    listOf(Uint256(BigInteger(tokenId))),
-                    emptyList()
-                )
-                val encodedFunction = FunctionEncoder.encode(function)
+            "burnERC721" ->
+                if (from != null && nft_token_id != null && token_id != null) {
+                    val function = Function(
+                        "burn",
+                        listOf(Uint256(BigInteger(nft_token_id))),
+                        emptyList()
+                    )
+                    val encodedFunction = FunctionEncoder.encode(function)
 
-                try {
-                    result = web3.ethEstimateGas(
-                        Transaction.createFunctionCallTransaction(
-                            fromAddress,
-                            BigInteger.ONE,
-                            gasPrice,
-                            BigInteger.ZERO, // temporary gasLimit
-                            tokenAddress,
-                            encodedFunction // data
-                        )
-                    ).send().amountUsed
-                } catch (ex: Exception) {
-                    // Handle the exception appropriately
-                    result = BigInteger.ZERO
+                    try {
+                        result = web3.ethEstimateGas(
+                            Transaction.createFunctionCallTransaction(
+                                from,
+                                BigInteger.ONE,
+                                gasPrice,
+                                BigInteger.ZERO, // temporary gasLimit
+                                token_id,
+                                encodedFunction // data
+                            )
+                        ).send().amountUsed
+                    } catch (ex: Exception) {
+                        // Handle the exception appropriately
+                        result = BigInteger.ZERO
+                    }
                 }
-            }
-        "burnERC1155" ->
-            if (fromAddress != null && tokenId != null && tokenAddress != null && tokenAmount != null) {
-                val function = Function(
-                    "burn",
-                    listOf(Address(fromAddress), Uint256(BigInteger(tokenId)), Uint256(BigInteger(tokenAmount))),
-                    emptyList()
-                )
-                val encodedFunction = FunctionEncoder.encode(function)
+            "burnERC1155" ->
+                if (from != null && nft_token_id != null && token_id != null && amount != null) {
+                    val function = Function(
+                        "burn",
+                        listOf(Address(from), Uint256(BigInteger(nft_token_id)), Uint256(BigInteger(amount))),
+                        emptyList()
+                    )
+                    val encodedFunction = FunctionEncoder.encode(function)
 
-                try {
-                    result = web3.ethEstimateGas(
-                        Transaction.createFunctionCallTransaction(
-                            fromAddress,
-                            BigInteger.ONE,
-                            gasPrice,
-                            BigInteger.ZERO, // temporary gasLimit
-                            tokenAddress,
-                            encodedFunction // data
-                        )
-                    ).send().amountUsed
-                } catch (ex: Exception) {
-                    // Handle the exception appropriately
-                    result = BigInteger.ZERO
+                    try {
+                        result = web3.ethEstimateGas(
+                            Transaction.createFunctionCallTransaction(
+                                from,
+                                BigInteger.ONE,
+                                gasPrice,
+                                BigInteger.ZERO, // temporary gasLimit
+                                token_id,
+                                encodedFunction // data
+                            )
+                        ).send().amountUsed
+                    } catch (ex: Exception) {
+                        // Handle the exception appropriately
+                        result = BigInteger.ZERO
+                    }
                 }
-            }
+        }
+        BigDecimal(result).multiply(BigDecimal(1.2)).setScale(0, RoundingMode.DOWN).toBigInteger()
+        if (result ==  BigInteger.ZERO) {
+            jsonData.put("error", "execution revert")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("gas", result)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        }
+    } catch (e: Exception) {
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
-    BigDecimal(result).multiply(BigDecimal(1.2)).setScale(0, RoundingMode.DOWN).toBigInteger()
 }
 
 fun textToHex(text: String): String {

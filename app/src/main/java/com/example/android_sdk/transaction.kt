@@ -117,8 +117,7 @@ suspend fun sendTransactionAsync(
                 .transactionCount
 
             val chainId = web3.ethChainId().sendAsync().get().chainId.toLong()
-
-            val gasLimit = getEstimateGasAsync(
+            val gasLimitEstimate = getEstimateGasAsync(
                 network,
                 "transferCoin",
                 null,
@@ -126,11 +125,20 @@ suspend fun sendTransactionAsync(
                 toAddress,
                 amount
             )
+            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+            val gasLimit = gasLimitEstimate.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("gas")
+            val gasPrice = gasPriceEstimate.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("gas")
+
             val transaction = if (network == "bnb") {
                 RawTransaction.createEtherTransaction(
                     nonce,
-                    getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price ,
-                    gasLimit, // Add 20% to the gas price ,
+                    BigInteger(gasPrice), // Add 20% to the gas price ,
+                    BigInteger(gasLimit), // Add 20% to the gas price ,
                     toAddress,
                     weiAmount as BigInteger? // value
                 )
@@ -139,12 +147,12 @@ suspend fun sendTransactionAsync(
                 RawTransaction.createTransaction(
                     chainId,
                     nonce,
-                    gasLimit, // gasLimit Add 20% to the gas limit,
+                    BigInteger(gasLimit), // gasLimit Add 20% to the gas limit,
                     toAddress, // to
                     weiAmount, // value
                     "0x", // data
                     BigInteger(maxPriorityFeePerGas), // 35 Gwei maxPriorityFeePerGas
-                    getEstimateGasAsync(network, "baseFee") // maxFeePerGas Add 20% to the gas price
+                    BigInteger(gasPrice) // maxFeePerGas Add 20% to the gas price
                 )
             }
 
@@ -282,7 +290,7 @@ suspend fun sendTokenTransactionAsync(
 
             val chainId = web3.ethChainId().sendAsync().get().chainId.toLong()
 
-            val gasLimit = getEstimateGasAsync(
+            val gasLimitEstimate = getEstimateGasAsync(
                 network,
                 "transferERC20",
                 token_address,
@@ -290,11 +298,20 @@ suspend fun sendTokenTransactionAsync(
                 toAddress,
                 amount
             )
+            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+            val gasLimit = gasLimitEstimate.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("gas")
+            val gasPrice = gasPriceEstimate.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("gas")
+
             val transaction = if (network == "bnb") {
                 RawTransaction.createTransaction(
                     nonce,
-                    getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price ,
-                    gasLimit, // Add 20% to the gas limit
+                    BigInteger(gasPrice), // Add 20% to the gas price ,
+                    BigInteger(gasLimit), // Add 20% to the gas limit
                     token_address, // to
                     tokenAmount, // value
                     encodedFunction // data
@@ -303,12 +320,12 @@ suspend fun sendTokenTransactionAsync(
                 RawTransaction.createTransaction(
                     chainId,
                     nonce,
-                    gasLimit, // gasLimit Add 20% to the gas limit,
+                    BigInteger(gasLimit), // gasLimit Add 20% to the gas limit,
                     token_address, // to
                     BigInteger.ZERO, // value
                     encodedFunction, // data
                     BigInteger(maxPriorityFeePerGas), // 35 Gwei maxPriorityFeePerGas
-                    getEstimateGasAsync(network, "baseFee") // maxFeePerGas Add 20% to the gas price
+                    BigInteger(gasPrice) // maxFeePerGas Add 20% to the gas price
                 )
             }
 
@@ -439,7 +456,7 @@ suspend fun deployErc20Async(
 
             val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-            val gasLimit = getEstimateGasAsync(
+            val gasLimitEstimate = getEstimateGasAsync(
                 network,
                 "deployERC20",
                 null,
@@ -454,12 +471,20 @@ suspend fun deployErc20Async(
                 null,
                 name, symbol
             )
+            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+            val gasLimit = gasLimitEstimate.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("gas")
+            val gasPrice = gasPriceEstimate.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("gas")
 
             val tx = if (network == "bnb" || network == "bnbTest") {
                 RawTransaction.createTransaction(
                     nonce,
-                    getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                    gasLimit, // Add 20% to the gas limit
+                    BigInteger(gasPrice), // Add 20% to the gas price
+                    BigInteger(gasLimit), // Add 20% to the gas limit
                     bridgeContractAddress,
                     encodedFunction
                 )
@@ -467,12 +492,12 @@ suspend fun deployErc20Async(
                 RawTransaction.createTransaction(
                     chainId,
                     nonce,
-                    gasLimit, // Add 20% to the gas limit
+                    BigInteger(gasLimit), // Add 20% to the gas limit
                     bridgeContractAddress,
                     BigInteger.ZERO,
                     encodedFunction,
                     BigInteger(maxPriorityFeePerGas), // 35 Gwei maxPriorityFeePerGas
-                    getEstimateGasAsync(network, "baseFee") // Add 20% to the gas price
+                    BigInteger(gasPrice) // Add 20% to the gas price
                 )
             }
             val signedMessage = TransactionEncoder.signMessage(tx, credentials)
@@ -548,11 +573,16 @@ suspend fun bridgeTokenAsync(
 
         val amountInWei = Convert.toWei(amount, Convert.Unit.ETHER).toBigIntegerExact()
 
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
         val tx =
             if (network == "bnb" || network == "bnbTest") {
                 RawTransaction.createTransaction(
                     nonce,
-                    getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
+                    BigInteger(gasPrice), // Add 20% to the gas price
                     BigInteger.valueOf(200000), // Add 20% to the gas limit
                     bridgeContractAddress,
                     encodedFunction
@@ -566,7 +596,7 @@ suspend fun bridgeTokenAsync(
                     amountInWei,
                     encodedFunction,
                     BigInteger(maxPriorityFeePerGas), // 35 Gwei maxPriorityFeePerGas
-                    getEstimateGasAsync(network, "baseFee") // Add 20% to the gas price
+                    BigInteger(gasPrice) // Add 20% to the gas price
                 )
             }
         val signedMessage = TransactionEncoder.signMessage(tx, credentials)
@@ -658,11 +688,16 @@ suspend fun bridgeTokenAsync(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
         val tx =
             if (network == "bnb" || network == "bnbTest") {
                 RawTransaction.createTransaction(
                     nonce,
-                    getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
+                    BigInteger(gasPrice), // Add 20% to the gas price
                     BigInteger.valueOf(200000), // Add 20% to the gas limit
                     bridgeContractAddress,
                     encodedFunction
@@ -676,7 +711,7 @@ suspend fun bridgeTokenAsync(
                     tokenFee, // value
                     encodedFunction,
                     BigInteger(maxPriorityFeePerGas), // 35 Gwei maxPriorityFeePerGas
-                    getEstimateGasAsync(network, "baseFee") // Add 20% to the gas price
+                    BigInteger(gasPrice) // Add 20% to the gas price
                 )
             }
         val signedMessage = TransactionEncoder.signMessage(tx, credentials)
@@ -775,11 +810,16 @@ suspend fun tokenSwapAppoveAsync(
                 .get()
                 .transactionCount
 
+            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+            val gasPrice = gasPriceEstimate.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("gas")
+
             val tx =
                 if (network == "bnb" || network == "bnbTest") {
                     RawTransaction.createTransaction(
                         nonce,
-                        getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
+                        BigInteger(gasPrice), // Add 20% to the gas price
                         BigInteger("200000"), // Add 20% to the gas limit
                         fromTokenId,
                         arroveTokenEncodedFunction
@@ -793,7 +833,7 @@ suspend fun tokenSwapAppoveAsync(
                         BigInteger.ZERO, // value
                         arroveTokenEncodedFunction,
                         BigInteger(maxPriorityFeePerGas), // maxPriorityFeePerGas
-                        getEstimateGasAsync(network, "baseFee") // Add 20% to the gas price
+                        BigInteger(gasPrice) // Add 20% to the gas price
                     )
                 }
             val signedMessage = TransactionEncoder.signMessage(tx, credentials)
@@ -901,11 +941,16 @@ suspend fun coinForTokenswapAsync(
 
             val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
+            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+            val gasPrice = gasPriceEstimate.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("gas")
+
             val tx =
                 if (network == "bnb" || network == "bnbTest") {
                     RawTransaction.createTransaction(
                         nonce,
-                        getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
+                        BigInteger(gasPrice), // Add 20% to the gas price
                         BigInteger("200000"), // Add 20% to the gas limit
                         uniswapV2RouterAddress,
                         encodedFunction
@@ -919,7 +964,7 @@ suspend fun coinForTokenswapAsync(
                         amountInWei, // value
                         encodedFunction,
                         BigInteger(maxPriorityFeePerGas), // maxPriorityFeePerGas
-                        getEstimateGasAsync(network, "baseFee") // Add 20% to the gas price
+                        BigInteger(gasPrice) // Add 20% to the gas price
                     )
                 }
             val signedMessage = TransactionEncoder.signMessage(tx, credentials)
@@ -1029,7 +1074,7 @@ suspend fun tokenForTokenswapAsync(
                 .get()
                 .transactionCount
 
-            val gasLimit = getEstimateGasAsync(
+            val gasLimitEstimate = getEstimateGasAsync(
                 network,
                 "swapToken",
                 fromTokenId,
@@ -1039,6 +1084,14 @@ suspend fun tokenForTokenswapAsync(
                 "",
                 toTokenId
             )
+            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+            val gasLimit = gasLimitEstimate.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("gas")
+            val gasPrice = gasPriceEstimate.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("gas")
 
             val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
@@ -1046,8 +1099,8 @@ suspend fun tokenForTokenswapAsync(
                 if (network == "bnb" || network == "bnbTest") {
                     RawTransaction.createTransaction(
                         nonce,
-                        getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                        gasLimit, // Add 20% to the gas limit
+                        BigInteger(gasPrice), // Add 20% to the gas price
+                        BigInteger(gasLimit), // Add 20% to the gas limit
                         uniswapV2RouterAddress,
                         encodedFunction
                     )
@@ -1055,12 +1108,12 @@ suspend fun tokenForTokenswapAsync(
                     RawTransaction.createTransaction(
                         chainId,
                         nonce,
-                        gasLimit, // Add 20% to the gas limit,
+                        BigInteger(gasLimit), // Add 20% to the gas limit,
                         uniswapV2RouterAddress,
                         BigInteger.ZERO, // value
                         encodedFunction,
                         BigInteger(maxPriorityFeePerGas), // maxPriorityFeePerGas
-                        getEstimateGasAsync(network, "baseFee") // Add 20% to the gas price
+                        BigInteger(gasPrice) // Add 20% to the gas price
                     )
                 }
             val signedMessage = TransactionEncoder.signMessage(tx, credentials)
@@ -1074,7 +1127,6 @@ suspend fun tokenForTokenswapAsync(
                 resultData.put("value", resultArray)
             } else {
                 jsonData.put("error", "insufficient funds")
-                jsonData.put("transaction_hash", transactionHash)
                 resultArray.put(jsonData)
                 resultData.put("result", "FAIL")
                 resultData.put("value", resultArray)
@@ -1180,7 +1232,7 @@ suspend fun tokenForCoinswapAsync(
 
             val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-            val gasLimit = getEstimateGasAsync(
+            val gasLimitEstimate =getEstimateGasAsync(
                 network,
                 "swapToken",
                 fromTokenId,
@@ -1190,13 +1242,21 @@ suspend fun tokenForCoinswapAsync(
                 "",
                 toTokenId
             )
+            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+            val gasLimit = gasLimitEstimate.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("gas")
+            val gasPrice = gasPriceEstimate.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("gas")
 
             val tx =
                 if (network == "bnb" || network == "bnbTest") {
                     RawTransaction.createTransaction(
                         nonce,
-                        getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                        gasLimit, // Add 20% to the gas limit
+                        BigInteger(gasPrice), // Add 20% to the gas price
+                        BigInteger(gasLimit), // Add 20% to the gas limit
                         uniswapV2RouterAddress,
                         encodedFunction
                     )
@@ -1209,7 +1269,7 @@ suspend fun tokenForCoinswapAsync(
                         BigInteger.ZERO, // value
                         encodedFunction,
                         BigInteger(maxPriorityFeePerGas), // maxPriorityFeePerGas
-                        getEstimateGasAsync(network, "baseFee") // Add 20% to the gas price
+                        BigInteger(gasPrice) // Add 20% to the gas price
                     )
                 }
             val signedMessage = TransactionEncoder.signMessage(tx, credentials)

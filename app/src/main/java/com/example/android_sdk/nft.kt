@@ -1050,9 +1050,15 @@ suspend fun sendNFT721TransactionAsync(
     to: String,
     token_id: String,
     collection_id: String
-): JSONObject = withContext(Dispatchers.IO){
+): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
 
     try {
         val getAddressInfo = getAccountInfoAsync(from)
@@ -1083,19 +1089,31 @@ suspend fun sendNFT721TransactionAsync(
             .transactionCount
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val gasLimitEstimate = getEstimateGasAsync(
+            network,
+            "transferERC721",
+            collection_id,
+            from,
+            to,
+            null,
+            token_id
+        )
+
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
         val tx = if (network == "bnb" || network == "bnbTest") {
             RawTransaction.createTransaction(
                 nonce,
-                getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                getEstimateGasAsync(
-                    network,
-                    "transferERC721",
-                    collection_id,
-                    from,
-                    to,
-                    null,
-                    token_id
-                ), // Add 20% to the gas limit
+                BigInteger(gasPrice),
+                BigInteger(gasLimit),// Add 20% to the gas limit
                 collection_id,
                 encodedFunction
             )
@@ -1103,33 +1121,38 @@ suspend fun sendNFT721TransactionAsync(
             RawTransaction.createTransaction(
                 chainId,
                 nonce,
-                getEstimateGasAsync(
-                    network,
-                    "transferERC721",
-                    collection_id,
-                    from,
-                    to,
-                    null,
-                    token_id
-                ),
+                BigInteger(gasLimit),
                 collection_id,
                 BigInteger.ZERO,
                 encodedFunction,
                 //1gwei
                 BigInteger(maxPriorityFeePerGas),
-                getEstimateGasAsync(network, "baseFee")
+                BigInteger(gasPrice)
             )
         }
 
         val signedMessage = TransactionEncoder.signMessage(tx, credentials)
         val signedTx = Numeric.toHexString(signedMessage)
 
-        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        jsonData.put("result","OK")
-        jsonData.put("transactionHash",txHash)
+        val transactionHash =
+            web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -1141,8 +1164,14 @@ suspend fun sendNFT1155TransactionAsync(
     collection_id: String,
     amount: String,
 ): JSONObject = withContext(Dispatchers.IO) {
-    val jsonData = JSONObject()
     networkSettings(network)
+    val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
     try {
         val getAddressInfo = getAccountInfoAsync(from)
         val privateKey = runCatching {
@@ -1182,22 +1211,31 @@ suspend fun sendNFT1155TransactionAsync(
             .get()
             .transactionCount
 
-        val gasPrice = ethGasPrice.gasPrice
-
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val gasLimitEstimate =getEstimateGasAsync(
+            network,
+            "transferERC1155",
+            collection_id,
+            from,
+            to,
+            amount,
+            token_id
+        )
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
         val tx = if (network == "bnb" || network == "bnbTest") {
             RawTransaction.createTransaction(
                 nonce,
-                getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                getEstimateGasAsync(
-                    network,
-                    "transferERC1155",
-                    collection_id,
-                    from,
-                    to,
-                    amount,
-                    token_id
-                ), // Add 20% to the gas limit
+                BigInteger(gasPrice),
+                BigInteger(gasLimit),// Add 20% to the gas limit
                 collection_id,
                 encodedFunction
             )
@@ -1205,25 +1243,37 @@ suspend fun sendNFT1155TransactionAsync(
             RawTransaction.createTransaction(
                 chainId,
                 nonce,
-                getEstimateGasAsync(network, "transferERC1155",collection_id, from, to, amount, token_id),
+                BigInteger(gasLimit),
                 collection_id,
                 BigInteger.ZERO,
                 encodedFunction,
                 //1gwei
                 BigInteger(maxPriorityFeePerGas),
-                getEstimateGasAsync(network, "baseFee")
+                BigInteger(gasPrice)
             )
         }
 
         val signedMessage = TransactionEncoder.signMessage(tx, credentials)
         val signedTx = Numeric.toHexString(signedMessage)
 
-        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        jsonData.put("result","OK")
-        jsonData.put("transactionHash",txHash)
+        val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -1234,8 +1284,14 @@ suspend fun sendNFT721BatchTransactionAsync(
     token_id: Array<String>,
     collection_id: String
 ): JSONObject = withContext(Dispatchers.IO) {
-    val jsonData = JSONObject()
     networkSettings(network)
+    val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
     try {
         val getAddressInfo = getAccountInfoAsync(from)
         val privateKey = runCatching {
@@ -1269,26 +1325,35 @@ suspend fun sendNFT721BatchTransactionAsync(
             .get()
             .transactionCount
 
-        val gasPrice = ethGasPrice.gasPrice
-
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val gasLimitEstimate = getEstimateGasAsync(
+            network,
+            "batchTransferERC721",
+            collection_id,
+            from,
+            to,
+            null,
+            null,
+            null,
+            null,
+            null,
+            token_id
+        )
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
         val tx = if (network == "bnb" || network == "bnbTest") {
             RawTransaction.createTransaction(
                 nonce,
-                getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                getEstimateGasAsync(
-                    network,
-                    "batchTransferERC721",
-                    collection_id,
-                    from,
-                    to,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    token_id
-                ), // Add 20% to the gas limit
+                BigInteger(gasPrice),
+                BigInteger(gasLimit),// Add 20% to the gas limit
                 collection_id,
                 encodedFunction
             )
@@ -1296,37 +1361,37 @@ suspend fun sendNFT721BatchTransactionAsync(
             RawTransaction.createTransaction(
                 chainId,
                 nonce,
-                getEstimateGasAsync(
-                    network,
-                    "batchTransferERC721",
-                    collection_id,
-                    from,
-                    to,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    token_id
-                ), // Add 20% to the gas limit
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 collection_id,
                 BigInteger.ZERO,
                 encodedFunction,
                 //1gwei
                 BigInteger(maxPriorityFeePerGas),
-                getEstimateGasAsync(network, "baseFee")
+                BigInteger(gasPrice)
             )
         }
 
         val signedMessage = TransactionEncoder.signMessage(tx, credentials)
         val signedTx = Numeric.toHexString(signedMessage)
 
-        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        jsonData.put("result","OK")
-        jsonData.put("transactionHash",txHash)
+        val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -1341,6 +1406,12 @@ suspend fun sendNFT1155BatchTransactionAsync(
 
     networkSettings(network)
     val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
 
     try {
         val getAddressInfo = getAccountInfoAsync(from)
@@ -1384,27 +1455,35 @@ suspend fun sendNFT1155BatchTransactionAsync(
             .get()
             .transactionCount
 
-        val gasPrice = ethGasPrice.gasPrice
-
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val gasLimitEstimate = getEstimateGasAsync(
+            network,
+            "batchTransferERC1155",
+            collection_id,
+            from,
+            to,
+            null,
+            null,
+            null,
+            null,
+            token_id,
+            amount
+        )
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
         val tx = if (network == "bnb" || network == "bnbTest") {
             RawTransaction.createTransaction(
                 nonce,
-                getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                getEstimateGasAsync(
-                    network,
-                    "batchTransferERC1155",
-                    collection_id,
-                    from,
-                    to,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    token_id,
-                    amount
-                ), // Add 20% to the gas limit
+                BigInteger(gasPrice), // Add 20% to the gas price
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 collection_id,
                 encodedFunction
             )
@@ -1412,38 +1491,37 @@ suspend fun sendNFT1155BatchTransactionAsync(
             RawTransaction.createTransaction(
                 chainId,
                 nonce,
-                getEstimateGasAsync(
-                    network,
-                    "batchTransferERC1155",
-                    collection_id,
-                    from,
-                    to,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    token_id,
-                    amount
-                ), // Add 20% to the gas limit
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 collection_id,
                 BigInteger.ZERO,
                 encodedFunction,
                 //1gwei
                 BigInteger(maxPriorityFeePerGas),
-                getEstimateGasAsync(network, "baseFee")
+                BigInteger(gasPrice)
             )
         }
 
         val signedMessage = TransactionEncoder.signMessage(tx, credentials)
         val signedTx = Numeric.toHexString(signedMessage)
 
-        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        jsonData.put("result","OK")
-        jsonData.put("transactionHash",txHash)
+        val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -1457,6 +1535,12 @@ suspend fun deployErc721Async(
 ): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
 
     try {
         val getAddressInfo = getAccountInfoAsync(from)
@@ -1491,25 +1575,35 @@ suspend fun deployErc721Async(
             .transactionCount
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val gasLimitEstimate = getEstimateGasAsync(
+            network,
+            "deployERC721",
+            null,
+            from,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            name, symbol, token_base_uri, uri_type
+        )
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
         val tx = if (network == "bnb" || network == "bnbTest") {
             RawTransaction.createTransaction(
                 nonce,
-                getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                getEstimateGasAsync(
-                    network,
-                    "deployERC721",
-                    null,
-                    from,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    name, symbol, null, token_base_uri, uri_type
-                ), // Add 20% to the gas limit
+                BigInteger(gasPrice), // Add 20% to the gas price
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 nftTransferContractAddress,
                 encodedFunction
             )
@@ -1517,39 +1611,37 @@ suspend fun deployErc721Async(
             RawTransaction.createTransaction(
                 chainId,
                 nonce,
-                getEstimateGasAsync(
-                    network,
-                    "deployERC721",
-                    null,
-                    from,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    name, symbol, null, token_base_uri, uri_type
-                ),
+                BigInteger(gasLimit),
                 nftTransferContractAddress,
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
                 BigInteger(maxPriorityFeePerGas),
-                getEstimateGasAsync(network, "baseFee")
+                BigInteger(gasPrice)
             )
         }
 
         val signedMessage = TransactionEncoder.signMessage(tx, credentials)
         val signedTx = Numeric.toHexString(signedMessage)
 
-        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        jsonData.put("result", "OK")
-        jsonData.put("transactionHash", txHash)
+        val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -1563,6 +1655,12 @@ suspend fun deployErc1155Async(
 ): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
 
     try {
         val getAddressInfo = getAccountInfoAsync(from)
@@ -1597,25 +1695,35 @@ suspend fun deployErc1155Async(
             .transactionCount
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val gasLimitEstimate =getEstimateGasAsync(
+            network,
+            "deployERC1155",
+            null,
+            from,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            name, symbol, token_base_uri, uri_type
+        )
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
         val tx = if (network == "bnb" || network == "bnbTest") {
             RawTransaction.createTransaction(
                 nonce,
-                getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                getEstimateGasAsync(
-                    network,
-                    "deployERC1155",
-                    null,
-                    from,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    name, symbol, null, token_base_uri, uri_type
-                ), // Add 20% to the gas limit
+                BigInteger(gasPrice), // Add 20% to the gas price
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 nftTransferContractAddress,
                 encodedFunction
             )
@@ -1623,40 +1731,37 @@ suspend fun deployErc1155Async(
             RawTransaction.createTransaction(
                 chainId,
                 nonce,
-                getEstimateGasAsync(
-                    network,
-                    "deployERC1155",
-                    null,
-                    from,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    name, symbol, null, token_base_uri, uri_type
-                ),
+                BigInteger(gasLimit),
                 nftTransferContractAddress,
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
                 BigInteger(maxPriorityFeePerGas),
-                getEstimateGasAsync(network, "baseFee")
+                BigInteger(gasPrice)
             )
         }
 
         val signedMessage = TransactionEncoder.signMessage(tx, credentials)
         val signedTx = Numeric.toHexString(signedMessage)
 
-        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        jsonData.put("result", "OK")
-        jsonData.put("transactionHash", txHash)
-        jsonData.put("maxPriorityFeePerGas", maxPriorityFeePerGas)
+        val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -1671,6 +1776,12 @@ suspend fun mintErc721Async(
 ): JSONObject = withContext(Dispatchers.IO){
     networkSettings(network)
     val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
 
     try {
         val getAddressInfo = getAccountInfoAsync(from)
@@ -1700,21 +1811,32 @@ suspend fun mintErc721Async(
             .transactionCount
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val gasLimitEstimate = getEstimateGasAsync(
+            network,
+            "mintERC721",
+            collection_id,
+            from,
+            to,
+            null,
+            token_id,
+            null, null, null, null, null, null, null, null,
+            token_uri
+        )
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
         val tx = if (network == "bnb" || network == "bnbTest") {
             RawTransaction.createTransaction(
                 nonce,
-                getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                getEstimateGasAsync(
-                    network,
-                    "mintERC721",
-                    collection_id,
-                    from,
-                    to,
-                    null,
-                    token_id,
-                    null, null, null, null, null, null, null, null, null, null,
-                    token_uri
-                ), // Add 20% to the gas limit
+                BigInteger(gasPrice), // Add 20% to the gas price
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 collection_id,
                 encodedFunction
             )
@@ -1722,35 +1844,37 @@ suspend fun mintErc721Async(
             RawTransaction.createTransaction(
                 chainId,
                 nonce,
-                getEstimateGasAsync(
-                    network,
-                    "mintERC721",
-                    collection_id,
-                    from,
-                    to,
-                    null,
-                    token_id,
-                    null, null, null, null, null, null, null, null, null, null,
-                    token_uri
-                ), // Add 20% to the gas limit
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 collection_id,
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
                 BigInteger(maxPriorityFeePerGas),
-                getEstimateGasAsync(network, "baseFee")
+                BigInteger(gasPrice)
             )
         }
 
         val signedMessage = TransactionEncoder.signMessage(tx, credentials)
         val signedTx = Numeric.toHexString(signedMessage)
 
-        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        jsonData.put("result","OK")
-        jsonData.put("transactionHash",txHash)
+        val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -1765,6 +1889,12 @@ suspend fun mintErc1155Async(
 ): JSONObject = withContext(Dispatchers.IO){
     networkSettings(network)
     val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
 
     try {
         val getAddressInfo = getAccountInfoAsync(from)
@@ -1794,21 +1924,32 @@ suspend fun mintErc1155Async(
             .transactionCount
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val gasLimitEstimate = getEstimateGasAsync(
+            network,
+            "mintERC1155",
+            collection_id,
+            from,
+            to,
+            amount,
+            token_id,
+            null, null, null, null, null, null, null, null,
+            token_uri
+        )
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
         val tx = if (network == "bnb" || network == "bnbTest") {
             RawTransaction.createTransaction(
                 nonce,
-                getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                getEstimateGasAsync(
-                    network,
-                    "mintERC1155",
-                    collection_id,
-                    from,
-                    to,
-                    amount,
-                    token_id,
-                    null, null, null, null, null, null, null, null, null, null,
-                    token_uri
-                ), // Add 20% to the gas limit
+                BigInteger(gasPrice), // Add 20% to the gas price
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 collection_id,
                 encodedFunction
             )
@@ -1816,35 +1957,37 @@ suspend fun mintErc1155Async(
             RawTransaction.createTransaction(
                 chainId,
                 nonce,
-                getEstimateGasAsync(
-                    network,
-                    "mintERC1155",
-                    collection_id,
-                    from,
-                    to,
-                    amount,
-                    token_id,
-                    null, null, null, null, null, null, null, null, null, null,
-                    token_uri
-                ), // Add 20% to the gas limit
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 collection_id,
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
                 BigInteger(maxPriorityFeePerGas),
-                getEstimateGasAsync(network, "baseFee")
+                BigInteger(gasPrice)
             )
         }
 
         val signedMessage = TransactionEncoder.signMessage(tx, credentials)
         val signedTx = Numeric.toHexString(signedMessage)
 
-        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        jsonData.put("result","OK")
-        jsonData.put("transactionHash",txHash)
+        val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -1858,6 +2001,12 @@ suspend fun batchMintErc721Async(
 ): JSONObject = withContext(Dispatchers.IO){
     networkSettings(network)
     val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
 
     try {
         val getAddressInfo = getAccountInfoAsync(from)
@@ -1890,21 +2039,32 @@ suspend fun batchMintErc721Async(
             .transactionCount
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val gasLimitEstimate =  getEstimateGasAsync(
+            network,
+            "batchMintERC721",
+            collection_id,
+            from,
+            to,
+            null,
+            null,
+            null, null, null, token_id, null, null, null, null,
+            null, token_uri
+        )
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
         val tx = if (network == "bnb" || network == "bnbTest") {
             RawTransaction.createTransaction(
                 nonce,
-                getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                getEstimateGasAsync(
-                    network,
-                    "batchMintERC721",
-                    collection_id,
-                    from,
-                    to,
-                    null,
-                    null,
-                    null, null, null, token_id, null, null, null, null, null, null,
-                    null, token_uri
-                ), // Add 20% to the gas limit
+                BigInteger(gasPrice), // Add 20% to the gas price
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 collection_id,
                 encodedFunction
             )
@@ -1912,36 +2072,37 @@ suspend fun batchMintErc721Async(
             RawTransaction.createTransaction(
                 chainId,
                 nonce,
-                getEstimateGasAsync(
-                    network,
-                    "batchMintERC721",
-                    collection_id,
-                    from,
-                    to,
-                    null,
-                    null,
-                    null, null, null, token_id, null, null, null, null, null, null,
-                    null, token_uri
-                ), // Add 20% to the gas limit
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 collection_id,
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
                 BigInteger(maxPriorityFeePerGas),
-                getEstimateGasAsync(network, "baseFee")
+                BigInteger(gasPrice)
             )
         }
 
         val signedMessage = TransactionEncoder.signMessage(tx, credentials)
         val signedTx = Numeric.toHexString(signedMessage)
 
-        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        jsonData.put("result","OK")
-        jsonData.put("transactionHash",txHash)
-        jsonData.put("maxPriorityFeePerGas",maxPriorityFeePerGas)
+        val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 suspend fun batchMintErc1155Async(
@@ -1955,6 +2116,12 @@ suspend fun batchMintErc1155Async(
 ): JSONObject = withContext(Dispatchers.IO){
     networkSettings(network)
     val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
 
     try {
         val getAddressInfo = getAccountInfoAsync(from)
@@ -1988,21 +2155,32 @@ suspend fun batchMintErc1155Async(
             .transactionCount
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val gasLimitEstimate = getEstimateGasAsync(
+            network,
+            "batchMintERC1155",
+            collection_id,
+            from,
+            to,
+            null,
+            null,
+            null, null, token_id, amount, null, null, null, null, null,
+            token_uri
+        )
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
         val tx = if (network == "bnb" || network == "bnbTest") {
             RawTransaction.createTransaction(
                 nonce,
-                getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                getEstimateGasAsync(
-                    network,
-                    "batchMintERC1155",
-                    collection_id,
-                    from,
-                    to,
-                    null,
-                    null,
-                    null, null, null, token_id, amount, null, null, null, null, null,
-                    null, token_uri
-                ), // Add 20% to the gas limit
+                BigInteger(gasPrice), // Add 20% to the gas price
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 collection_id,
                 encodedFunction
             )
@@ -2010,35 +2188,37 @@ suspend fun batchMintErc1155Async(
             RawTransaction.createTransaction(
                 chainId,
                 nonce,
-                getEstimateGasAsync(
-                    network,
-                    "batchMintERC1155",
-                    collection_id,
-                    from,
-                    to,
-                    null,
-                    null,
-                    null, null, null, token_id, amount, null, null, null, null, null,
-                    null, token_uri
-                ), // Add 20% to the gas limit
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 collection_id,
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
                 BigInteger(maxPriorityFeePerGas),
-                getEstimateGasAsync(network, "baseFee")
+                BigInteger(gasPrice)
             )
         }
 
         val signedMessage = TransactionEncoder.signMessage(tx, credentials)
         val signedTx = Numeric.toHexString(signedMessage)
 
-        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        jsonData.put("result","OK")
-        jsonData.put("transactionHash",txHash)
+        val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -2050,6 +2230,12 @@ suspend fun burnErc721Async(
 ): JSONObject = withContext(Dispatchers.IO){
     networkSettings(network)
     val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
 
     try {
         val getAddressInfo = getAccountInfoAsync(owner)
@@ -2079,21 +2265,32 @@ suspend fun burnErc721Async(
             .transactionCount
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val gasLimitEstimate = getEstimateGasAsync(
+            network,
+            "burnERC721",
+            collection_id,
+            owner,
+            null,
+            null,
+            token_id,
+            null, null, null, null, null, null, null, null, null, null,
+
+            )
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
         val tx = if (network == "bnb" || network == "bnbTest") {
             RawTransaction.createTransaction(
                 nonce,
-                getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                getEstimateGasAsync(
-                    network,
-                    "burnERC721",
-                    collection_id,
-                    owner,
-                    null,
-                    null,
-                    token_id,
-                    null, null, null, null, null, null, null, null, null, null,
-                    null, null
-                ), // Add 20% to the gas limit
+                BigInteger(gasPrice), // Add 20% to the gas price
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 collection_id,
                 encodedFunction
             )
@@ -2101,35 +2298,37 @@ suspend fun burnErc721Async(
             RawTransaction.createTransaction(
                 chainId,
                 nonce,
-                getEstimateGasAsync(
-                    network,
-                    "burnERC721",
-                    collection_id,
-                    owner,
-                    null,
-                    null,
-                    token_id,
-                    null, null, null, null, null, null, null, null, null, null,
-                    null, null
-                ), // Add 20% to the gas limit
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 collection_id,
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
                 BigInteger(maxPriorityFeePerGas),
-                getEstimateGasAsync(network, "baseFee")
+                BigInteger(gasPrice)
             )
         }
 
         val signedMessage = TransactionEncoder.signMessage(tx, credentials)
         val signedTx = Numeric.toHexString(signedMessage)
 
-        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        jsonData.put("result","OK")
-        jsonData.put("transactionHash",txHash)
+        val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -2142,6 +2341,12 @@ suspend fun burnErc1155Async(
 ): JSONObject = withContext(Dispatchers.IO){
     networkSettings(network)
     val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
 
     try {
         val getAddressInfo = getAccountInfoAsync(owner)
@@ -2171,21 +2376,31 @@ suspend fun burnErc1155Async(
             .transactionCount
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val gasLimitEstimate = getEstimateGasAsync(
+            network,
+            "burnERC1155",
+            collection_id,
+            owner,
+            null,
+            amount,
+            token_id,
+            null, null, null, null, null, null, null, null, null, null
+        )
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
         val tx = if (network == "bnb" || network == "bnbTest") {
             RawTransaction.createTransaction(
                 nonce,
-                getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
-                getEstimateGasAsync(
-                    network,
-                    "burnERC1155",
-                    collection_id,
-                    owner,
-                    null,
-                    amount,
-                    token_id,
-                    null, null, null, null, null, null, null, null, null, null,
-                    null, null
-                ), // Add 20% to the gas limit
+                BigInteger(gasPrice), // Add 20% to the gas price
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 collection_id,
                 encodedFunction
             )
@@ -2193,35 +2408,37 @@ suspend fun burnErc1155Async(
             RawTransaction.createTransaction(
                 chainId,
                 nonce,
-                getEstimateGasAsync(
-                    network,
-                    "burnERC1155",
-                    collection_id,
-                    owner,
-                    null,
-                    amount,
-                    token_id,
-                    null, null, null, null, null, null, null, null, null, null,
-                    null, null
-                ), // Add 20% to the gas limit
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 collection_id,
                 BigInteger.ZERO,
                 encodedFunction,
                 //0.1gwei
                 BigInteger(maxPriorityFeePerGas),
-                getEstimateGasAsync(network, "baseFee")
+                BigInteger(gasPrice)
             )
         }
 
         val signedMessage = TransactionEncoder.signMessage(tx, credentials)
         val signedTx = Numeric.toHexString(signedMessage)
 
-        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        jsonData.put("result","OK")
-        jsonData.put("transactionHash",txHash)
+        val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -2232,8 +2449,15 @@ suspend fun bridgeErc721Async(
     token_id: String,
     token_address: String
 ): JSONObject = withContext(Dispatchers.IO) {
-    val jsonData = JSONObject()
     networkSettings(network)
+    val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
+
     val getAddressInfo = getAccountInfoAsync(fromAddress)
     val privateKey = runCatching {
         getAddressInfo.getJSONArray("value")
@@ -2297,11 +2521,16 @@ suspend fun bridgeErc721Async(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
         val tx =
             if (network == "bnb" || network == "bnbTest") {
                 RawTransaction.createTransaction(
                     nonce,
-                    getEstimateGasAsync(network, "baseFee"), // Add 20% to the gas price
+                    BigInteger(gasPrice), // Add 20% to the gas price
                     BigInteger.valueOf(200000), // Add 20% to the gas limit
                     nftTransferContractAddress,
                     encodedFunction
@@ -2315,23 +2544,30 @@ suspend fun bridgeErc721Async(
                     nftFee, // value
                     encodedFunction,
                     BigInteger(maxPriorityFeePerGas), // 35 Gwei maxPriorityFeePerGas
-                    getEstimateGasAsync(network, "baseFee") // Add 20% to the gas price
+                    BigInteger(gasPrice) // Add 20% to the gas price
                 )
             }
         val signedMessage = TransactionEncoder.signMessage(tx, credentials)
         val signedTx = Numeric.toHexString(signedMessage)
 
-        val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (txHash != null) {
-            jsonData.put("result", "OK")
-            jsonData.put("transactionHash", txHash)
+        val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
         } else {
-            jsonData.put("result", "FAIL")
             jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 

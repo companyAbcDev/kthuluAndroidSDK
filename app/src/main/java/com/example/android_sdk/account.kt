@@ -4,7 +4,19 @@ import kotlinx.coroutines.*
 import org.apache.commons.lang3.RandomUtils
 import org.json.JSONArray
 import org.json.JSONObject
+import org.web3j.abi.FunctionEncoder
+import org.web3j.abi.FunctionReturnDecoder
+import org.web3j.abi.TypeReference
+import org.web3j.abi.datatypes.Address
+import org.web3j.abi.datatypes.Function
+import org.web3j.abi.datatypes.Utf8String
+import org.web3j.abi.datatypes.generated.Uint8
 import org.web3j.crypto.*
+import org.web3j.protocol.Web3j
+import org.web3j.protocol.core.DefaultBlockParameterName
+import org.web3j.protocol.core.methods.request.Transaction
+import org.web3j.protocol.http.HttpService
+import org.web3j.utils.Convert
 import org.web3j.utils.Numeric
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -217,82 +229,116 @@ suspend fun getBalanceAsync(
     owner_account: String,
     token_address: String? = "0x0000000000000000000000000000000000000000"
 ): JSONObject = withContext(Dispatchers.IO) {
+    networkSettings(network)
     val jsonData = JSONObject()
-    val dbConnector = DBConnector()
-    dbConnector.connect()
-    val connection = dbConnector.getConnection()
-
     // return array & object
     val resultArray = JSONArray()
     val resultData = JSONObject().apply {
         put("result", "FAIL")
         put("value", resultArray)
     }
+    try {
+        val web3j = Web3j.build(HttpService(rpcUrl))
 
-    val query =
-        "SELECT balance, (SELECT decimals FROM token_table WHERE t.network ='$network' AND t.token_address ='$token_address' LIMIT 1) FROM token_owner_table t WHERE network = '$network' AND owner_account = '$owner_account' AND token_address = '$token_address'"
-
-    connection?.use {
-        val dbQueryExecutor = DBQueryExector(it)
-        val resultSet = dbQueryExecutor.executeQuery(query)
-        resultSet?.use {
-            while (it.next()) {
-                val jsonData = JSONObject().apply {
-                    var balance = it.getString("balance")
-                    var decimals = it.getString("decimals")
-                    var newBalance =
-                        BigDecimal(balance.toDouble()).divide(BigDecimal.TEN.pow(decimals.toInt()))
-                    put("balance", newBalance.toString())
-
-                }
-                resultArray.put(jsonData)
-            }
+        if(token_address == "0x0000000000000000000000000000000000000000") {
+            val ethGetBalance = web3j.ethGetBalance(owner_account, DefaultBlockParameterName.LATEST).send()
+            val balance = ethGetBalance.balance
+            val balanceEther = Convert.fromWei(balance.toString(), Convert.Unit.ETHER)
+            jsonData.put("balance", balanceEther)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            val balanceFunction = Function("balanceOf", listOf(Address(owner_account)), listOf(object : TypeReference<Uint8>() {}))
+            val encodedbalanceFunction = FunctionEncoder.encode(balanceFunction)
+            val balanceResponse = web3j.ethCall(
+                Transaction.createEthCallTransaction(null, token_address, encodedbalanceFunction),
+                DefaultBlockParameterName.LATEST
+            ).send()
+            val tokenBalance = BigInteger(balanceResponse.result.replace("0x", ""), 16)
+            val decimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
+            val encodedDecimalsFunction = FunctionEncoder.encode(decimalsFunction)
+            val decimalsResponse = web3j.ethCall(
+                Transaction.createEthCallTransaction(null, token_address, encodedDecimalsFunction),
+                DefaultBlockParameterName.LATEST
+            ).send()
+            val decimalsOutput =
+                FunctionReturnDecoder.decode(decimalsResponse.result, decimalsFunction.outputParameters)
+            val decimals = (decimalsOutput[0].value as BigInteger).toInt()
+            var newBalance =
+                BigDecimal(tokenBalance.toDouble()).divide(BigDecimal.TEN.pow(decimals.toInt()))
+            jsonData.put("balance", newBalance)
+            resultArray.put(jsonData)
             resultData.put("result", "OK")
             resultData.put("value", resultArray)
         }
+    } catch (e: Exception) {
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
-    dbConnector.disconnect()
-    resultData
 }
 
 suspend fun getTokenInfoAsync(
     network: String,
     token_address: String,
 ) : JSONObject = withContext(Dispatchers.IO) {
-    val dbConnector = DBConnector()
-    dbConnector.connect()
-    val connection = dbConnector.getConnection()
-
+    networkSettings(network)
+    val jsonData = JSONObject()
+    // return array & object
     val resultArray = JSONArray()
     val resultData = JSONObject().apply {
         put("result", "FAIL")
         put("value", resultArray)
     }
+    try {
+        val web3j = Web3j.build(HttpService(rpcUrl))
 
-    val query =
-        "SELECT network, token_address, token_name, token_symbol, decimals, total_supply FROM token_table WHERE network = '$network' AND token_address = '$token_address'"
+        val nameFunction = Function("name", emptyList(), listOf(object : TypeReference<Utf8String>() {}))
+        val encodedNameFunction = FunctionEncoder.encode(nameFunction)
+        val nameResponse = web3j.ethCall(
+            Transaction.createEthCallTransaction(null, token_address, encodedNameFunction),
+            DefaultBlockParameterName.LATEST
+        ).send()
 
-    connection?.use {
-        val dbQueryExecutor = DBQueryExector(it)
-        val resultSet = dbQueryExecutor.executeQuery(query)
-        resultSet?.use {
-            while (it.next()) {
-                val jsonData = JSONObject().apply {
-                    put("network", it.getString("network"))
-                    put("token_id", it.getString("token_address"))
-                    put("name", it.getString("token_name"))
-                    put("symbol", it.getString("token_symbol"))
-                    put("decimals", it.getString("decimals"))
-                    put("total_supply", it.getString("total_supply"))
-                }
-                resultArray.put(jsonData)
-            }
-            resultData.put("result", "OK")
-            resultData.put("value", resultArray)
-        }
+        val nameOutput = FunctionReturnDecoder.decode(nameResponse.result, nameFunction.outputParameters)
+
+        val tokenName: String = nameOutput[0].value as String
+
+
+        val symbolFunction = Function("symbol", emptyList(), listOf(object : TypeReference<Utf8String>() {}))
+        val encodedSymbolFunction = FunctionEncoder.encode(symbolFunction)
+        val symbolResponse = web3j.ethCall(
+            Transaction.createEthCallTransaction(null, token_address, encodedSymbolFunction),
+            DefaultBlockParameterName.LATEST
+        ).send()
+
+        val symbolOutput = FunctionReturnDecoder.decode(symbolResponse.result, symbolFunction.outputParameters)
+
+        val tokenSymbol: String = symbolOutput[0].value as String
+
+        val decimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
+        val encodedDecimalsFunction = FunctionEncoder.encode(decimalsFunction)
+        val decimalsResponse = web3j.ethCall(
+            Transaction.createEthCallTransaction(null, token_address, encodedDecimalsFunction),
+            DefaultBlockParameterName.LATEST
+        ).send()
+        val decimalsOutput =
+            FunctionReturnDecoder.decode(decimalsResponse.result, decimalsFunction.outputParameters)
+        val decimals = (decimalsOutput[0].value as BigInteger).toInt()
+        jsonData.put("name", tokenName)
+        jsonData.put("symbol", tokenSymbol)
+        jsonData.put("decimals", decimals)
+        resultArray.put(jsonData)
+        resultData.put("result", "OK")
+        resultData.put("value", resultArray)
+    } catch (e: Exception) {
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
-    dbConnector.disconnect()
-    resultData
 }
 
 suspend fun getTokenHistoryAsync(
@@ -539,7 +585,6 @@ suspend fun getSignerAddressFromSignature(
     val pubKey = Sign.signedPrefixedMessageToKey(message.toByteArray(Charsets.UTF_8), signData)
     return "0x" + Keys.getAddress(pubKey)
 }
-
 
 
 
