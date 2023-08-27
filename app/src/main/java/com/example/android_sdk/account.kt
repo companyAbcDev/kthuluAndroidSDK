@@ -230,7 +230,7 @@ suspend fun getBalanceAsync(
     }
 
     val query =
-        "SELECT balance, (SELECT decimals FROM token_table WHERE t.network ='$network' AND t.t.token_address ='$token_address' LIMIT 1) FROM token_owner_table t WHERE network = '$network' AND owner_account = '$owner_account' AND token_address = '$token_address'"
+        "SELECT balance, (SELECT decimals FROM token_table WHERE t.network ='$network' AND t.token_address ='$token_address' LIMIT 1) FROM token_owner_table t WHERE network = '$network' AND owner_account = '$owner_account' AND token_address = '$token_address'"
 
     connection?.use {
         val dbQueryExecutor = DBQueryExector(it)
