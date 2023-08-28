@@ -1,4 +1,4 @@
-package com.example.android_sdk
+package io.kthulu.sdk
 
 import android.annotation.SuppressLint
 import kotlinx.coroutines.*
@@ -1136,7 +1136,7 @@ suspend fun sendNFT721TransactionAsync(
 
         val transactionHash =
             web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (transactionHash != "") {
+        if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
             resultArray.put(jsonData)
             resultData.put("result", "OK")
@@ -1213,7 +1213,7 @@ suspend fun sendNFT1155TransactionAsync(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-        val gasLimitEstimate =getEstimateGasAsync(
+        val gasLimitEstimate = getEstimateGasAsync(
             network,
             "transferERC1155",
             collection_id,
@@ -1257,7 +1257,7 @@ suspend fun sendNFT1155TransactionAsync(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (transactionHash != "") {
+        if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
             resultArray.put(jsonData)
             resultData.put("result", "OK")
@@ -1312,7 +1312,7 @@ suspend fun sendNFT721BatchTransactionAsync(
         val batchTokenId = token_id.map { Uint256(BigInteger(it)) }
 
         val function = Function(
-            "safeBatchTransferFrom",
+            "transferFromBatch",
             listOf(
                 Address(from), Address(to), DynamicArray(batchTokenId)
             ),
@@ -1333,7 +1333,6 @@ suspend fun sendNFT721BatchTransactionAsync(
             collection_id,
             from,
             to,
-            null,
             null,
             null,
             null,
@@ -1375,7 +1374,7 @@ suspend fun sendNFT721BatchTransactionAsync(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (transactionHash != "") {
+        if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
             resultArray.put(jsonData)
             resultData.put("result", "OK")
@@ -1505,7 +1504,7 @@ suspend fun sendNFT1155BatchTransactionAsync(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (transactionHash != "") {
+        if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
             resultArray.put(jsonData)
             resultData.put("result", "OK")
@@ -1625,7 +1624,7 @@ suspend fun deployErc721Async(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (transactionHash != "") {
+        if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
             resultArray.put(jsonData)
             resultData.put("result", "OK")
@@ -1696,7 +1695,7 @@ suspend fun deployErc1155Async(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-        val gasLimitEstimate =getEstimateGasAsync(
+        val gasLimitEstimate = getEstimateGasAsync(
                 network,
                 "deployERC1155",
                 null,
@@ -1745,7 +1744,7 @@ suspend fun deployErc1155Async(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (transactionHash != "") {
+        if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
             resultArray.put(jsonData)
             resultData.put("result", "OK")
@@ -1858,7 +1857,7 @@ suspend fun mintErc721Async(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (transactionHash != "") {
+        if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
             resultArray.put(jsonData)
             resultData.put("result", "OK")
@@ -1971,7 +1970,7 @@ suspend fun mintErc1155Async(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (transactionHash != "") {
+        if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
             resultArray.put(jsonData)
             resultData.put("result", "OK")
@@ -2086,7 +2085,7 @@ suspend fun batchMintErc721Async(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (transactionHash != "") {
+        if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
             resultArray.put(jsonData)
             resultData.put("result", "OK")
@@ -2202,7 +2201,7 @@ suspend fun batchMintErc1155Async(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (transactionHash != "") {
+        if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
             resultArray.put(jsonData)
             resultData.put("result", "OK")
@@ -2312,7 +2311,7 @@ suspend fun burnErc721Async(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (transactionHash != "") {
+        if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
             resultArray.put(jsonData)
             resultData.put("result", "OK")
@@ -2422,7 +2421,7 @@ suspend fun burnErc1155Async(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (transactionHash != "") {
+        if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
             resultArray.put(jsonData)
             resultData.put("result", "OK")
@@ -2551,7 +2550,7 @@ suspend fun bridgeErc721Async(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (transactionHash != "") {
+        if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
             resultArray.put(jsonData)
             resultData.put("result", "OK")

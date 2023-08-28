@@ -1,4 +1,4 @@
-package com.example.android_sdk
+package io.kthulu.sdk
 
 import java.sql.*
 

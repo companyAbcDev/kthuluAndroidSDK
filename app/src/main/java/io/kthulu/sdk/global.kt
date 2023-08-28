@@ -1,4 +1,4 @@
-package com.example.android_sdk
+package io.kthulu.sdk
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
@@ -35,10 +35,11 @@ import java.util.Base64
 import javax.crypto.Cipher
 
 suspend fun kthuluSdkVersion(){
+    println("SDK version:0.0.84, Connect OK")
     val resultArray = JSONArray()
     var resultData = JSONObject()
     val jsonData = JSONObject()
-    jsonData.put("version", "SDK version:0.0.85, Connect OK")
+    jsonData.put("version", "SDK version:0.0.84, Connect OK")
     resultArray.put(jsonData)
     resultData.put("result", "OK")
     resultData.put("value", resultArray)

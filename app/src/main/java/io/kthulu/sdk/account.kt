@@ -1,4 +1,4 @@
-package com.example.android_sdk
+package io.kthulu.sdk
 
 import kotlinx.coroutines.*
 import org.apache.commons.lang3.RandomUtils

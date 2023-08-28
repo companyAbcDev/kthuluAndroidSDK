@@ -1,4 +1,4 @@
-package com.example.android_sdk
+package io.kthulu.sdk
 
 import android.app.Application
 import android.content.Context
@@ -23,21 +23,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val database_url = "jdbc:mariadb://210.207.161.10:3306/kthulu?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false"
-        val database_username = "kthulu"
-        val database_password = "kthulu123"
-        val database_driver_class_name = "org.mariadb.jdbc.Driver"
-
-        setConfiguration(
-            database_url,
-            database_username,
-            database_password,
-            database_driver_class_name
-        )
-
         launch {
             withContext(Dispatchers.IO) {
-
 
             }
         }

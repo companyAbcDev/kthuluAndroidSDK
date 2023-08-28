@@ -1,4 +1,4 @@
-package com.example.android_sdk
+package io.kthulu.sdk
 
 import com.klaytn.caver.Caver
 import com.klaytn.caver.contract.SendOptions
@@ -706,9 +706,21 @@ suspend fun bridgeTokenAsync(
         // Convert hex string to BigInteger
         val toNetworkHex = BigInteger(hex, 16)
 
+        val decimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
+        val encodedDecimalsFunction = FunctionEncoder.encode(decimalsFunction)
+        val decimalsResponse = web3j.ethCall(
+            Transaction.createEthCallTransaction(null, token_address, encodedDecimalsFunction),
+            DefaultBlockParameterName.LATEST
+        ).send()
+        val decimalsOutput =
+            FunctionReturnDecoder.decode(decimalsResponse.result, decimalsFunction.outputParameters)
+        val decimals = (decimalsOutput[0].value as BigInteger).toInt()
+        val decimalMultiplier = BigDecimal.TEN.pow(decimals)
+        val tokenAmount = BigDecimal(amount).multiply(decimalMultiplier).toBigInteger()
+
         val function = Function(
             "moveFromERC20",
-            listOf(Uint256(toNetworkHex), Address(token_address), Uint256(BigInteger(amount))),
+            listOf(Uint256(toNetworkHex), Address(token_address), Uint256(tokenAmount)),
             emptyList()
         )
 
@@ -1339,7 +1351,7 @@ suspend fun tokenForCoinswapAsync(
             var gasLimit = ""
             var gasPrice = ""
             try {
-                val gasLimitEstimate =getEstimateGasAsync(
+                val gasLimitEstimate = getEstimateGasAsync(
                     network,
                     "swapToken",
                     fromTokenId,
