@@ -38,7 +38,7 @@ suspend fun kthuluSdkVersion(){
     val resultArray = JSONArray()
     var resultData = JSONObject()
     val jsonData = JSONObject()
-    jsonData.put("version", "SDK version:0.0.86, Connect OK")
+    jsonData.put("version", "SDK version:0.0.87, Connect OK")
     resultArray.put(jsonData)
     resultData.put("result", "OK")
     resultData.put("value", resultArray)
