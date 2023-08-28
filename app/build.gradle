@@ -1,10 +1,10 @@
 plugins {
-    id 'com.android.library'
+    id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
 }
 
 android {
-    namespace 'com.example.android_sdk'
+    namespace 'io.kthulu.sdk'
     compileSdk 33
 
     defaultConfig {
