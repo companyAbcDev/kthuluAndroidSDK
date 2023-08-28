@@ -25,7 +25,6 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
 
         launch {
             withContext(Dispatchers.IO) {
-
             }
         }
     }
