@@ -34,8 +34,8 @@ import java.time.Instant
 import java.util.Base64
 import javax.crypto.Cipher
 
-fun kthuluSdkVersion(){
-    println("SDK version:0.0.77, Connect OK")
+suspend fun kthuluSdkVersion(){
+    println("SDK version:0.0.83, Connect OK")
 }
 var rpcUrl ="";
 var bridgeConfigContractAddress = "";
