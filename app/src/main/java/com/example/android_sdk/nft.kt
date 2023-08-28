@@ -750,27 +750,27 @@ suspend fun getNFTsTransferHistory(
 
     var transferQuery =
         " SELECT" +
-                " transaction.network AS network," +
-                " transaction.`from` AS from_address," +
-                " transaction.`to` AS to_address," +
-                " transaction.collection_id AS collection_id," +
-                " transaction.block_number AS block_number," +
-                " transaction.`timestamp` AS timestamp," +
-                " transaction.transaction_hash AS transaction_hash," +
-                " transaction.log_id AS log_id," +
-                " transaction.token_id AS token_id," +
-                " transaction.amount AS amount," +
-                " transaction.currency AS currency," +
-                " transaction.currency_symbol AS currency_symbol," +
-                " transaction.decimals AS decimals," +
-                " transaction.price AS price," +
-                " transaction.market AS market," +
-                " transaction.sales_info AS sales_info," +
-                " transaction.transaction_type AS type" +
-                " FROM " +
-                " nft_transaction_table AS transaction" +
-                " WHERE" +
-                " transaction.network = '${network}'"
+            " transaction.network AS network," +
+            " transaction.`from` AS from_address," +
+            " transaction.`to` AS to_address," +
+            " transaction.collection_id AS collection_id," +
+            " transaction.block_number AS block_number," +
+            " transaction.`timestamp` AS timestamp," +
+            " transaction.transaction_hash AS transaction_hash," +
+            " transaction.log_id AS log_id," +
+            " transaction.token_id AS token_id," +
+            " transaction.amount AS amount," +
+            " transaction.currency AS currency," +
+            " transaction.currency_symbol AS currency_symbol," +
+            " transaction.decimals AS decimals," +
+            " transaction.price AS price," +
+            " transaction.market AS market," +
+            " transaction.sales_info AS sales_info," +
+            " transaction.transaction_type AS type" +
+        " FROM " +
+            " nft_transaction_table AS transaction" +
+        " WHERE" +
+            " transaction.network = '${network}'"
     if(token_id != null){
         transferQuery += " AND transaction.token_id = '${token_id}' "
     }
@@ -799,11 +799,11 @@ suspend fun getNFTsTransferHistory(
 
     var sumQuery =
         "SELECT" +
-                " count(*) AS sum" +
-                " FROM " +
-                " nft_transaction_table AS transaction" +
-                " WHERE " +
-                " transaction.network = '$network'"
+            " count(*) AS sum" +
+        " FROM " +
+            " nft_transaction_table AS transaction" +
+        " WHERE " +
+            " transaction.network = '$network'"
     if (token_id != null) {
         sumQuery += " AND transaction.token_id = '$token_id' "
     }
@@ -846,25 +846,25 @@ suspend fun getNFTsTransferHistory(
                         val sales_info = getTransaction1.getString("sales_info")
                         val transaction_type = getTransaction1.getString("type")
 
-                        val replace_sales_info = JSONArray(sales_info ?: "[]")
+//                        val replace_sales_info = JSONArray(sales_info ?: null)
 
-                        jsonData.put("network", network)
-                        jsonData.put("from", from_address)
-                        jsonData.put("to", to_address)
-                        jsonData.put("collection_id", collection_id)
-                        jsonData.put("block_number", block_number)
-                        jsonData.put("timestamp", timestamp)
-                        jsonData.put("transaction_hash", transaction_hash)
-                        jsonData.put("log_id", log_id)
-                        jsonData.put("token_id", token_id)
-                        jsonData.put("amount", amount)
-                        jsonData.put("currency", currency)
-                        jsonData.put("currency_symbol", currency_symbol)
-                        jsonData.put("decimals", decimals)
-                        jsonData.put("price", price)
-                        jsonData.put("market", market)
-                        jsonData.put("sales_info", replace_sales_info)
-                        jsonData.put("type", transaction_type)
+                        jsonData.put("network", network ?: JSONObject.NULL)
+                        jsonData.put("from", from_address ?: JSONObject.NULL)
+                        jsonData.put("to", to_address ?: JSONObject.NULL)
+                        jsonData.put("collection_id", collection_id ?: JSONObject.NULL)
+                        jsonData.put("block_number", block_number ?: JSONObject.NULL)
+                        jsonData.put("timestamp", timestamp ?: JSONObject.NULL)
+                        jsonData.put("transaction_hash", transaction_hash ?: JSONObject.NULL)
+                        jsonData.put("log_id", log_id ?: JSONObject.NULL)
+                        jsonData.put("token_id", token_id ?: JSONObject.NULL)
+                        jsonData.put("amount", amount ?: JSONObject.NULL)
+                        jsonData.put("currency", currency ?: JSONObject.NULL)
+                        jsonData.put("currency_symbol", currency_symbol ?: JSONObject.NULL)
+                        jsonData.put("decimals", decimals ?: JSONObject.NULL)
+                        jsonData.put("price", price ?: JSONObject.NULL)
+                        jsonData.put("market", market ?: JSONObject.NULL)
+                        jsonData.put("sales_info", sales_info ?: JSONObject.NULL)
+                        jsonData.put("type", transaction_type ?: JSONObject.NULL)
 
                         transactionArray.put(jsonData)
                     }
@@ -1091,13 +1091,13 @@ suspend fun sendNFT721TransactionAsync(
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
         val gasLimitEstimate = getEstimateGasAsync(
-            network,
-            "transferERC721",
-            collection_id,
-            from,
-            to,
-            null,
-            token_id
+                network,
+                "transferERC721",
+                collection_id,
+                from,
+                to,
+                null,
+                token_id
         )
 
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
@@ -1458,17 +1458,17 @@ suspend fun sendNFT1155BatchTransactionAsync(
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
         val gasLimitEstimate = getEstimateGasAsync(
-            network,
-            "batchTransferERC1155",
-            collection_id,
-            from,
-            to,
-            null,
-            null,
-            null,
-            null,
-            token_id,
-            amount
+                network,
+                "batchTransferERC1155",
+                collection_id,
+                from,
+                to,
+                null,
+                null,
+                null,
+                null,
+                token_id,
+                amount
         )
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
@@ -1577,18 +1577,18 @@ suspend fun deployErc721Async(
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
         val gasLimitEstimate = getEstimateGasAsync(
-            network,
-            "deployERC721",
-            null,
-            from,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            name, symbol, token_base_uri, uri_type
+                network,
+                "deployERC721",
+                null,
+                from,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                name, symbol, token_base_uri, uri_type
         )
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
@@ -1697,18 +1697,18 @@ suspend fun deployErc1155Async(
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
         val gasLimitEstimate =getEstimateGasAsync(
-            network,
-            "deployERC1155",
-            null,
-            from,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            name, symbol, token_base_uri, uri_type
+                network,
+                "deployERC1155",
+                null,
+                from,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                name, symbol, token_base_uri, uri_type
         )
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
@@ -1913,7 +1913,7 @@ suspend fun mintErc1155Async(
 
         val function = Function(
             "mint",
-            listOf(Address(to), Uint256(BigInteger(token_id)), Uint256(BigInteger(amount)), Utf8String(token_uri), DynamicBytes(byteArrayOf(0))),
+            listOf(Address(to), Uint256(BigInteger(token_id)), Uint256(BigInteger(amount)), Utf8String(token_uri)),
             emptyList()
         )
         val encodedFunction = FunctionEncoder.encode(function)
@@ -1926,15 +1926,15 @@ suspend fun mintErc1155Async(
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
         val gasLimitEstimate = getEstimateGasAsync(
-            network,
-            "mintERC1155",
-            collection_id,
-            from,
-            to,
-            amount,
-            token_id,
-            null, null, null, null, null, null, null, null,
-            token_uri
+                network,
+                "mintERC1155",
+                collection_id,
+                from,
+                to,
+                amount,
+                token_id,
+                null, null, null, null, null, null, null, null,
+                token_uri
         )
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
@@ -1996,7 +1996,8 @@ suspend fun batchMintErc721Async(
     from: String,
     to: String,
     token_uri: Array<String>,
-    token_id: Array<String>,
+    start_id: String,
+    end_id: String,
     collection_id: String
 ): JSONObject = withContext(Dispatchers.IO){
     networkSettings(network)
@@ -2023,12 +2024,11 @@ suspend fun batchMintErc721Async(
         val credentials =
             Credentials.create(privateKey)
 
-        val batchTokenId = token_id.map { Uint256(BigInteger(it)) }
         val batchTokenURI = token_uri.map { Utf8String(it) }
 
         val function = Function(
             "mintBatch",
-            listOf(Address(to), DynamicArray(batchTokenId), DynamicArray(batchTokenURI)),
+            listOf(Address(to), Uint256(BigInteger(start_id)), Uint256(BigInteger(end_id)), DynamicArray(batchTokenURI)),
             emptyList()
         )
         val encodedFunction = FunctionEncoder.encode(function)
@@ -2041,15 +2041,15 @@ suspend fun batchMintErc721Async(
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
         val gasLimitEstimate =  getEstimateGasAsync(
-            network,
-            "batchMintERC721",
-            collection_id,
-            from,
-            to,
-            null,
-            null,
-            null, null, null, token_id, null, null, null, null,
-            null, token_uri
+                network,
+                "batchMintERC721",
+                collection_id,
+                from,
+                to,
+                null,
+                null,
+                null, null, null, null, null, null, null,
+                null, null, token_uri, start_id, end_id
         )
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
@@ -2144,7 +2144,7 @@ suspend fun batchMintErc1155Async(
 
         val function = Function(
             "mintBatch",
-            listOf(Address(to), DynamicArray(batchTokenId), DynamicArray(batchAmount), DynamicArray(batchTokenURI), DynamicBytes(byteArrayOf(0))),
+            listOf(Address(to), DynamicArray(batchTokenId), DynamicArray(batchAmount), DynamicArray(batchTokenURI)),
             emptyList()
         )
         val encodedFunction = FunctionEncoder.encode(function)
@@ -2157,15 +2157,15 @@ suspend fun batchMintErc1155Async(
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
         val gasLimitEstimate = getEstimateGasAsync(
-            network,
-            "batchMintERC1155",
-            collection_id,
-            from,
-            to,
-            null,
-            null,
-            null, null, token_id, amount, null, null, null, null, null,
-            token_uri
+                network,
+                "batchMintERC1155",
+                collection_id,
+                from,
+                to,
+                null,
+                null,
+                null, null, token_id, amount, null, null, null, null, null,
+                token_uri
         )
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
@@ -2267,14 +2267,14 @@ suspend fun burnErc721Async(
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
         val gasLimitEstimate = getEstimateGasAsync(
-            network,
-            "burnERC721",
-            collection_id,
-            owner,
-            null,
-            null,
-            token_id,
-            null, null, null, null, null, null, null, null, null, null,
+                network,
+                "burnERC721",
+                collection_id,
+                owner,
+                null,
+                null,
+                token_id,
+                null, null, null, null, null, null, null, null, null, null,
 
             )
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
@@ -2378,14 +2378,14 @@ suspend fun burnErc1155Async(
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
         val gasLimitEstimate = getEstimateGasAsync(
-            network,
-            "burnERC1155",
-            collection_id,
-            owner,
-            null,
-            amount,
-            token_id,
-            null, null, null, null, null, null, null, null, null, null
+                network,
+                "burnERC1155",
+                collection_id,
+                owner,
+                null,
+                amount,
+                token_id,
+                null, null, null, null, null, null, null, null, null, null
         )
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
@@ -2596,13 +2596,13 @@ suspend fun verifyNFT(
     var imageURL: String? = null
     var query =
         "SELECT nft_type, token_uri, token_info, image_url FROM " +
-                "nft_token_table " +
-                "WHERE " +
-                "network = '${network}' " +
-                "AND " +
-                "collection_id = '${contractAddress}' " +
-                "AND " +
-                "token_id = '${tokenId}' "
+        "nft_token_table " +
+        "WHERE " +
+        "network = '${network}' " +
+        "AND " +
+        "collection_id = '${contractAddress}' " +
+        "AND " +
+        "token_id = '${tokenId}' "
     try {
         if (connection != null) {
             val dbQueryExector = DBQueryExector(connection)

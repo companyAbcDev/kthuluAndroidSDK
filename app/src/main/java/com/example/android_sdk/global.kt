@@ -35,7 +35,7 @@ import java.util.Base64
 import javax.crypto.Cipher
 
 fun kthuluSdkVersion(){
-    println("SDK version:0.0.80, Connect OK")
+    println("SDK version:0.0.77, Connect OK")
 }
 var rpcUrl ="";
 var bridgeConfigContractAddress = "";
@@ -114,7 +114,7 @@ fun networkSettings(network: String) {
     }
     nftTransferContractAddress = when (network) {
         "ethereum" -> "0x9a1c0ef3989f944e692232d491fe5395927be9bd"
-        "cypress" -> ""
+        "cypress" -> "0x534d102f2bf1bcad450c8a5da6e1cfb6cdb93b2f"
         "polygon" -> "0x9a1c0ef3989f944e692232d491fe5395927be9bd"
         "bnb" -> "0x534d102f2bf1bcad450c8a5da6e1cfb6cdb93b2f"
         "goerli" -> ""
@@ -205,21 +205,23 @@ fun removeData(key: String) {
 suspend fun getEstimateGasAsync(
     network: String,
     tx_type: String,
-    token_id: String? = null,
-    to_network: String? = null,
-    to_token_id: String? = null,
+    token_address: String? = null,
     from: String? = null,
     to: String? = null,
-    nft_token_id: String? = null,
     amount: String? = null,
-    batchTokenId: Array<String>? = null,
-    batchTokenAmount: Array<String>? = null,
+    token_id: String? = null,
+    to_token_address: String? = null,
+    to_network: String? = null,
+    batch_token_id: Array<String>? = null,
+    batch_token_amount: Array<String>? = null,
     name: String? = null,
     symbol: String? = null,
-    baseURI: String? = null,
-    uriType: String? = null,
-    tokenURI: String? = null,
-    batchTokenURI: Array<String>? = null
+    base_uri: String? = null,
+    uri_type: String? = null,
+    token_uri: String? = null,
+    batch_token_uri: Array<String>? = null,
+    start_id: String? = null,
+    end_id: String? = null
 ): JSONObject = withContext(Dispatchers.IO) {
 
     networkSettings(network)
@@ -284,7 +286,7 @@ suspend fun getEstimateGasAsync(
                                 BigInteger.ONE,
                                 gasPrice,
                                 BigInteger.ZERO, // temporary gasLimit
-                                token_id,
+                                token_address,
                                 encodedFunction // data
                             )
                         ).send().amountUsed
@@ -342,8 +344,8 @@ suspend fun getEstimateGasAsync(
                     }
                 }
             "swapToken" ->
-                if (from != null && token_id != null && amount != null && to_token_id != null) {
-                    val path = DynamicArray(Address::class.java, listOf(Address(token_id), Address(to_token_id)))
+                if (from != null && token_address != null && amount != null && to_token_address != null) {
+                    val path = DynamicArray(Address::class.java, listOf(Address(token_address), Address(to_token_address)))
                     // Deadline is the current time + 10 minutes in seconds
                     val deadline = Instant.now().epochSecond + 600
                     val function = Function("swapExactTokensForTokens", listOf(Uint256(BigInteger(amount)), Uint256(BigInteger.ZERO), path, Address(from), Uint256(deadline)), emptyList())
@@ -367,10 +369,10 @@ suspend fun getEstimateGasAsync(
                     }
                 }
             "transferERC721" ->
-                if (token_id != null && to != null && from != null && nft_token_id != null) {
+                if (token_id != null && to != null && from != null && token_address != null) {
                     val function = Function(
                         "safeTransferFrom",
-                        listOf(Address(from), Address(to), Uint256(BigInteger(nft_token_id))),
+                        listOf(Address(from), Address(to), Uint256(BigInteger(token_id))),
                         emptyList()
                     )
                     val encodedFunction = FunctionEncoder.encode(function)
@@ -382,7 +384,7 @@ suspend fun getEstimateGasAsync(
                                 BigInteger.ONE,
                                 gasPrice,
                                 BigInteger.ZERO, // temporary gasLimit
-                                token_id,
+                                token_address,
                                 encodedFunction // data
                             )
                         ).send().amountUsed
@@ -392,11 +394,11 @@ suspend fun getEstimateGasAsync(
                     }
                 }
             "transferERC1155" ->
-                if (token_id != null && to != null && from != null && nft_token_id != null && amount != null) {
+                if (token_id != null && to != null && from != null && token_address != null && amount != null) {
                     val function = Function(
                         "safeTransferFrom",
                         listOf(
-                            Address(from), Address(to), Uint256(BigInteger(nft_token_id)),
+                            Address(from), Address(to), Uint256(BigInteger(token_id)),
                             Uint256(BigInteger(amount)), DynamicBytes(byteArrayOf(0))
                         ),
                         emptyList()
@@ -410,7 +412,7 @@ suspend fun getEstimateGasAsync(
                                 BigInteger.ONE,
                                 gasPrice,
                                 BigInteger.ZERO, // temporary gasLimit
-                                token_id,
+                                token_address,
                                 encodedFunction // data
                             )
                         ).send().amountUsed
@@ -420,8 +422,8 @@ suspend fun getEstimateGasAsync(
                     }
                 }
             "batchTransferERC721" ->
-                if (token_id != null && to != null && from != null && batchTokenId != null) {
-                    val batchTokenId = batchTokenId.map { Uint256(BigInteger(it)) }
+                if (token_id != null && to != null && from != null && batch_token_id != null) {
+                    val batchTokenId = batch_token_id.map { Uint256(BigInteger(it)) }
                     val function = Function(
                         "safeBatchTransferFrom",
                         listOf(
@@ -438,7 +440,7 @@ suspend fun getEstimateGasAsync(
                                 BigInteger.ONE,
                                 gasPrice,
                                 BigInteger.ZERO, // temporary gasLimit
-                                token_id,
+                                token_address,
                                 encodedFunction // data
                             )
                         ).send().amountUsed
@@ -448,9 +450,9 @@ suspend fun getEstimateGasAsync(
                     }
                 }
             "batchTransferERC1155" ->
-                if (token_id != null && to != null && from != null && batchTokenId != null && batchTokenAmount != null) {
-                    val batchTokenId = batchTokenId.map { Uint256(BigInteger(it)) }
-                    val batchAmount = batchTokenAmount.map { Uint256(BigInteger(it)) }
+                if (token_id != null && to != null && from != null && batch_token_id != null && batch_token_amount != null) {
+                    val batchTokenId = batch_token_id.map { Uint256(BigInteger(it)) }
+                    val batchAmount = batch_token_amount.map { Uint256(BigInteger(it)) }
                     val function = Function(
                         "safeBatchTransferFrom",
                         listOf(
@@ -467,7 +469,7 @@ suspend fun getEstimateGasAsync(
                                 BigInteger.ONE,
                                 gasPrice,
                                 BigInteger.ZERO, // temporary gasLimit
-                                token_id,
+                                token_address,
                                 encodedFunction // data
                             )
                         ).send().amountUsed
@@ -477,10 +479,10 @@ suspend fun getEstimateGasAsync(
                     }
                 }
             "deployERC721" ->
-                if (name != null && symbol != null && from != null && baseURI != null && uriType != null) {
+                if (name != null && symbol != null && from != null && base_uri != null && uri_type != null) {
                     val function = Function(
                         "deployWrapped721",
-                        listOf(Utf8String(name), Utf8String(symbol), Utf8String(baseURI), Uint8(BigInteger(uriType))),
+                        listOf(Utf8String(name), Utf8String(symbol), Utf8String(base_uri), Uint8(BigInteger(uri_type))),
                         emptyList()
                     )
                     val encodedFunction = FunctionEncoder.encode(function)
@@ -502,10 +504,10 @@ suspend fun getEstimateGasAsync(
                     }
                 }
             "deployERC1155" ->
-                if (name != null && symbol != null && from != null && baseURI != null && uriType != null) {
+                if (name != null && symbol != null && from != null && base_uri != null && uri_type != null) {
                     val function = Function(
                         "deployWrapped1155",
-                        listOf(Utf8String(name), Utf8String(symbol), Utf8String(baseURI), Uint8(BigInteger(uriType))),
+                        listOf(Utf8String(name), Utf8String(symbol), Utf8String(base_uri), Uint8(BigInteger(uri_type))),
                         emptyList()
                     )
                     val encodedFunction = FunctionEncoder.encode(function)
@@ -527,10 +529,10 @@ suspend fun getEstimateGasAsync(
                     }
                 }
             "mintERC721" ->
-                if (from != null && to != null && tokenURI != null && nft_token_id != null && token_id != null) {
+                if (from != null && to != null && token_uri != null && token_id != null && token_address != null) {
                     val function = Function(
                         "mint",
-                        listOf(Address(to), Uint256(BigInteger(nft_token_id)), Utf8String(tokenURI)),
+                        listOf(Address(to), Uint256(BigInteger(token_id)), Utf8String(token_uri)),
                         emptyList()
                     )
                     val encodedFunction = FunctionEncoder.encode(function)
@@ -542,7 +544,7 @@ suspend fun getEstimateGasAsync(
                                 BigInteger.ONE,
                                 gasPrice,
                                 BigInteger.ZERO, // temporary gasLimit
-                                token_id,
+                                token_address,
                                 encodedFunction // data
                             )
                         ).send().amountUsed
@@ -552,10 +554,10 @@ suspend fun getEstimateGasAsync(
                     }
                 }
             "mintERC1155" ->
-                if (from != null && to != null && tokenURI != null && nft_token_id != null && token_id != null && amount!= null) {
+                if (from != null && to != null && token_uri != null && token_id != null && token_address != null && amount!= null) {
                     val function = Function(
                         "mint",
-                        listOf(Address(to), Uint256(BigInteger(nft_token_id)), Uint256(BigInteger(amount)), Utf8String(tokenURI), DynamicBytes(byteArrayOf(0))),
+                        listOf(Address(to), Uint256(BigInteger(token_id)), Uint256(BigInteger(amount)), Utf8String(token_uri)),
                         emptyList()
                     )
                     val encodedFunction = FunctionEncoder.encode(function)
@@ -567,7 +569,7 @@ suspend fun getEstimateGasAsync(
                                 BigInteger.ONE,
                                 gasPrice,
                                 BigInteger.ZERO, // temporary gasLimit
-                                token_id,
+                                token_address,
                                 encodedFunction // data
                             )
                         ).send().amountUsed
@@ -577,13 +579,13 @@ suspend fun getEstimateGasAsync(
                     }
                 }
             "batchMintERC721" ->
-                if (from != null && to != null && batchTokenURI != null && batchTokenId != null && token_id != null) {
-                    val a = batchTokenId.map { Uint256(BigInteger(it)) }
-                    val b = batchTokenURI.map { Utf8String(it) }
+                if (from != null && to != null && batch_token_uri != null && start_id != null && end_id != null && token_address != null) {
+
+                    val b = batch_token_uri.map { Utf8String(it) }
 
                     val function = Function(
                         "mintBatch",
-                        listOf(Address(to), DynamicArray(a), DynamicArray(b)),
+                        listOf(Address(to), Uint256(BigInteger(start_id)), Uint256(BigInteger(end_id)), DynamicArray(b)),
                         emptyList()
                     )
                     val encodedFunction = FunctionEncoder.encode(function)
@@ -595,7 +597,7 @@ suspend fun getEstimateGasAsync(
                                 BigInteger.ONE,
                                 gasPrice,
                                 BigInteger.ZERO, // temporary gasLimit
-                                token_id,
+                                token_address,
                                 encodedFunction // data
                             )
                         ).send().amountUsed
@@ -605,14 +607,14 @@ suspend fun getEstimateGasAsync(
                     }
                 }
             "batchMintERC1155" ->
-                if (from != null && to != null && batchTokenURI != null && batchTokenId != null && token_id != null && batchTokenAmount!= null) {
-                    val a = batchTokenId.map { Uint256(BigInteger(it)) }
-                    val b = batchTokenAmount.map { Uint256(BigInteger(it)) }
-                    val c = batchTokenURI.map { Utf8String(it) }
+                if (from != null && to != null && batch_token_uri != null && batch_token_id != null && token_address != null && batch_token_amount!= null) {
+                    val a = batch_token_id.map { Uint256(BigInteger(it)) }
+                    val b = batch_token_amount.map { Uint256(BigInteger(it)) }
+                    val c = batch_token_uri.map { Utf8String(it) }
 
                     val function = Function(
                         "mintBatch",
-                        listOf(Address(to), DynamicArray(a), DynamicArray(b), DynamicArray(c), DynamicBytes(byteArrayOf(0))),
+                        listOf(Address(to), DynamicArray(a), DynamicArray(b), DynamicArray(c)),
                         emptyList()
                     )
                     val encodedFunction = FunctionEncoder.encode(function)
@@ -624,7 +626,7 @@ suspend fun getEstimateGasAsync(
                                 BigInteger.ONE,
                                 gasPrice,
                                 BigInteger.ZERO, // temporary gasLimit
-                                token_id,
+                                token_address,
                                 encodedFunction // data
                             )
                         ).send().amountUsed
@@ -634,10 +636,10 @@ suspend fun getEstimateGasAsync(
                     }
                 }
             "burnERC721" ->
-                if (from != null && nft_token_id != null && token_id != null) {
+                if (from != null && token_id != null && token_address != null) {
                     val function = Function(
                         "burn",
-                        listOf(Uint256(BigInteger(nft_token_id))),
+                        listOf(Uint256(BigInteger(token_id))),
                         emptyList()
                     )
                     val encodedFunction = FunctionEncoder.encode(function)
@@ -649,7 +651,7 @@ suspend fun getEstimateGasAsync(
                                 BigInteger.ONE,
                                 gasPrice,
                                 BigInteger.ZERO, // temporary gasLimit
-                                token_id,
+                                token_address,
                                 encodedFunction // data
                             )
                         ).send().amountUsed
@@ -659,10 +661,10 @@ suspend fun getEstimateGasAsync(
                     }
                 }
             "burnERC1155" ->
-                if (from != null && nft_token_id != null && token_id != null && amount != null) {
+                if (from != null && token_id != null && token_address != null && amount != null) {
                     val function = Function(
                         "burn",
-                        listOf(Address(from), Uint256(BigInteger(nft_token_id)), Uint256(BigInteger(amount))),
+                        listOf(Address(from), Uint256(BigInteger(token_id)), Uint256(BigInteger(amount))),
                         emptyList()
                     )
                     val encodedFunction = FunctionEncoder.encode(function)
@@ -674,7 +676,7 @@ suspend fun getEstimateGasAsync(
                                 BigInteger.ONE,
                                 gasPrice,
                                 BigInteger.ZERO, // temporary gasLimit
-                                token_id,
+                                token_address,
                                 encodedFunction // data
                             )
                         ).send().amountUsed
@@ -684,7 +686,7 @@ suspend fun getEstimateGasAsync(
                     }
                 }
         }
-        BigDecimal(result).multiply(BigDecimal(1.2)).setScale(0, RoundingMode.DOWN).toBigInteger()
+        result = BigDecimal(result).multiply(BigDecimal(1.2)).setScale(0, RoundingMode.DOWN).toBigInteger()
         if (result ==  BigInteger.ZERO) {
             jsonData.put("error", "execution revert")
             resultArray.put(jsonData)

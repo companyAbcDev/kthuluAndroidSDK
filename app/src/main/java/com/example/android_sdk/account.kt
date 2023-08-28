@@ -10,6 +10,7 @@ import org.web3j.abi.TypeReference
 import org.web3j.abi.datatypes.Address
 import org.web3j.abi.datatypes.Function
 import org.web3j.abi.datatypes.Utf8String
+import org.web3j.abi.datatypes.generated.Uint256
 import org.web3j.abi.datatypes.generated.Uint8
 import org.web3j.crypto.*
 import org.web3j.protocol.Web3j
@@ -21,10 +22,26 @@ import org.web3j.utils.Numeric
 import java.math.BigDecimal
 import java.math.BigInteger
 
-// Create accounts asynchronously
 suspend fun createAccountsAsync(
     network: Array<String>
 ): JSONObject = withContext(Dispatchers.IO) {
+    // save data arrya
+    var saveMainNet = JSONArray()
+
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
+    val allowedStrings = setOf("ethereum", "cypress", "polygon", "bnb")
+
+    for (network in network) {
+        if (network !in allowedStrings) {
+            resultData.put("result", "FAIL")
+            resultData.put("value", "Error: $network is not allowed.")
+            return@withContext resultData
+        }
+    }
+
     val initialEntropy = RandomUtils.nextBytes(16)
     val mnemonic = MnemonicUtils.generateMnemonic(initialEntropy)
     val seed = MnemonicUtils.generateSeed(mnemonic, null)
@@ -36,13 +53,7 @@ suspend fun createAccountsAsync(
     val keyPair = Bip32ECKeyPair.deriveKeyPair(change, intArrayOf(0))
     val credentials = Credentials.create(keyPair.privateKey.toString(16))
 
-    // save data arrya
-    var saveMainNet = JSONArray()
 
-    val resultArray = JSONArray()
-    var resultData = JSONObject()
-    resultData.put("result", "FAIL")
-    resultData.put("value", resultArray)
 
     try{
         for (network in network) {
@@ -295,41 +306,74 @@ suspend fun getTokenInfoAsync(
     try {
         val web3j = Web3j.build(HttpService(rpcUrl))
 
-        val nameFunction = Function("name", emptyList(), listOf(object : TypeReference<Utf8String>() {}))
-        val encodedNameFunction = FunctionEncoder.encode(nameFunction)
-        val nameResponse = web3j.ethCall(
-            Transaction.createEthCallTransaction(null, token_address, encodedNameFunction),
-            DefaultBlockParameterName.LATEST
-        ).send()
+        var tokenName = "";
+        var tokenSymbol = "";
+        var decimals = 0;
+        var adjustedTotalSupply = ""
 
-        val nameOutput = FunctionReturnDecoder.decode(nameResponse.result, nameFunction.outputParameters)
+        try {
+            val nameFunction = Function("name", emptyList(), listOf(object : TypeReference<Utf8String>() {}))
+            val encodedNameFunction = FunctionEncoder.encode(nameFunction)
+            val nameResponse = web3j.ethCall(
+                Transaction.createEthCallTransaction(null, token_address, encodedNameFunction),
+                DefaultBlockParameterName.LATEST
+            ).send()
 
-        val tokenName: String = nameOutput[0].value as String
+            val nameOutput = FunctionReturnDecoder.decode(nameResponse.result, nameFunction.outputParameters)
+            tokenName = nameOutput[0].value as String
+        } catch (e: Exception) {
+            println("name error")
+        }
 
 
-        val symbolFunction = Function("symbol", emptyList(), listOf(object : TypeReference<Utf8String>() {}))
-        val encodedSymbolFunction = FunctionEncoder.encode(symbolFunction)
-        val symbolResponse = web3j.ethCall(
-            Transaction.createEthCallTransaction(null, token_address, encodedSymbolFunction),
-            DefaultBlockParameterName.LATEST
-        ).send()
+        try {
+            val symbolFunction = Function("symbol", emptyList(), listOf(object : TypeReference<Utf8String>() {}))
+            val encodedSymbolFunction = FunctionEncoder.encode(symbolFunction)
+            val symbolResponse = web3j.ethCall(
+                Transaction.createEthCallTransaction(null, token_address, encodedSymbolFunction),
+                DefaultBlockParameterName.LATEST
+            ).send()
 
-        val symbolOutput = FunctionReturnDecoder.decode(symbolResponse.result, symbolFunction.outputParameters)
+            val symbolOutput = FunctionReturnDecoder.decode(symbolResponse.result, symbolFunction.outputParameters)
 
-        val tokenSymbol: String = symbolOutput[0].value as String
+            tokenSymbol = symbolOutput[0].value as String
 
-        val decimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
-        val encodedDecimalsFunction = FunctionEncoder.encode(decimalsFunction)
-        val decimalsResponse = web3j.ethCall(
-            Transaction.createEthCallTransaction(null, token_address, encodedDecimalsFunction),
-            DefaultBlockParameterName.LATEST
-        ).send()
-        val decimalsOutput =
-            FunctionReturnDecoder.decode(decimalsResponse.result, decimalsFunction.outputParameters)
-        val decimals = (decimalsOutput[0].value as BigInteger).toInt()
+        } catch (e: Exception) {
+            println("symbol error")
+        }
+
+        try {
+            val decimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
+            val encodedDecimalsFunction = FunctionEncoder.encode(decimalsFunction)
+            val decimalsResponse = web3j.ethCall(
+                Transaction.createEthCallTransaction(null, token_address, encodedDecimalsFunction),
+                DefaultBlockParameterName.LATEST
+            ).send()
+            val decimalsOutput =
+                FunctionReturnDecoder.decode(decimalsResponse.result, decimalsFunction.outputParameters)
+            decimals = (decimalsOutput[0].value as BigInteger).toInt()
+        } catch (e: Exception) {
+            println("decimals error")
+        }
+        try {
+            val totalFunction = Function("totalSupply", emptyList(), listOf(object : TypeReference<Uint256>() {}))
+            val encodedTotalFunction = FunctionEncoder.encode(totalFunction)
+            val totalResponse = web3j.ethCall(
+                Transaction.createEthCallTransaction(null, token_address, encodedTotalFunction),
+                DefaultBlockParameterName.LATEST
+            ).send()
+            val totalsOutput =
+                FunctionReturnDecoder.decode(totalResponse.result, totalFunction.outputParameters)
+            val totalSupplyRaw = totalsOutput[0].value as BigInteger
+            adjustedTotalSupply = totalSupplyRaw.divide(BigInteger.TEN.pow(decimals)).toString()
+
+        } catch (e: Exception) {
+            println("totalSupply error")
+        }
         jsonData.put("name", tokenName)
         jsonData.put("symbol", tokenSymbol)
         jsonData.put("decimals", decimals)
+        jsonData.put("total_supply", adjustedTotalSupply)
         resultArray.put(jsonData)
         resultData.put("result", "OK")
         resultData.put("value", resultArray)
@@ -359,23 +403,23 @@ suspend fun getTokenHistoryAsync(
 
     val query =
         "SELECT " +
-                " network," +
-                " token_address," +
-                " block_number," +
-                " timestamp," +
-                " transaction_hash," +
-                " `from`," +
-                " `to`," +
-                " amount," +
-                " gas_used, " +
-                " (SELECT token_symbol FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS symbol, " +
-                " (SELECT decimals FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS decimals " +
-                "FROM " +
-                " token_transfer_table " +
-                "WHERE " +
-                " network = '$network' AND token_address = '$token_address' AND (`from` ='$owner_account' OR `to` ='$owner_account')" +
-                "ORDER BY " +
-                " block_number DESC"
+        " network," +
+        " token_address," +
+        " block_number," +
+        " timestamp," +
+        " transaction_hash," +
+        " `from`," +
+        " `to`," +
+        " amount," +
+        " gas_used, " +
+        " (SELECT token_symbol FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS symbol, " +
+        " (SELECT decimals FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS decimals " +
+        "FROM " +
+        " token_transfer_table " +
+        "WHERE " +
+        " network = '$network' AND token_address = '$token_address' AND (`from` ='$owner_account' OR `to` ='$owner_account')" +
+        "ORDER BY " +
+        " block_number DESC"
     connection?.use {
         val dbQueryExecutor = DBQueryExector(it)
         val resultSet = dbQueryExecutor.executeQuery(query)
@@ -465,22 +509,22 @@ suspend fun getTokenListAsync(
     val offset = limit?.let { lim -> page_number?.minus(1)?.times(lim) } ?: 0
 
     var query =
-        " SELECT" +
-                " idx AS idx," +
-                " network AS network," +
-                " token_address AS token_id," +
-                " owner_account AS owner," +
-                " balance AS balance," +
-                " (SELECT decimals FROM token_table WHERE network = t.network AND token_address = t.token_address LIMIT 1) AS decimals," +
-                " (SELECT token_symbol FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS symbol," +
-                " (SELECT token_name FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS name," +
-                " (SELECT COUNT(*) FROM token_owner_table WHERE network = '$network' AND owner_account = '$ownerAddress') AS sum " +
-                " FROM" +
-                " token_owner_table t" +
-                " WHERE" +
-                " network = '$network' AND owner_account = '$ownerAddress'" +
-                " ORDER BY" +
-                " idx $sort";
+    " SELECT" +
+    " idx AS idx," +
+    " network AS network," +
+    " token_address AS token_id," +
+    " owner_account AS owner," +
+    " balance AS balance," +
+    " (SELECT decimals FROM token_table WHERE network = t.network AND token_address = t.token_address LIMIT 1) AS decimals," +
+    " (SELECT token_symbol FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS symbol," +
+    " (SELECT token_name FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS name," +
+    " (SELECT COUNT(*) FROM token_owner_table WHERE network = '$network' AND owner_account = '$ownerAddress') AS sum " +
+    " FROM" +
+    " token_owner_table t" +
+    " WHERE" +
+    " network = '$network' AND owner_account = '$ownerAddress'" +
+    " ORDER BY" +
+            " idx $sort";
 
     if(offset != 0) {
         query += " LIMIT $limit OFFSET $offset";
