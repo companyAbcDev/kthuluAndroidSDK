@@ -259,14 +259,14 @@ suspend fun getEstimateGasAsync(
                 ).send().amountUsed
 
             "transferERC20" ->
-                if (token_id != null && to != null && from != null && amount != null) {
+                if (token_address != null && to != null && from != null && amount != null) {
                     // Ensure amount is a valid number
                     if (BigDecimal(amount) <= BigDecimal.ZERO) BigInteger.ZERO
 
                     val decimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
                     val encodedDecimalsFunction = FunctionEncoder.encode(decimalsFunction)
                     val decimalsResponse = web3.ethCall(
-                        Transaction.createEthCallTransaction(null, token_id, encodedDecimalsFunction),
+                        Transaction.createEthCallTransaction(null, token_address, encodedDecimalsFunction),
                         DefaultBlockParameterName.LATEST
                     ).send()
                     val decimalsOutput =
