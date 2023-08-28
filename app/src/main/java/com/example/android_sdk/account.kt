@@ -390,103 +390,125 @@ suspend fun getTokenHistoryAsync(
     owner_account: String,
     token_address: String = "0x0000000000000000000000000000000000000000"
 ) : JSONObject = withContext(Dispatchers.IO) {
-
-    val dbConnector = DBConnector()
-    dbConnector.connect()
-    val connection = dbConnector.getConnection()
-
     val resultArray = JSONArray()
+    var jsonData = JSONObject()
     val resultData = JSONObject().apply {
         put("result", "FAIL")
         put("value", resultArray)
     }
 
-    val query =
-        "SELECT " +
-        " network," +
-        " token_address," +
-        " block_number," +
-        " timestamp," +
-        " transaction_hash," +
-        " `from`," +
-        " `to`," +
-        " amount," +
-        " gas_used, " +
-        " (SELECT token_symbol FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS symbol, " +
-        " (SELECT decimals FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS decimals " +
-        "FROM " +
-        " token_transfer_table " +
-        "WHERE " +
-        " network = '$network' AND token_address = '$token_address' AND (`from` ='$owner_account' OR `to` ='$owner_account')" +
-        "ORDER BY " +
-        " block_number DESC"
-    connection?.use {
-        val dbQueryExecutor = DBQueryExector(it)
-        val resultSet = dbQueryExecutor.executeQuery(query)
-        resultSet?.use {
-            while (it.next()) {
-                val jsonData = JSONObject().apply {
-                    put("network", it.getString("network"))
-                    put("token_id", it.getString("token_address"))
-                    put("block_number", it.getString("block_number"))
-                    put("timestamp", it.getString("timestamp"))
-                    put("transaction_hash", it.getString("transaction_hash"))
-                    put("from", it.getString("from"))
-                    put("to", it.getString("to"))
-                    put("amount", it.getString("amount"))
-                    put("gas_used", it.getString("gas_used"))
-                    put("symbol", it.getString("symbol"))
-                    put("decimals", it.getString("decimals"))
+    try {
+        val dbConnector = DBConnector()
+        dbConnector.connect()
+        val connection = dbConnector.getConnection()
 
+        val query =
+            "SELECT " +
+                    " network," +
+                    " token_address," +
+                    " block_number," +
+                    " timestamp," +
+                    " transaction_hash," +
+                    " `from`," +
+                    " `to`," +
+                    " amount," +
+                    " gas_used, " +
+                    " (SELECT token_symbol FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS symbol, " +
+                    " (SELECT decimals FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS decimals " +
+                    "FROM " +
+                    " token_transfer_table " +
+                    "WHERE " +
+                    " network = '$network' AND token_address = '$token_address' AND (`from` ='$owner_account' OR `to` ='$owner_account')" +
+                    "ORDER BY " +
+                    " block_number DESC"
+        connection?.use {
+            val dbQueryExecutor = DBQueryExector(it)
+            val resultSet = dbQueryExecutor.executeQuery(query)
+            resultSet?.use {
+                while (it.next()) {
+                    jsonData = JSONObject().apply {
+                        put("network", it.getString("network"))
+                        put("token_id", it.getString("token_address"))
+                        put("block_number", it.getString("block_number"))
+                        put("timestamp", it.getString("timestamp"))
+                        put("transaction_hash", it.getString("transaction_hash"))
+                        put("from", it.getString("from"))
+                        put("to", it.getString("to"))
+                        put("amount", it.getString("amount"))
+                        put("gas_used", it.getString("gas_used"))
+                        put("symbol", it.getString("symbol"))
+                        put("decimals", it.getString("decimals"))
+
+                    }
+                    resultArray.put(jsonData)
                 }
-                resultArray.put(jsonData)
+                resultData.put("result", "OK")
+                resultData.put("value", resultArray)
             }
-            resultData.put("result", "OK")
-            resultData.put("value", resultArray)
         }
+
+        dbConnector.disconnect()
+        resultData
+    } catch (e: Exception) {
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 
-    dbConnector.disconnect()
-    resultData
+
 }
 
 suspend fun getUsersAsync(
     owner: String
 ) : JSONObject = withContext(Dispatchers.IO) {
-
-    val dbConnector = DBConnector()
-    dbConnector.connect()
-    val connection = dbConnector.getConnection()
-
     val resultArray = JSONArray()
+    var jsonData = JSONObject()
     val resultData = JSONObject().apply {
         put("result", "FAIL")
         put("value", resultArray)
     }
 
-    val query =
-        "SELECT * FROM users_table WHERE owner_eigenvalue = '$owner'"
+    try {
+        val dbConnector = DBConnector()
+        dbConnector.connect()
+        val connection = dbConnector.getConnection()
 
-    connection?.use {
-        val dbQueryExecutor = DBQueryExector(it)
-        val resultSet = dbQueryExecutor.executeQuery(query)
-        resultSet?.use {
-            while (it.next()) {
-                val jsonData = JSONObject().apply {
-                    put("owner", it.getString("owner_eigenvalue"))
-                    put("network", it.getString("network"))
-                    put("account", it.getString("user_account"))
-                    put("type", it.getString("user_type"))
-                }
-                resultArray.put(jsonData)
-            }
-            resultData.put("result", "OK")
-            resultData.put("value", resultArray)
+        val resultArray = JSONArray()
+        val resultData = JSONObject().apply {
+            put("result", "FAIL")
+            put("value", resultArray)
         }
-    }
 
-    dbConnector.disconnect()
-    resultData
+        val query =
+            "SELECT * FROM users_table WHERE owner_eigenvalue = '$owner'"
+
+        connection?.use {
+            val dbQueryExecutor = DBQueryExector(it)
+            val resultSet = dbQueryExecutor.executeQuery(query)
+            resultSet?.use {
+                while (it.next()) {
+                    jsonData = JSONObject().apply {
+                        put("owner", it.getString("owner_eigenvalue"))
+                        put("network", it.getString("network"))
+                        put("account", it.getString("user_account"))
+                        put("type", it.getString("user_type"))
+                    }
+                    resultArray.put(jsonData)
+                }
+                resultData.put("result", "OK")
+                resultData.put("value", resultArray)
+            }
+        }
+
+        dbConnector.disconnect()
+        resultData
+    } catch (e: Exception) {
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
+    }
 }
 
 suspend fun getTokenListAsync(
@@ -495,65 +517,79 @@ suspend fun getTokenListAsync(
     sort: String? = "DESC",
     limit: Int? = null,
     page_number: Int? = null): JSONObject = withContext(Dispatchers.IO) {
-    val dbConnector = DBConnector()
-    dbConnector.connect()
-    val connection = dbConnector.getConnection()
-
     val resultArray = JSONArray()
+    var jsonData = JSONObject()
     val resultData = JSONObject().apply {
         put("result", "FAIL")
-        put("sum", 0)
         put("value", resultArray)
     }
-    var sum = 0;
-    val offset = limit?.let { lim -> page_number?.minus(1)?.times(lim) } ?: 0
 
-    var query =
-    " SELECT" +
-    " idx AS idx," +
-    " network AS network," +
-    " token_address AS token_id," +
-    " owner_account AS owner," +
-    " balance AS balance," +
-    " (SELECT decimals FROM token_table WHERE network = t.network AND token_address = t.token_address LIMIT 1) AS decimals," +
-    " (SELECT token_symbol FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS symbol," +
-    " (SELECT token_name FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS name," +
-    " (SELECT COUNT(*) FROM token_owner_table WHERE network = '$network' AND owner_account = '$ownerAddress') AS sum " +
-    " FROM" +
-    " token_owner_table t" +
-    " WHERE" +
-    " network = '$network' AND owner_account = '$ownerAddress'" +
-    " ORDER BY" +
-            " idx $sort";
+    try {
+        val dbConnector = DBConnector()
+        dbConnector.connect()
+        val connection = dbConnector.getConnection()
 
-    if(offset != 0) {
-        query += " LIMIT $limit OFFSET $offset";
-    }
-
-    connection?.use {
-        val dbQueryExecutor = DBQueryExector(it)
-        val resultSet = dbQueryExecutor.executeQuery(query)
-        resultSet?.use {
-            while (it.next()) {
-                val jsonData = JSONObject().apply {
-                    put("network", it.getString("network"))
-                    put("token_id", it.getString("token_id"))
-                    put("owner", it.getString("owner"))
-                    put("balance", it.getString("balance"))
-                    put("decimals", it.getString("decimals"))
-                    put("symbol", it.getString("symbol"))
-                    put("name", it.getString("name"))
-                }
-                resultArray.put(jsonData)
-                sum = it.getInt("sum")
-            }
-            resultData.put("result", "OK")
-            resultData.put("sum", sum)
-            resultData.put("value", resultArray)
+        val resultArray = JSONArray()
+        val resultData = JSONObject().apply {
+            put("result", "FAIL")
+            put("sum", 0)
+            put("value", resultArray)
         }
+        var sum = 0;
+        val offset = limit?.let { lim -> page_number?.minus(1)?.times(lim) } ?: 0
+
+        var query =
+        " SELECT" +
+        " idx AS idx," +
+        " network AS network," +
+        " token_address AS token_id," +
+        " owner_account AS owner," +
+        " balance AS balance," +
+        " (SELECT decimals FROM token_table WHERE network = t.network AND token_address = t.token_address LIMIT 1) AS decimals," +
+        " (SELECT token_symbol FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS symbol," +
+        " (SELECT token_name FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS name," +
+        " (SELECT COUNT(*) FROM token_owner_table WHERE network = '$network' AND owner_account = '$ownerAddress') AS sum " +
+        " FROM" +
+        " token_owner_table t" +
+        " WHERE" +
+        " network = '$network' AND owner_account = '$ownerAddress'" +
+        " ORDER BY" +
+                " idx $sort";
+
+        if(offset != 0) {
+            query += " LIMIT $limit OFFSET $offset";
+        }
+
+        connection?.use {
+            val dbQueryExecutor = DBQueryExector(it)
+            val resultSet = dbQueryExecutor.executeQuery(query)
+            resultSet?.use {
+                while (it.next()) {
+                    jsonData = JSONObject().apply {
+                        put("network", it.getString("network"))
+                        put("token_id", it.getString("token_id"))
+                        put("owner", it.getString("owner"))
+                        put("balance", it.getString("balance"))
+                        put("decimals", it.getString("decimals"))
+                        put("symbol", it.getString("symbol"))
+                        put("name", it.getString("name"))
+                    }
+                    resultArray.put(jsonData)
+                    sum = it.getInt("sum")
+                }
+                resultData.put("result", "OK")
+                resultData.put("sum", sum)
+                resultData.put("value", resultArray)
+            }
+        }
+        dbConnector.disconnect()
+        resultData
+    } catch (e: Exception) {
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
-    dbConnector.disconnect()
-    resultData
 }
 
 suspend fun signMessage(
