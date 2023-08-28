@@ -117,22 +117,33 @@ suspend fun sendTransactionAsync(
                 .transactionCount
 
             val chainId = web3.ethChainId().sendAsync().get().chainId.toLong()
-            val gasLimitEstimate = getEstimateGasAsync(
-                network,
-                "transferCoin",
-                null,
-                fromAddress,
-                toAddress,
-                amount
-            )
-            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
-            val gasLimit = gasLimitEstimate.getJSONArray("value")
-                .getJSONObject(0)
-                .getString("gas")
-            val gasPrice = gasPriceEstimate.getJSONArray("value")
-                .getJSONObject(0)
-                .getString("gas")
+            var gasLimit = ""
+            var gasPrice = ""
+            try {
+                val gasLimitEstimate = getEstimateGasAsync(
+                    network,
+                    "transferCoin",
+                    null,
+                    fromAddress,
+                    toAddress,
+                    amount
+                )
+                val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+                gasLimit = gasLimitEstimate.getJSONArray("value")
+                    .getJSONObject(0)
+                    .getString("gas")
+                gasPrice = gasPriceEstimate.getJSONArray("value")
+                    .getJSONObject(0)
+                    .getString("gas")
+            } catch (e: Exception){
+                jsonData.put("error", e.message)
+                resultArray.put(jsonData)
+                resultData.put("result", "FAIL")
+                resultData.put("value", resultArray)
+                return@withContext resultData
+            }
 
             val transaction = if (network == "bnb") {
                 RawTransaction.createEtherTransaction(
@@ -290,22 +301,33 @@ suspend fun sendTokenTransactionAsync(
 
             val chainId = web3.ethChainId().sendAsync().get().chainId.toLong()
 
-            val gasLimitEstimate = getEstimateGasAsync(
-                network,
-                "transferERC20",
-                token_address,
-                fromAddress,
-                toAddress,
-                amount
-            )
-            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+            var gasLimit = ""
+            var gasPrice = ""
+            try {
+                val gasLimitEstimate = getEstimateGasAsync(
+                    network,
+                    "transferERC20",
+                    token_address,
+                    fromAddress,
+                    toAddress,
+                    amount
+                )
+                val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
-            val gasLimit = gasLimitEstimate.getJSONArray("value")
-                .getJSONObject(0)
-                .getString("gas")
-            val gasPrice = gasPriceEstimate.getJSONArray("value")
-                .getJSONObject(0)
-                .getString("gas")
+                gasLimit = gasLimitEstimate.getJSONArray("value")
+                    .getJSONObject(0)
+                    .getString("gas")
+                gasPrice = gasPriceEstimate.getJSONArray("value")
+                    .getJSONObject(0)
+                    .getString("gas")
+            } catch (e: Exception){
+                jsonData.put("error", e.message)
+                resultArray.put(jsonData)
+                resultData.put("result", "FAIL")
+                resultData.put("value", resultArray)
+                return@withContext resultData
+            }
+
 
             val transaction = if (network == "bnb") {
                 RawTransaction.createTransaction(
@@ -386,6 +408,7 @@ suspend fun deployErc20Async(
             println("Error while fetching the private key: ${it.message}")
             null
         }
+
         var transactionHash = "";
         val decimals = "18"
         val decimalMultiplier = BigDecimal.TEN.pow(decimals.toInt())
@@ -440,7 +463,6 @@ suspend fun deployErc20Async(
             val credentials =
                 Credentials.create(privateKey)
 
-
             val function = Function(
                 "deployWrapped20",
                 listOf(Utf8String(name), Utf8String(symbol), Uint8(BigInteger(decimals)), Uint256(tokenAmount)),
@@ -456,29 +478,40 @@ suspend fun deployErc20Async(
 
             val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-            val gasLimitEstimate = getEstimateGasAsync(
-                network,
-                "deployERC20",
-                null,
-                ownerAddress,
-                null,
-                totalSupply,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                name, symbol
-            )
-            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+            var gasLimit = ""
+            var gasPrice = ""
+            try {
+                val gasLimitEstimate = getEstimateGasAsync(
+                    network,
+                    "deployERC20",
+                    null,
+                    ownerAddress,
+                    null,
+                    totalSupply,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    name,
+                    symbol
+                )
+                val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
-            val gasLimit = gasLimitEstimate.getJSONArray("value")
-                .getJSONObject(0)
-                .getString("gas")
-            val gasPrice = gasPriceEstimate.getJSONArray("value")
-                .getJSONObject(0)
-                .getString("gas")
+                gasLimit = gasLimitEstimate.getJSONArray("value")
+                    .getJSONObject(0)
+                    .getString("gas")
+                gasPrice = gasPriceEstimate.getJSONArray("value")
+                    .getJSONObject(0)
+                    .getString("gas")
+
+            } catch (e: Exception){
+                jsonData.put("error", e.message)
+                resultArray.put(jsonData)
+                resultData.put("result", "FAIL")
+                resultData.put("value", resultArray)
+                return@withContext resultData
+            }
 
             val tx = if (network == "bnb" || network == "bnbTest") {
                 RawTransaction.createTransaction(
@@ -488,6 +521,7 @@ suspend fun deployErc20Async(
                     bridgeContractAddress,
                     encodedFunction
                 )
+
             } else {
                 RawTransaction.createTransaction(
                     chainId,
@@ -533,8 +567,15 @@ suspend fun bridgeTokenAsync(
     toNetwork: String,
     amount: String,
 ): JSONObject = withContext(Dispatchers.IO) {
-    val jsonData = JSONObject()
     networkSettings(network)
+    val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
     val getAddressInfo = getAccountInfoAsync(fromAddress)
     val privateKey = runCatching {
         getAddressInfo.getJSONArray("value")
@@ -573,10 +614,22 @@ suspend fun bridgeTokenAsync(
 
         val amountInWei = Convert.toWei(amount, Convert.Unit.ETHER).toBigIntegerExact()
 
-        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
-        val gasPrice = gasPriceEstimate.getJSONArray("value")
-            .getJSONObject(0)
-            .getString("gas")
+        var gasLimit = ""
+        var gasPrice = ""
+        try {
+
+            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+            gasPrice = gasPriceEstimate.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("gas")
+
+        } catch (e: Exception){
+            jsonData.put("error", e.message)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+            return@withContext resultData
+        }
 
         val tx =
             if (network == "bnb" || network == "bnbTest") {
@@ -623,8 +676,15 @@ suspend fun bridgeTokenAsync(
     amount: String,
     token_address: String
 ): JSONObject = withContext(Dispatchers.IO) {
-    val jsonData = JSONObject()
     networkSettings(network)
+    val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
     val getAddressInfo = getAccountInfoAsync(fromAddress)
     val privateKey = runCatching {
         getAddressInfo.getJSONArray("value")
@@ -688,10 +748,22 @@ suspend fun bridgeTokenAsync(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
-        val gasPrice = gasPriceEstimate.getJSONArray("value")
-            .getJSONObject(0)
-            .getString("gas")
+        var gasLimit = ""
+        var gasPrice = ""
+        try {
+            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+            gasPrice = gasPriceEstimate.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("gas")
+
+        } catch (e: Exception){
+            jsonData.put("error", e.message)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+            return@withContext resultData
+        }
+
 
         val tx =
             if (network == "bnb" || network == "bnbTest") {
@@ -810,10 +882,21 @@ suspend fun tokenSwapAppoveAsync(
                 .get()
                 .transactionCount
 
-            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
-            val gasPrice = gasPriceEstimate.getJSONArray("value")
-                .getJSONObject(0)
-                .getString("gas")
+            var gasPrice = ""
+            try {
+                val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+                gasPrice = gasPriceEstimate.getJSONArray("value")
+                    .getJSONObject(0)
+                    .getString("gas")
+
+            } catch (e: Exception){
+                jsonData.put("error", e.message)
+                resultArray.put(jsonData)
+                resultData.put("result", "FAIL")
+                resultData.put("value", resultArray)
+                return@withContext resultData
+            }
+
 
             val tx =
                 if (network == "bnb" || network == "bnbTest") {
@@ -940,11 +1023,21 @@ suspend fun coinForTokenswapAsync(
                 .transactionCount
 
             val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+            var gasLimit = ""
+            var gasPrice = ""
+            try {
+                val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+                gasPrice = gasPriceEstimate.getJSONArray("value")
+                    .getJSONObject(0)
+                    .getString("gas")
 
-            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
-            val gasPrice = gasPriceEstimate.getJSONArray("value")
-                .getJSONObject(0)
-                .getString("gas")
+            } catch (e: Exception){
+                jsonData.put("error", e.message)
+                resultArray.put(jsonData)
+                resultData.put("result", "FAIL")
+                resultData.put("value", resultArray)
+                return@withContext resultData
+            }
 
             val tx =
                 if (network == "bnb" || network == "bnbTest") {
@@ -1073,25 +1166,36 @@ suspend fun tokenForTokenswapAsync(
                 .sendAsync()
                 .get()
                 .transactionCount
+            var gasLimit = ""
+            var gasPrice = ""
+            try {
+                val gasLimitEstimate = getEstimateGasAsync(
+                    network,
+                    "swapToken",
+                    fromTokenId,
+                    fromAddress,
+                    "",
+                    amountInWei.toString(),
+                    "",
+                    toTokenId
+                )
 
-            val gasLimitEstimate = getEstimateGasAsync(
-                network,
-                "swapToken",
-                fromTokenId,
-                fromAddress,
-                "",
-                amountInWei.toString(),
-                "",
-                toTokenId
-            )
-            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+                val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
-            val gasLimit = gasLimitEstimate.getJSONArray("value")
-                .getJSONObject(0)
-                .getString("gas")
-            val gasPrice = gasPriceEstimate.getJSONArray("value")
-                .getJSONObject(0)
-                .getString("gas")
+                gasLimit = gasLimitEstimate.getJSONArray("value")
+                    .getJSONObject(0)
+                    .getString("gas")
+                gasPrice = gasPriceEstimate.getJSONArray("value")
+                    .getJSONObject(0)
+                    .getString("gas")
+
+            } catch (e: Exception){
+                jsonData.put("error", e.message)
+                resultArray.put(jsonData)
+                resultData.put("result", "FAIL")
+                resultData.put("value", resultArray)
+                return@withContext resultData
+            }
 
             val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
@@ -1232,24 +1336,35 @@ suspend fun tokenForCoinswapAsync(
 
             val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-            val gasLimitEstimate =getEstimateGasAsync(
-                network,
-                "swapToken",
-                fromTokenId,
-                fromAddress,
-                "",
-                amountInWei.toString(),
-                "",
-                toTokenId
-            )
-            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+            var gasLimit = ""
+            var gasPrice = ""
+            try {
+                val gasLimitEstimate =getEstimateGasAsync(
+                    network,
+                    "swapToken",
+                    fromTokenId,
+                    fromAddress,
+                    "",
+                    amountInWei.toString(),
+                    "",
+                    toTokenId
+                )
+                val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
-            val gasLimit = gasLimitEstimate.getJSONArray("value")
-                .getJSONObject(0)
-                .getString("gas")
-            val gasPrice = gasPriceEstimate.getJSONArray("value")
-                .getJSONObject(0)
-                .getString("gas")
+                gasLimit = gasLimitEstimate.getJSONArray("value")
+                    .getJSONObject(0)
+                    .getString("gas")
+                gasPrice = gasPriceEstimate.getJSONArray("value")
+                    .getJSONObject(0)
+                    .getString("gas")
+
+            } catch (e: Exception){
+                jsonData.put("error", e.message)
+                resultArray.put(jsonData)
+                resultData.put("result", "FAIL")
+                resultData.put("value", resultArray)
+                return@withContext resultData
+            }
 
             val tx =
                 if (network == "bnb" || network == "bnbTest") {
