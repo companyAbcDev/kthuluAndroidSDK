@@ -561,7 +561,7 @@ suspend fun deployErc20Async(
 
 }
 
-suspend fun bridgeTokenAsync(
+suspend fun bridgeCoinAsync(
     network: String,
     fromAddress: String,
     toNetwork: String,
