@@ -391,7 +391,7 @@ suspend fun getTokenHistoryAsync(
     token_address: String? = "0x0000000000000000000000000000000000000000",
     sort: String? = "DESC",
     limit: Int? = 1000,
-    page_number: Int? = 0
+    page_number: Int? = 1
 ) : JSONObject = withContext(Dispatchers.IO) {
     val resultArray = JSONArray()
     var jsonData = JSONObject()
@@ -422,10 +422,10 @@ suspend fun getTokenHistoryAsync(
                     " token_transfer_table " +
                     "WHERE " +
                     " network = '$network' AND token_address = '$token_address' AND (`from` ='$owner_account' OR `to` ='$owner_account')" +
-                    "ORDER BY " +
-                    " block_number $sort " +
+                    " ORDER BY" +
+                    " block_number $sort";
                     "LIMIT $limit" +
-                    " OFFSET ${(page_number!!) * limit!!}"
+                    " OFFSET ${(page_number!! - 1) * limit!!}"
 
         connection?.use {
             val dbQueryExecutor = DBQueryExector(it)
@@ -452,7 +452,12 @@ suspend fun getTokenHistoryAsync(
                 resultData.put("result", "OK")
                 resultData.put("sum", total_count)
                 resultData.put("sort", sort)
-                resultData.put("page_count", page_number)
+                val page_count: Int? = if (total_count != null && limit != null) {
+                    Math.ceil(total_count.toDouble() / limit.toDouble()).toInt()
+                } else {
+                    0
+                }
+                resultData.put("page_count", page_count)
                 resultData.put("value", resultArray)
             }
         }
@@ -526,7 +531,7 @@ suspend fun getTokenListAsync(
     ownerAddress: String,
     sort: String? = "DESC",
     limit: Int? = 1000,
-    page_number: Int? = 0): JSONObject = withContext(Dispatchers.IO) {
+    page_number: Int? = 1): JSONObject = withContext(Dispatchers.IO) {
     val resultArray = JSONArray()
     var jsonData = JSONObject()
     val resultData = JSONObject().apply {
@@ -565,7 +570,7 @@ suspend fun getTokenListAsync(
         " ORDER BY" +
                 " idx $sort";
         "LIMIT $limit" +
-                " OFFSET ${(page_number!!) * limit!!}"
+                " OFFSET ${(page_number!! - 1) * limit!!}"
 
         connection?.use {
             val dbQueryExecutor = DBQueryExector(it)
@@ -586,8 +591,13 @@ suspend fun getTokenListAsync(
                 }
                 resultData.put("result", "OK")
                 resultData.put("sum", total_count)
+                val page_count: Int? = if (total_count != null && limit != null) {
+                    Math.ceil(total_count.toDouble() / limit.toDouble()).toInt()
+                } else {
+                    0
+                }
+                resultData.put("page_count", page_count)
                 resultData.put("sort", sort)
-                resultData.put("page_count", page_number)
                 resultData.put("value", resultArray)
             }
         }
