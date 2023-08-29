@@ -35,11 +35,11 @@ import java.util.Base64
 import javax.crypto.Cipher
 
 suspend fun kthuluSdkVersion(){
-    println("SDK version:0.0.87, Connect OK")
+    println("SDK version:1.0.0, Connect OK")
     val resultArray = JSONArray()
     var resultData = JSONObject()
     val jsonData = JSONObject()
-    jsonData.put("version", "SDK version:0.0.87, Connect OK")
+    jsonData.put("version", "SDK version:1.0.0, Connect OK")
     resultArray.put(jsonData)
     resultData.put("result", "OK")
     resultData.put("value", resultArray)
@@ -49,6 +49,7 @@ var rpcUrl ="";
 var bridgeConfigContractAddress = "";
 var bridgeContractAddress = "";
 var nftTransferContractAddress = "";
+var bridgeSetupContractAddress = "";
 var uniswapV2RouterAddress = "";
 var uniswapV2FactoryAddress = "";
 var maxPriorityFeePerGas = "";
@@ -125,6 +126,17 @@ fun networkSettings(network: String) {
         "cypress" -> "0x534d102f2bf1bcad450c8a5da6e1cfb6cdb93b2f"
         "polygon" -> "0x9a1c0ef3989f944e692232d491fe5395927be9bd"
         "bnb" -> "0x534d102f2bf1bcad450c8a5da6e1cfb6cdb93b2f"
+        "goerli" -> ""
+        "baobab" -> ""
+        "mumbai" -> ""
+        "tbnb" -> ""
+        else -> throw IllegalArgumentException("Invalid main network type")
+    }
+    bridgeSetupContractAddress = when (network) {
+        "ethereum" -> "0x3cf93d43251324c527346abf3e0559f4c7a713d1"
+        "cypress" -> "0x41ec118425e4d13b509382e97cdc3f09dbba8fd9"
+        "polygon" -> "0x4f5d095ccda117e168ea58bcccffafb9c3617491"
+        "bnb" -> ""
         "goerli" -> ""
         "baobab" -> ""
         "mumbai" -> ""

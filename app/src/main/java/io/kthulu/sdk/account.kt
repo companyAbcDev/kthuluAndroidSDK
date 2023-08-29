@@ -388,7 +388,10 @@ suspend fun getTokenInfoAsync(
 suspend fun getTokenHistoryAsync(
     network: String,
     owner_account: String,
-    token_address: String = "0x0000000000000000000000000000000000000000"
+    token_address: String? = "0x0000000000000000000000000000000000000000",
+    sort: String? = "DESC",
+    limit: Int? = 1000,
+    page_number: Int? = 0
 ) : JSONObject = withContext(Dispatchers.IO) {
     val resultArray = JSONArray()
     var jsonData = JSONObject()
@@ -401,7 +404,7 @@ suspend fun getTokenHistoryAsync(
         val dbConnector = DBConnector()
         dbConnector.connect()
         val connection = dbConnector.getConnection()
-
+        var total_count = 0
         val query =
             "SELECT " +
                     " network," +
@@ -420,7 +423,10 @@ suspend fun getTokenHistoryAsync(
                     "WHERE " +
                     " network = '$network' AND token_address = '$token_address' AND (`from` ='$owner_account' OR `to` ='$owner_account')" +
                     "ORDER BY " +
-                    " block_number DESC"
+                    " block_number $sort " +
+                    "LIMIT $limit" +
+                    " OFFSET ${(page_number!!) * limit!!}"
+
         connection?.use {
             val dbQueryExecutor = DBQueryExector(it)
             val resultSet = dbQueryExecutor.executeQuery(query)
@@ -438,11 +444,15 @@ suspend fun getTokenHistoryAsync(
                         put("gas_used", it.getString("gas_used"))
                         put("symbol", it.getString("symbol"))
                         put("decimals", it.getString("decimals"))
+                        total_count++
 
                     }
                     resultArray.put(jsonData)
                 }
                 resultData.put("result", "OK")
+                resultData.put("sum", total_count)
+                resultData.put("sort", sort)
+                resultData.put("page_count", page_number)
                 resultData.put("value", resultArray)
             }
         }
@@ -515,8 +525,8 @@ suspend fun getTokenListAsync(
     network: String,
     ownerAddress: String,
     sort: String? = "DESC",
-    limit: Int? = null,
-    page_number: Int? = null): JSONObject = withContext(Dispatchers.IO) {
+    limit: Int? = 1000,
+    page_number: Int? = 0): JSONObject = withContext(Dispatchers.IO) {
     val resultArray = JSONArray()
     var jsonData = JSONObject()
     val resultData = JSONObject().apply {
@@ -528,7 +538,7 @@ suspend fun getTokenListAsync(
         val dbConnector = DBConnector()
         dbConnector.connect()
         val connection = dbConnector.getConnection()
-
+        var total_count = 0
         val resultArray = JSONArray()
         val resultData = JSONObject().apply {
             put("result", "FAIL")
@@ -547,18 +557,15 @@ suspend fun getTokenListAsync(
         " balance AS balance," +
         " (SELECT decimals FROM token_table WHERE network = t.network AND token_address = t.token_address LIMIT 1) AS decimals," +
         " (SELECT token_symbol FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS symbol," +
-        " (SELECT token_name FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS name," +
-        " (SELECT COUNT(*) FROM token_owner_table WHERE network = '$network' AND owner_account = '$ownerAddress') AS sum " +
+        " (SELECT token_name FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS name " +
         " FROM" +
         " token_owner_table t" +
         " WHERE" +
         " network = '$network' AND owner_account = '$ownerAddress'" +
         " ORDER BY" +
                 " idx $sort";
-
-        if(offset != 0) {
-            query += " LIMIT $limit OFFSET $offset";
-        }
+        "LIMIT $limit" +
+                " OFFSET ${(page_number!!) * limit!!}"
 
         connection?.use {
             val dbQueryExecutor = DBQueryExector(it)
@@ -573,12 +580,14 @@ suspend fun getTokenListAsync(
                         put("decimals", it.getString("decimals"))
                         put("symbol", it.getString("symbol"))
                         put("name", it.getString("name"))
+                        total_count ++
                     }
                     resultArray.put(jsonData)
-                    sum = it.getInt("sum")
                 }
                 resultData.put("result", "OK")
-                resultData.put("sum", sum)
+                resultData.put("sum", total_count)
+                resultData.put("sort", sort)
+                resultData.put("page_count", page_number)
                 resultData.put("value", resultArray)
             }
         }
@@ -593,9 +602,9 @@ suspend fun getTokenListAsync(
 }
 
 suspend fun signMessage(
+    network: String,
     fromAddress: String,
     collection_id: String,
-    network: String,
     token_id: String,
     prefix: String
 ): String {
@@ -634,10 +643,10 @@ suspend fun signMessage(
 }
 
 suspend fun getSignerAddressFromSignature(
+    network: String,
     signature: String,
     fromAddress: String,
     collection_id: String,
-    network: String,
     token_id: String,
     prefix: String
 ): String {
@@ -665,6 +674,7 @@ suspend fun getSignerAddressFromSignature(
     val pubKey = Sign.signedPrefixedMessageToKey(message.toByteArray(Charsets.UTF_8), signData)
     return "0x" + Keys.getAddress(pubKey)
 }
+
 
 
 

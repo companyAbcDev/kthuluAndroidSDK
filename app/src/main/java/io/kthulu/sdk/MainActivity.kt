@@ -23,8 +23,10 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+
         launch {
             withContext(Dispatchers.IO) {
+
             }
         }
     }

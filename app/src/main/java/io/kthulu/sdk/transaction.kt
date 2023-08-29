@@ -656,16 +656,23 @@ suspend fun bridgeCoinAsync(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (txHash != null) {
-            jsonData.put("result", "OK")
-            jsonData.put("transactionHash", txHash)
+        if(txHash != "") {
+            jsonData.put("transaction_hash", txHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
         } else {
-            jsonData.put("result", "FAIL")
             jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", txHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -802,16 +809,23 @@ suspend fun bridgeTokenAsync(
         val signedTx = Numeric.toHexString(signedMessage)
 
         val txHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if (txHash != null) {
-            jsonData.put("result", "OK")
-            jsonData.put("transactionHash", txHash)
+        if(txHash != "") {
+            jsonData.put("transaction_hash", txHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
         } else {
-            jsonData.put("result", "FAIL")
             jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", txHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
-        jsonData.put("result", "FAIL")
         jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -1076,17 +1090,19 @@ suspend fun coinForTokenswapAsync(
             val signedTx = Numeric.toHexString(signedMessage)
 
             transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-            if(transactionHash != "") {
+            if(!transactionHash.isNullOrEmpty()) {
                 jsonData.put("transaction_hash", transactionHash)
                 resultArray.put(jsonData)
                 resultData.put("result", "OK")
                 resultData.put("value", resultArray)
+                return@withContext resultData
             } else {
                 jsonData.put("error", "insufficient funds")
                 jsonData.put("transaction_hash", transactionHash)
                 resultArray.put(jsonData)
                 resultData.put("result", "FAIL")
                 resultData.put("value", resultArray)
+                return@withContext resultData
             }
 
         } else {
@@ -1094,12 +1110,14 @@ suspend fun coinForTokenswapAsync(
             resultArray.put(jsonData)
             resultData.put("result", "FAIL")
             resultData.put("value", resultArray)
+            return@withContext resultData
         }
     } catch (e: Exception) {
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
         resultData.put("value", resultArray)
+        return@withContext resultData
     }
 }
 
