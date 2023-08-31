@@ -416,25 +416,25 @@ suspend fun getTokenHistoryAsync(
         var total_count = 0
         val query =
             "SELECT " +
-                    " network," +
-                    " token_address," +
-                    " block_number," +
-                    " timestamp," +
-                    " transaction_hash," +
-                    " `from`," +
-                    " `to`," +
-                    " amount," +
-                    " gas_used, " +
-                    " (SELECT token_symbol FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS symbol, " +
-                    " (SELECT decimals FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS decimals " +
-                    "FROM " +
-                    " token_transfer_table " +
-                    "WHERE " +
-                    " network = '$network' AND token_address = '$token_address' AND (`from` ='$owner_account' OR `to` ='$owner_account')" +
-                    " ORDER BY" +
-                    " block_number $sort ";
-        "LIMIT $limit " +
-                " OFFSET ${(page_number!! - 1) * limit!!}"
+            " network," +
+            " token_address," +
+            " block_number," +
+            " timestamp," +
+            " transaction_hash," +
+            " `from`," +
+            " `to`," +
+            " amount," +
+            " gas_used, " +
+            " (SELECT token_symbol FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS symbol, " +
+            " (SELECT decimals FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS decimals " +
+            "FROM " +
+            " token_transfer_table " +
+            "WHERE " +
+            " network = '$network' AND token_address = '$token_address' AND (`from` ='$owner_account' OR `to` ='$owner_account')" +
+            " ORDER BY" +
+            " block_number $sort ";
+            "LIMIT $limit " +
+            " OFFSET ${(page_number!! - 1) * limit!!}"
 
         connection?.use {
             val dbQueryExecutor = DBQueryExector(it)
@@ -563,21 +563,21 @@ suspend fun getTokenListAsync(
         val offset = limit?.let { lim -> page_number?.minus(1)?.times(lim) } ?: 0
 
         var query =
-            " SELECT" +
-                    " idx AS idx," +
-                    " network AS network," +
-                    " token_address AS token_id," +
-                    " owner_account AS owner," +
-                    " balance AS balance," +
-                    " (SELECT decimals FROM token_table WHERE network = t.network AND token_address = t.token_address LIMIT 1) AS decimals," +
-                    " (SELECT token_symbol FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS symbol," +
-                    " (SELECT token_name FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS name " +
-                    " FROM" +
-                    " token_owner_table t" +
-                    " WHERE" +
-                    " network = '$network' AND owner_account = '$ownerAddress'" +
-                    " ORDER BY" +
-                    " idx $sort";
+        " SELECT" +
+        " idx AS idx," +
+        " network AS network," +
+        " token_address AS token_id," +
+        " owner_account AS owner," +
+        " balance AS balance," +
+        " (SELECT decimals FROM token_table WHERE network = t.network AND token_address = t.token_address LIMIT 1) AS decimals," +
+        " (SELECT token_symbol FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS symbol," +
+        " (SELECT token_name FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS name " +
+        " FROM" +
+        " token_owner_table t" +
+        " WHERE" +
+        " network = '$network' AND owner_account = '$ownerAddress'" +
+        " ORDER BY" +
+                " idx $sort";
         "LIMIT $limit" +
                 " OFFSET ${(page_number!! - 1) * limit!!}"
 

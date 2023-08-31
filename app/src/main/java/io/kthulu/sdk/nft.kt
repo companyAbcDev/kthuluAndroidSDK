@@ -2400,20 +2400,20 @@ suspend fun approveSetupNftAsync(
         val credentials =
             Credentials.create(privateKey)
 
-        var gasPrice = ""
-        try {
-            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
-            gasPrice = gasPriceEstimate.getJSONArray("value")
-                .getJSONObject(0)
-                .getString("gas")
+            var gasPrice = ""
+            try {
+                val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+                gasPrice = gasPriceEstimate.getJSONArray("value")
+                    .getJSONObject(0)
+                    .getString("gas")
 
-        } catch (e: Exception){
-            jsonData.put("error", e.message)
-            resultArray.put(jsonData)
-            resultData.put("result", "FAIL")
-            resultData.put("value", resultArray)
-            return@withContext resultData
-        }
+            } catch (e: Exception){
+                jsonData.put("error", e.message)
+                resultArray.put(jsonData)
+                resultData.put("result", "FAIL")
+                resultData.put("value", resultArray)
+                return@withContext resultData
+            }
 
         val function =
             Function("setApprovalForAll",  listOf(Address(bridgeSetupContractAddress), Bool(true)),
@@ -2428,43 +2428,43 @@ suspend fun approveSetupNftAsync(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-        val tx =
-            if (network == "bnb" || network == "bnbTest") {
-                RawTransaction.createTransaction(
-                    nonce,
-                    BigInteger(gasPrice), // Add 20% to the gas price
-                    BigInteger("100000"), // Add 20% to the gas limit
-                    token_address,
-                    encodedFunction
-                )
-            } else {
-                RawTransaction.createTransaction(
-                    chainId,
-                    nonce,
-                    BigInteger("100000"), // Add 20% to the gas limit
-                    token_address,
-                    BigInteger.ZERO, // value
-                    encodedFunction,
-                    BigInteger(maxPriorityFeePerGas), // maxPriorityFeePerGas
-                    BigInteger(gasPrice) // Add 20% to the gas price
-                )
-            }
-        val signedMessage = TransactionEncoder.signMessage(tx, credentials)
-        val signedTx = Numeric.toHexString(signedMessage)
+            val tx =
+                if (network == "bnb" || network == "bnbTest") {
+                    RawTransaction.createTransaction(
+                        nonce,
+                        BigInteger(gasPrice), // Add 20% to the gas price
+                        BigInteger("100000"), // Add 20% to the gas limit
+                        token_address,
+                        encodedFunction
+                    )
+                } else {
+                    RawTransaction.createTransaction(
+                        chainId,
+                        nonce,
+                        BigInteger("100000"), // Add 20% to the gas limit
+                        token_address,
+                        BigInteger.ZERO, // value
+                        encodedFunction,
+                        BigInteger(maxPriorityFeePerGas), // maxPriorityFeePerGas
+                        BigInteger(gasPrice) // Add 20% to the gas price
+                    )
+                }
+            val signedMessage = TransactionEncoder.signMessage(tx, credentials)
+            val signedTx = Numeric.toHexString(signedMessage)
 
-        transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if(transactionHash != "") {
-            jsonData.put("transaction_hash", transactionHash)
-            resultArray.put(jsonData)
-            resultData.put("result", "OK")
-            resultData.put("value", resultArray)
-        } else {
-            jsonData.put("error", "insufficient funds")
-            jsonData.put("transaction_hash", transactionHash)
-            resultArray.put(jsonData)
-            resultData.put("result", "FAIL")
-            resultData.put("value", resultArray)
-        }
+            transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+            if(transactionHash != "") {
+                jsonData.put("transaction_hash", transactionHash)
+                resultArray.put(jsonData)
+                resultData.put("result", "OK")
+                resultData.put("value", resultArray)
+            } else {
+                jsonData.put("error", "insufficient funds")
+                jsonData.put("transaction_hash", transactionHash)
+                resultArray.put(jsonData)
+                resultData.put("result", "FAIL")
+                resultData.put("value", resultArray)
+            }
     } catch (e: Exception) {
         jsonData.put("error", e.message)
         resultArray.put(jsonData)

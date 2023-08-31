@@ -878,15 +878,15 @@ suspend fun bridgeTokenAsync(
             ).send()
 
             // Assuming each value is of length 64 characters (32 bytes, which is standard for Ethereum)
-            //        val networkHex = networkFeeResponse.result.substring(2, 66)
+    //        val networkHex = networkFeeResponse.result.substring(2, 66)
             val tokenFeeHex = networkFeeResponse.result.substring(66, 130)
-            //        val nftFeeHex = networkFeeResponse.result.substring(130, 194)
-            //        val regFeeHex = networkFeeResponse.result.substring(194, 258)
+    //        val nftFeeHex = networkFeeResponse.result.substring(130, 194)
+    //        val regFeeHex = networkFeeResponse.result.substring(194, 258)
 
-            //        val network = String(BigInteger(networkHex, 16).toByteArray())
+    //        val network = String(BigInteger(networkHex, 16).toByteArray())
             val tokenFee = BigInteger(tokenFeeHex, 16)
-            //        val nftFee = BigInteger(nftFeeHex, 16)
-            //        val regFee = BigInteger(regFeeHex, 16)
+    //        val nftFee = BigInteger(nftFeeHex, 16)
+    //        val regFee = BigInteger(regFeeHex, 16)
 
             val nonce = web3j.ethGetTransactionCount(fromAddress, DefaultBlockParameterName.PENDING)
                 .sendAsync()
