@@ -35,7 +35,7 @@ import java.util.Base64
 import javax.crypto.Cipher
 
 suspend fun kthuluSdkVersion(){
-//    println("SDK version:1.0.0, Connect OK")
+    println("SDK version:1.0.0, Connect OK")
     val resultArray = JSONArray()
     var resultData = JSONObject()
     val jsonData = JSONObject()
@@ -43,8 +43,6 @@ suspend fun kthuluSdkVersion(){
     resultArray.put(jsonData)
     resultData.put("result", "OK")
     resultData.put("value", resultArray)
-
-    println(resultData)
 }
 
 var rpcUrl ="";
