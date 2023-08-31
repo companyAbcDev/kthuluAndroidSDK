@@ -45,7 +45,7 @@ suspend fun sendTransactionAsync(
     val jsonData = JSONObject()
 
     // return array & object
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     var resultData = JSONObject()
     resultData.put("result", "FAIL")
     resultData.put("value", resultArray)
@@ -185,12 +185,14 @@ suspend fun sendTransactionAsync(
             resultData.put("result", "OK")
             resultData.put("value", resultArray)
         } else {
+            resultArray = JSONArray()
             jsonData.put("error", "insufficient funds")
             resultArray.put(jsonData)
             resultData.put("result", "FAIL")
             resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
@@ -210,7 +212,7 @@ suspend fun sendTokenTransactionAsync(
     val jsonData = JSONObject()
 
     // return array & object
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     var resultData = JSONObject()
     resultData.put("result", "FAIL")
     resultData.put("value", resultArray)
@@ -370,12 +372,14 @@ suspend fun sendTokenTransactionAsync(
             resultData.put("result", "OK")
             resultData.put("value", resultArray)
         } else {
+            resultArray = JSONArray()
             jsonData.put("error", "insufficient funds")
             resultArray.put(jsonData)
             resultData.put("result", "FAIL")
             resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
@@ -394,7 +398,7 @@ suspend fun deployErc20Async(
     val jsonData = JSONObject()
 
     // return array & object
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     var resultData = JSONObject()
 
     resultData.put("result", "FAIL")
@@ -512,6 +516,7 @@ suspend fun deployErc20Async(
                     .getString("gas")
 
             } catch (e: Exception){
+                resultArray = JSONArray()
                 jsonData.put("error", e.message)
                 resultArray.put(jsonData)
                 resultData.put("result", "FAIL")
@@ -552,12 +557,14 @@ suspend fun deployErc20Async(
             resultData.put("result", "OK")
             resultData.put("value", resultArray)
         } else {
+            resultArray = JSONArray()
             jsonData.put("error", "insufficient funds")
             resultArray.put(jsonData)
             resultData.put("result", "FAIL")
             resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
@@ -576,7 +583,7 @@ suspend fun bridgeCoinAsync(
     val jsonData = JSONObject()
 
     // return array & object
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     var resultData = JSONObject()
 
     resultData.put("result", "FAIL")
@@ -714,12 +721,14 @@ suspend fun bridgeCoinAsync(
             resultData.put("result", "OK")
             resultData.put("value", resultArray)
         } else {
+            resultArray = JSONArray()
             jsonData.put("error", "insufficient funds")
             resultArray.put(jsonData)
             resultData.put("result", "FAIL")
             resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
@@ -738,7 +747,7 @@ suspend fun bridgeTokenAsync(
     val jsonData = JSONObject()
 
     // return array & object
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     var resultData = JSONObject()
 
     resultData.put("result", "FAIL")
@@ -952,12 +961,14 @@ suspend fun bridgeTokenAsync(
             resultData.put("result", "OK")
             resultData.put("value", resultArray)
         } else {
+            resultArray = JSONArray()
             jsonData.put("error", "insufficient funds")
             resultArray.put(jsonData)
             resultData.put("result", "FAIL")
             resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
@@ -976,7 +987,7 @@ suspend fun tokenSwapAppoveAsync(
     val jsonData = JSONObject()
 
     // return array & object
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     var resultData = JSONObject()
     resultData.put("result", "FAIL")
     resultData.put("value", resultArray)
@@ -1094,6 +1105,7 @@ suspend fun tokenSwapAppoveAsync(
                 resultData.put("result", "OK")
                 resultData.put("value", resultArray)
             } else {
+                resultArray = JSONArray()
                 jsonData.put("error", "insufficient funds")
                 resultArray.put(jsonData)
                 resultData.put("result", "FAIL")
@@ -1101,12 +1113,14 @@ suspend fun tokenSwapAppoveAsync(
             }
 
         } else {
+            resultArray = JSONArray()
             jsonData.put("error", "pair not found")
             resultArray.put(jsonData)
             resultData.put("result", "FAIL")
             resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
@@ -1126,7 +1140,7 @@ suspend fun coinForTokenswapAsync(
     val jsonData = JSONObject()
 
     // return array & object
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     var resultData = JSONObject()
     resultData.put("result", "FAIL")
     resultData.put("value", resultArray)
@@ -1247,6 +1261,7 @@ suspend fun coinForTokenswapAsync(
             }
 
         } else {
+            resultArray = JSONArray()
             jsonData.put("error", "pair not found")
             resultArray.put(jsonData)
             resultData.put("result", "FAIL")
@@ -1254,6 +1269,7 @@ suspend fun coinForTokenswapAsync(
             return@withContext resultData
         }
     } catch (e: Exception) {
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
@@ -1274,7 +1290,7 @@ suspend fun tokenForTokenswapAsync(
     val jsonData = JSONObject()
 
     // return array & object
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     var resultData = JSONObject()
     resultData.put("result", "FAIL")
     resultData.put("value", resultArray)
@@ -1404,6 +1420,7 @@ suspend fun tokenForTokenswapAsync(
                 resultData.put("result", "OK")
                 resultData.put("value", resultArray)
             } else {
+                resultArray = JSONArray()
                 jsonData.put("error", "insufficient funds")
                 resultArray.put(jsonData)
                 resultData.put("result", "FAIL")
@@ -1411,12 +1428,14 @@ suspend fun tokenForTokenswapAsync(
             }
 
         } else {
+            resultArray = JSONArray()
             jsonData.put("error", "pair not found")
             resultArray.put(jsonData)
             resultData.put("result", "FAIL")
             resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
@@ -1436,7 +1455,7 @@ suspend fun tokenForCoinswapAsync(
     val jsonData = JSONObject()
 
     // return array & object
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     var resultData = JSONObject()
     resultData.put("result", "FAIL")
     resultData.put("value", resultArray)
@@ -1574,6 +1593,7 @@ suspend fun tokenForCoinswapAsync(
                 resultData.put("result", "OK")
                 resultData.put("value", resultArray)
             } else {
+                resultArray = JSONArray()
                 jsonData.put("error", "insufficient funds")
                 resultArray.put(jsonData)
                 resultData.put("result", "FAIL")
@@ -1581,12 +1601,14 @@ suspend fun tokenForCoinswapAsync(
             }
 
         } else {
+            resultArray = JSONArray()
             jsonData.put("error", "pair not found")
             resultArray.put(jsonData)
             resultData.put("result", "FAIL")
             resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")

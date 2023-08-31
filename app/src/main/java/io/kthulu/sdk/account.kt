@@ -28,7 +28,7 @@ suspend fun createAccountsAsync(
     // save data arrya
     var saveMainNet = JSONArray()
     var jsonData = JSONObject()
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     var resultData = JSONObject()
     resultData.put("result", "FAIL")
     resultData.put("value", resultArray)
@@ -79,6 +79,7 @@ suspend fun createAccountsAsync(
         resultData
 
     } catch(e: Exception){
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
@@ -123,7 +124,7 @@ suspend fun restoreAccountAsync(
     var saveMainNet = JSONArray()
     var jsonData = JSONObject()
     // return array & object
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     var resultData = JSONObject()
     resultData.put("result", "FAIL")
     resultData.put("value", resultArray)
@@ -190,6 +191,7 @@ suspend fun restoreAccountAsync(
 
         resultData
     } catch(e: Exception){
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
@@ -199,7 +201,7 @@ suspend fun restoreAccountAsync(
 }
 
 suspend fun getAccountInfoAsync(account: String): JSONObject = withContext(Dispatchers.IO) {
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     var jsonData = JSONObject()
     val resultData = JSONObject().apply {
         put("result", "FAIL")
@@ -234,6 +236,7 @@ suspend fun getAccountInfoAsync(account: String): JSONObject = withContext(Dispa
             put("value", resultArray)
         }
     } catch(e: Exception){
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
@@ -252,7 +255,7 @@ suspend fun getBalanceAsync(
     networkSettings(network)
     val jsonData = JSONObject()
     // return array & object
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     val resultData = JSONObject().apply {
         put("result", "FAIL")
         put("value", resultArray)
@@ -293,6 +296,7 @@ suspend fun getBalanceAsync(
             resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
@@ -307,7 +311,7 @@ suspend fun getTokenInfoAsync(
     networkSettings(network)
     val jsonData = JSONObject()
     // return array & object
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     val resultData = JSONObject().apply {
         put("result", "FAIL")
         put("value", resultArray)
@@ -387,6 +391,7 @@ suspend fun getTokenInfoAsync(
         resultData.put("result", "OK")
         resultData.put("value", resultArray)
     } catch (e: Exception) {
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
@@ -402,7 +407,7 @@ suspend fun getTokenHistoryAsync(
     limit: Int? = 1000,
     page_number: Int? = 1
 ) : JSONObject = withContext(Dispatchers.IO) {
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     var jsonData = JSONObject()
     val resultData = JSONObject().apply {
         put("result", "FAIL")
@@ -474,6 +479,7 @@ suspend fun getTokenHistoryAsync(
         dbConnector.disconnect()
         resultData
     } catch (e: Exception) {
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
@@ -486,7 +492,7 @@ suspend fun getTokenHistoryAsync(
 suspend fun getUsersAsync(
     owner: String
 ) : JSONObject = withContext(Dispatchers.IO) {
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     var jsonData = JSONObject()
     val resultData = JSONObject().apply {
         put("result", "FAIL")
@@ -528,6 +534,7 @@ suspend fun getUsersAsync(
         dbConnector.disconnect()
         resultData
     } catch (e: Exception) {
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
@@ -541,7 +548,7 @@ suspend fun getTokenListAsync(
     sort: String? = "DESC",
     limit: Int? = 1000,
     page_number: Int? = 1): JSONObject = withContext(Dispatchers.IO) {
-    val resultArray = JSONArray()
+    var resultArray = JSONArray()
     var jsonData = JSONObject()
     val resultData = JSONObject().apply {
         put("result", "FAIL")
@@ -613,6 +620,7 @@ suspend fun getTokenListAsync(
         dbConnector.disconnect()
         resultData
     } catch (e: Exception) {
+        resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")

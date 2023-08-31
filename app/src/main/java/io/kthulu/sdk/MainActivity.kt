@@ -29,12 +29,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Setting the context
-        MyContext.setAppContext(this)
-
         launch {
             withContext(Dispatchers.IO) {
-
             }
         }
     }
