@@ -27,7 +27,7 @@ suspend fun createAccountsAsync(
 ): JSONObject = withContext(Dispatchers.IO) {
     // save data arrya
     var saveMainNet = JSONArray()
-
+    var jsonData = JSONObject()
     val resultArray = JSONArray()
     var resultData = JSONObject()
     resultData.put("result", "FAIL")
@@ -79,7 +79,10 @@ suspend fun createAccountsAsync(
         resultData
 
     } catch(e: Exception){
-        resultData
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -118,7 +121,7 @@ suspend fun restoreAccountAsync(
 
     // save data array
     var saveMainNet = JSONArray()
-
+    var jsonData = JSONObject()
     // return array & object
     val resultArray = JSONArray()
     var resultData = JSONObject()
@@ -186,15 +189,18 @@ suspend fun restoreAccountAsync(
         resultData.put("value", resultArray)
 
         resultData
-    }catch (e: Exception) {
-        resultData.put("error", e.message)
-        resultData
+    } catch(e: Exception){
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 
 }
 
 suspend fun getAccountInfoAsync(account: String): JSONObject = withContext(Dispatchers.IO) {
     val resultArray = JSONArray()
+    var jsonData = JSONObject()
     val resultData = JSONObject().apply {
         put("result", "FAIL")
         put("value", resultArray)
@@ -227,8 +233,11 @@ suspend fun getAccountInfoAsync(account: String): JSONObject = withContext(Dispa
             put("result", "OK")
             put("value", resultArray)
         }
-    } catch (e: Exception) {
-        resultData
+    } catch(e: Exception){
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -423,8 +432,8 @@ suspend fun getTokenHistoryAsync(
                     "WHERE " +
                     " network = '$network' AND token_address = '$token_address' AND (`from` ='$owner_account' OR `to` ='$owner_account')" +
                     " ORDER BY" +
-                    " block_number $sort";
-        "LIMIT $limit" +
+                    " block_number $sort ";
+        "LIMIT $limit " +
                 " OFFSET ${(page_number!! - 1) * limit!!}"
 
         connection?.use {
@@ -610,81 +619,3 @@ suspend fun getTokenListAsync(
         resultData.put("value", resultArray)
     }
 }
-
-suspend fun signMessage(
-    network: String,
-    fromAddress: String,
-    collection_id: String,
-    token_id: String,
-    prefix: String
-): String {
-    val getAddressInfo = getAccountInfoAsync(fromAddress)
-    val privateKey = runCatching {
-        getAddressInfo.getJSONArray("value")
-            .getJSONObject(0)
-            .getString("private")
-    }.getOrElse {
-        // handle error here
-        println("Error while fetching the private key: ${it.message}")
-        null
-    }
-    var message = ""
-    val credentials = Credentials.create(privateKey)
-    val str = prefix+network+fromAddress+collection_id+token_id
-    val hash = Hash.sha3(Numeric.toHexStringNoPrefix(str.toByteArray()))
-//    println("Hash$hash")
-    if(network == "cypress") {
-        message = """
-        \x19Klaytn Signed Message:
-        ${hash.length}$hash
-        """.trimIndent()
-    } else {
-        message = """
-        \x19Ethereum Signed Message:
-        ${hash.length}$hash
-        """.trimIndent()
-    }
-    val data = message.toByteArray()
-    val signature = Sign.signPrefixedMessage(data, credentials.ecKeyPair)
-    val r = Numeric.toHexStringNoPrefix(signature.r)
-    val s = Numeric.toHexStringNoPrefix(signature.s)
-    val v = Numeric.toHexStringNoPrefix(signature.v)
-    return r + s + v
-}
-
-suspend fun getSignerAddressFromSignature(
-    network: String,
-    signature: String,
-    fromAddress: String,
-    collection_id: String,
-    token_id: String,
-    prefix: String
-): String {
-    var message = ""
-    val str = prefix+network+fromAddress+collection_id+token_id
-    val hash = Hash.sha3(Numeric.toHexStringNoPrefix(str.toByteArray()))
-//    println("Hash$hash")
-
-    if(network == "cypress") {
-        message = """
-        \x19Klaytn Signed Message:
-        ${hash.length}$hash
-        """.trimIndent()
-    } else {
-        message = """
-        \x19Ethereum Signed Message:
-        ${hash.length}$hash
-        """.trimIndent()
-    }
-    val r = Numeric.hexStringToByteArray(signature.substring(0, 64))
-    val s = Numeric.hexStringToByteArray(signature.substring(64, 128))
-    val v = BigInteger(signature.substring(128), 16).toByte()
-
-    val signData = Sign.SignatureData(v, r, s)
-    val pubKey = Sign.signedPrefixedMessageToKey(message.toByteArray(Charsets.UTF_8), signData)
-    return "0x" + Keys.getAddress(pubKey)
-}
-
-
-
-

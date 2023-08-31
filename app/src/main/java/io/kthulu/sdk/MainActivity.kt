@@ -15,14 +15,22 @@ class MyContext : Application() {
 
     companion object {
         lateinit var context: Context
+            private set // make the setter private so it can't be changed from outside
+
+        fun setAppContext(appContext: Context) {
+            context = appContext
+        }
     }
 }
+
 
 class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Setting the context
+        MyContext.setAppContext(this)
 
         launch {
             withContext(Dispatchers.IO) {
@@ -30,6 +38,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             }
         }
     }
+
 
     override fun onDestroy() {
         super.onDestroy()

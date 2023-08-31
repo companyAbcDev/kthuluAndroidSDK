@@ -1070,8 +1070,11 @@ suspend fun sendNFT721TransactionAsync(
                 .getString("private")
         }.getOrElse {
             // handle error here
-            println("Error while fetching the private key: ${it.message}")
-            null
+            jsonData.put("error", "Error while fetching the private key: ${it.message}")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+            return@withContext resultData
         }
 
         val web3j = Web3j.build(HttpService(rpcUrl))
@@ -1182,8 +1185,11 @@ suspend fun sendNFT1155TransactionAsync(
                 .getString("private")
         }.getOrElse {
             // handle error here
-            println("Error while fetching the private key: ${it.message}")
-            null
+            jsonData.put("error", "Error while fetching the private key: ${it.message}")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+            return@withContext resultData
         }
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
@@ -1302,8 +1308,11 @@ suspend fun sendNFT721BatchTransactionAsync(
                 .getString("private")
         }.getOrElse {
             // handle error here
-            println("Error while fetching the private key: ${it.message}")
-            null
+            jsonData.put("error", "Error while fetching the private key: ${it.message}")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+            return@withContext resultData
         }
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
@@ -1422,8 +1431,11 @@ suspend fun sendNFT1155BatchTransactionAsync(
                 .getString("private")
         }.getOrElse {
             // handle error here
-            println("Error while fetching the private key: ${it.message}")
-            null
+            jsonData.put("error", "Error while fetching the private key: ${it.message}")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+            return@withContext resultData
         }
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
@@ -1551,8 +1563,11 @@ suspend fun deployErc721Async(
                 .getString("private")
         }.getOrElse {
             // handle error here
-            println("Error while fetching the private key: ${it.message}")
-            null
+            jsonData.put("error", "Error while fetching the private key: ${it.message}")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+            return@withContext resultData
         }
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
@@ -1671,8 +1686,11 @@ suspend fun deployErc1155Async(
                 .getString("private")
         }.getOrElse {
             // handle error here
-            println("Error while fetching the private key: ${it.message}")
-            null
+            jsonData.put("error", "Error while fetching the private key: ${it.message}")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+            return@withContext resultData
         }
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
@@ -1792,8 +1810,11 @@ suspend fun mintErc721Async(
                 .getString("private")
         }.getOrElse {
             // handle error here
-            println("Error while fetching the private key: ${it.message}")
-            null
+            jsonData.put("error", "Error while fetching the private key: ${it.message}")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+            return@withContext resultData
         }
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
@@ -1905,8 +1926,11 @@ suspend fun mintErc1155Async(
                 .getString("private")
         }.getOrElse {
             // handle error here
-            println("Error while fetching the private key: ${it.message}")
-            null
+            jsonData.put("error", "Error while fetching the private key: ${it.message}")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+            return@withContext resultData
         }
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
@@ -2018,8 +2042,11 @@ suspend fun batchMintErc721Async(
                 .getString("private")
         }.getOrElse {
             // handle error here
-            println("Error while fetching the private key: ${it.message}")
-            null
+            jsonData.put("error", "Error while fetching the private key: ${it.message}")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+            return@withContext resultData
         }
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
@@ -2132,8 +2159,11 @@ suspend fun batchMintErc1155Async(
                 .getString("private")
         }.getOrElse {
             // handle error here
-            println("Error while fetching the private key: ${it.message}")
-            null
+            jsonData.put("error", "Error while fetching the private key: ${it.message}")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+            return@withContext resultData
         }
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
@@ -2246,8 +2276,11 @@ suspend fun burnErc721Async(
                 .getString("private")
         }.getOrElse {
             // handle error here
-            println("Error while fetching the private key: ${it.message}")
-            null
+            jsonData.put("error", "Error while fetching the private key: ${it.message}")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+            return@withContext resultData
         }
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
@@ -2356,8 +2389,11 @@ suspend fun approveSetupNftAsync(
                 .getString("private")
         }.getOrElse {
             // handle error here
-            println("Error while fetching the private key: ${it.message}")
-            null
+            jsonData.put("error", "Error while fetching the private key: ${it.message}")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+            return@withContext resultData
         }
         var transactionHash = "";
         val web3j = Web3j.build(HttpService(rpcUrl))
@@ -2462,8 +2498,11 @@ suspend fun burnErc1155Async(
                 .getString("private")
         }.getOrElse {
             // handle error here
-            println("Error while fetching the private key: ${it.message}")
-            null
+            jsonData.put("error", "Error while fetching the private key: ${it.message}")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+            return@withContext resultData
         }
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
