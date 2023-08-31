@@ -21,13 +21,26 @@ class DBConnector() {
 
     fun connect() {
         try {
-            // User-specified configuration
-            connectToDatabase(
-                ConfigHolder.databaseUrl!!,
-                ConfigHolder.databaseUsername!!,
-                ConfigHolder.databasePassword!!,
-                ConfigHolder.databaseDriverClassName!!
-            )
+            if (ConfigHolder.databaseUrl != null && ConfigHolder.databaseUsername != null &&
+                ConfigHolder.databasePassword != null && ConfigHolder.databaseDriverClassName != null
+            ) {
+                // User-specified configuration
+                connectToDatabase(
+                    ConfigHolder.databaseUrl!!,
+                    ConfigHolder.databaseUsername!!,
+                    ConfigHolder.databasePassword!!,
+                    ConfigHolder.databaseDriverClassName!!
+                )
+            } else {
+                // Manual configuration
+                connectToDatabase(
+                    "jdbc:mariadb://210.207.161.10:3306/kthulu?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false",
+                    "kthulu",
+                    "kthulu123",
+                    "org.mariadb.jdbc.Driver"
+                )
+            }
+
             println("Database Connection Successful")
         } catch (ex: ClassNotFoundException) {
             ex.printStackTrace()
@@ -63,12 +76,10 @@ class DBConnector() {
 class DBQueryExector(private val connection: Connection){
     fun executeQuery(sqlQuery : String) : ResultSet?{
         var statement : Statement? = null
-        var resultSet : ResultSet? = null
 
         try{
             statement = connection.createStatement()
-            resultSet = statement.executeQuery(sqlQuery)
-            return resultSet
+            return statement.executeQuery(sqlQuery)
         } catch (ex : SQLException){
             ex.printStackTrace()
         } finally {

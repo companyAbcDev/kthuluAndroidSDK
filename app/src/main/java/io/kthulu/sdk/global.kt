@@ -35,7 +35,7 @@ import java.util.Base64
 import javax.crypto.Cipher
 
 suspend fun kthuluSdkVersion(){
-    println("SDK version:1.0.0, Connect OK")
+//    println("SDK version:1.0.0, Connect OK")
     val resultArray = JSONArray()
     var resultData = JSONObject()
     val jsonData = JSONObject()
@@ -43,6 +43,8 @@ suspend fun kthuluSdkVersion(){
     resultArray.put(jsonData)
     resultData.put("result", "OK")
     resultData.put("value", resultArray)
+
+    println(resultData)
 }
 
 var rpcUrl ="";
@@ -337,16 +339,16 @@ suspend fun getEstimateGasAsync(
                         emptyList()
                     )
                     val encodedFunction = FunctionEncoder.encode(function)
-                        result = web3.ethEstimateGas(
-                            Transaction.createFunctionCallTransaction(
-                                from,
-                                BigInteger.ONE,
-                                gasPrice,
-                                BigInteger.ZERO, // temporary gasLimit
-                                bridgeContractAddress,
-                                encodedFunction // data
-                            )
-                        ).send().amountUsed
+                    result = web3.ethEstimateGas(
+                        Transaction.createFunctionCallTransaction(
+                            from,
+                            BigInteger.ONE,
+                            gasPrice,
+                            BigInteger.ZERO, // temporary gasLimit
+                            bridgeContractAddress,
+                            encodedFunction // data
+                        )
+                    ).send().amountUsed
                 }
             "swapToken" ->
                 if (from != null && token_address != null && amount != null && to_token_address != null) {
