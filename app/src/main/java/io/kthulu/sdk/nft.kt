@@ -17,9 +17,7 @@ import org.web3j.abi.datatypes.generated.Bytes4
 import org.web3j.abi.datatypes.generated.Uint256
 import org.web3j.abi.datatypes.generated.Uint32
 import org.web3j.abi.datatypes.generated.Uint8
-import org.web3j.crypto.Credentials
-import org.web3j.crypto.RawTransaction
-import org.web3j.crypto.TransactionEncoder
+import org.web3j.crypto.*
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.core.DefaultBlockParameterName
 import org.web3j.protocol.core.methods.request.Transaction
@@ -3315,4 +3313,79 @@ suspend fun chkNFTHolder(
         return@withContext result
     }
 }
+
+suspend fun signMessage(
+    network: String,
+    fromAddress: String,
+    collection_id: String,
+    token_id: String,
+    prefix: String
+): String {
+    val getAddressInfo = getAccountInfoAsync(fromAddress)
+    val privateKey = runCatching {
+        getAddressInfo.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("private")
+    }.getOrElse {
+        // handle error here
+        println("Error while fetching the private key: ${it.message}")
+        null
+    }
+    var message = ""
+    val credentials = Credentials.create(privateKey)
+    val str = prefix+network+fromAddress+collection_id+token_id
+    val hash = Hash.sha3(Numeric.toHexStringNoPrefix(str.toByteArray()))
+//    println("Hash$hash")
+    if(network == "cypress") {
+        message = """
+        \x19Klaytn Signed Message:
+        ${hash.length}$hash
+        """.trimIndent()
+    } else {
+        message = """
+        \x19Ethereum Signed Message:
+        ${hash.length}$hash
+        """.trimIndent()
+    }
+    val data = message.toByteArray()
+    val signature = Sign.signPrefixedMessage(data, credentials.ecKeyPair)
+    val r = Numeric.toHexStringNoPrefix(signature.r)
+    val s = Numeric.toHexStringNoPrefix(signature.s)
+    val v = Numeric.toHexStringNoPrefix(signature.v)
+    return r + s + v
+}
+
+suspend fun getSignerAddressFromSignature(
+    network: String,
+    signature: String,
+    fromAddress: String,
+    collection_id: String,
+    token_id: String,
+    prefix: String
+): String {
+    var message = ""
+    val str = prefix+network+fromAddress+collection_id+token_id
+    val hash = Hash.sha3(Numeric.toHexStringNoPrefix(str.toByteArray()))
+//    println("Hash$hash")
+
+    if(network == "cypress") {
+        message = """
+        \x19Klaytn Signed Message:
+        ${hash.length}$hash
+        """.trimIndent()
+    } else {
+        message = """
+        \x19Ethereum Signed Message:
+        ${hash.length}$hash
+        """.trimIndent()
+    }
+    val r = Numeric.hexStringToByteArray(signature.substring(0, 64))
+    val s = Numeric.hexStringToByteArray(signature.substring(64, 128))
+    val v = BigInteger(signature.substring(128), 16).toByte()
+
+    val signData = Sign.SignatureData(v, r, s)
+    val pubKey = Sign.signedPrefixedMessageToKey(message.toByteArray(Charsets.UTF_8), signData)
+    return "0x" + Keys.getAddress(pubKey)
+}
+
 
