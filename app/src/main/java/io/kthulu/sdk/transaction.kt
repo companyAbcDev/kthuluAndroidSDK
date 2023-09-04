@@ -524,7 +524,7 @@ suspend fun deployErc20Async(
                 return@withContext resultData
             }
 
-            val tx = if (network == "bnb" || network == "bnbTest") {
+            val tx = if (network == "bnb" || network == "tbnb") {
                 RawTransaction.createTransaction(
                     nonce,
                     BigInteger(gasPrice), // Add 20% to the gas price
@@ -604,6 +604,14 @@ suspend fun bridgeCoinAsync(
 
     try {
         var transactionHash = "";
+
+        var toNetwork = when (toNetwork) {
+            "ethereum" -> "ETHEREUM"
+            "cypress" -> "KLAYTN"
+            "polygon" -> "POLYGON"
+            "bnb" -> "BNBMAIN"
+            else -> throw IllegalArgumentException("Invalid main network type")
+        }
 
         val hex = textToHex(toNetwork)
 
@@ -688,7 +696,7 @@ suspend fun bridgeCoinAsync(
             }
 
             val tx =
-                if (network == "bnb" || network == "bnbTest") {
+                if (network == "bnb" || network == "tbnb") {
                     RawTransaction.createTransaction(
                         nonce,
                         BigInteger(gasPrice), // Add 20% to the gas price
@@ -740,8 +748,7 @@ suspend fun bridgeTokenAsync(
     network: String,
     fromAddress: String,
     toNetwork: String,
-    amount: String,
-    token_address: String
+    amount: String
 ): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
@@ -767,6 +774,40 @@ suspend fun bridgeTokenAsync(
     }
 
     try {
+        val tokenAddresses = mapOf(
+            "ethereum" to mapOf(
+                "cypress" to "0x39AAB030b052350A79ca9cB1F8992230288C512b",
+                "polygon" to "0xdF9c65B589e1286D4361EcFFa516e1fbfA4526df",
+                "bnb" to "0xcd9f176125b244cf5e9ca537d4fbbd62f7cec402"
+            ),
+            "cypress" to mapOf(
+                "ethereum" to "0x8d868082C214a23aA31E1862FF183426A3a81c07",
+                "polygon" to "0x085AB24e511bEa905bDe815FA38a11eEB507E206",
+                "bnb" to "0x655108c33bbe4e1dee19b15c2fee5a2cf73eea64"
+            ),
+            "polygon" to mapOf(
+                "ethereum" to "0x8f663C94A255835DA908D52657d83B071E59D96a",
+                "cypress" to "0x4F92e336aF5129bA4cD6d8cFE5272dc45B61cb06",
+                "bnb" to "0x8216acee6664c9ba1d340f48041931ddc3e800db"
+            ),
+            "bnb" to mapOf(
+                "ethereum" to "0x4354453f99bB208ab0a2e8774F929D7DC282A0f7",
+                "cypress" to "0x909CCb87D6Ee34742A89AD1f60c171007B46d7dB",
+                "polygon" to "0x60398bD8F17d3866fB6dE9545D3168CECA5d9a0c"
+            )
+        )
+
+        val tokenAddress = tokenAddresses[network]?.get(toNetwork)
+            ?: throw IllegalArgumentException("Invalid main network type")
+
+        var toNetwork = when (toNetwork) {
+            "ethereum" -> "ETHEREUM"
+            "cypress" -> "KLAYTN"
+            "polygon" -> "POLYGON"
+            "bnb" -> "BNBMAIN"
+            else -> throw IllegalArgumentException("Invalid main network type")
+        }
+
         var transactionHash = "";
 
         val hex = textToHex(toNetwork)
@@ -774,54 +815,21 @@ suspend fun bridgeTokenAsync(
         // Convert hex string to BigInteger
         val toNetworkHex = BigInteger(hex, 16)
 
+        val tokenFee = getNetworkFee(network, toNetwork, "token")
+
         if (network == "cypress") {
             val caver = Caver(rpcUrl)
             val keyring = KeyringFactory.createFromPrivateKey(privateKey)
             caver.wallet.add(keyring)
 
-            val networkFeeIdxFunction = Function(
-                "getNetworkFeeIdxByName",
-                listOf(Uint256(toNetworkHex)),
-                emptyList()
-            )
-            val encodedNetworkFeeIdxFunction = FunctionEncoder.encode(networkFeeIdxFunction)
-            val callObjectForFeeIdx = CallObject.createCallObject(
-                fromAddress,
-                bridgeConfigContractAddress,
-                null,
-                null,
-                null,
-                encodedNetworkFeeIdxFunction
-            )
-            val networkFeeIdxResponse = caver.rpc.klay.call(callObjectForFeeIdx).send()
-            val networkFeeIdx = BigInteger(networkFeeIdxResponse.result.replace("0x", ""), 16)
-            val networkFeeFunction = Function(
-                "getNetworkFeeByIdx",
-                listOf(Uint32(networkFeeIdx)),
-                emptyList()
-            )
-            val encodedNetworkFeeFunction = FunctionEncoder.encode(networkFeeFunction)
-            val callObjectForNetworkFee = CallObject.createCallObject(
-                fromAddress,
-                bridgeConfigContractAddress,
-                null,
-                null,
-                null,
-                encodedNetworkFeeFunction
-            )
-
-            val networkFeeResponse = caver.rpc.klay.call(callObjectForNetworkFee).send()
-            val tokenFeeHex = networkFeeResponse.result.substring(66, 130)
-            val tokenFee = BigInteger(tokenFeeHex, 16)
-
-            val clone = KIP7(caver, token_address)
+            val clone = KIP7(caver, tokenAddress)
             val decimals = clone.decimals()
             val decimalMultiplier = BigDecimal.TEN.pow(decimals)
             val tokenAmount = BigDecimal(amount).multiply(decimalMultiplier).toBigInteger()
 
             val function = Function(
                 "moveFromERC20",
-                listOf(Uint256(toNetworkHex), Address(token_address), Uint256(tokenAmount)),
+                listOf(Uint256(toNetworkHex), Address(tokenAddress), Uint256(tokenAmount)),
                 emptyList()
             )
             val encodedFunction = FunctionEncoder.encode(function)
@@ -861,7 +869,7 @@ suspend fun bridgeTokenAsync(
             val decimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
             val encodedDecimalsFunction = FunctionEncoder.encode(decimalsFunction)
             val decimalsResponse = web3j.ethCall(
-                Transaction.createEthCallTransaction(null, token_address, encodedDecimalsFunction),
+                Transaction.createEthCallTransaction(null, tokenAddress, encodedDecimalsFunction),
                 DefaultBlockParameterName.LATEST
             ).send()
             val decimalsOutput =
@@ -869,33 +877,6 @@ suspend fun bridgeTokenAsync(
             val decimals = (decimalsOutput[0].value as BigInteger).toInt()
             val decimalMultiplier = BigDecimal.TEN.pow(decimals)
             val tokenAmount = BigDecimal(amount).multiply(decimalMultiplier).toBigInteger()
-
-            val networkFeeIdxFunction = Function("getNetworkFeeIdxByName", listOf(Uint256(toNetworkHex)), emptyList())
-            val encodedNetworkFeeIdxFunction = FunctionEncoder.encode(networkFeeIdxFunction)
-            val networkFeeIdxResponse = web3j.ethCall(
-                Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeIdxFunction),
-                DefaultBlockParameterName.LATEST
-            ).send()
-
-            val networkFeeIdx = BigInteger(networkFeeIdxResponse.result.replace("0x", ""), 16)
-
-            val networkFeeFunction = Function("getNetworkFeeByIdx", listOf(Uint32(networkFeeIdx)), emptyList())
-            val encodedNetworkFeeFunction = FunctionEncoder.encode(networkFeeFunction)
-            val networkFeeResponse = web3j.ethCall(
-                Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeFunction),
-                DefaultBlockParameterName.LATEST
-            ).send()
-
-            // Assuming each value is of length 64 characters (32 bytes, which is standard for Ethereum)
-    //        val networkHex = networkFeeResponse.result.substring(2, 66)
-            val tokenFeeHex = networkFeeResponse.result.substring(66, 130)
-    //        val nftFeeHex = networkFeeResponse.result.substring(130, 194)
-    //        val regFeeHex = networkFeeResponse.result.substring(194, 258)
-
-    //        val network = String(BigInteger(networkHex, 16).toByteArray())
-            val tokenFee = BigInteger(tokenFeeHex, 16)
-    //        val nftFee = BigInteger(nftFeeHex, 16)
-    //        val regFee = BigInteger(regFeeHex, 16)
 
             val nonce = web3j.ethGetTransactionCount(fromAddress, DefaultBlockParameterName.PENDING)
                 .sendAsync()
@@ -922,13 +903,13 @@ suspend fun bridgeTokenAsync(
 
             val function = Function(
                 "moveFromERC20",
-                listOf(Uint256(toNetworkHex), Address(token_address), Uint256(tokenAmount)),
+                listOf(Uint256(toNetworkHex), Address(tokenAddress), Uint256(tokenAmount)),
                 emptyList()
             )
             val encodedFunction = FunctionEncoder.encode(function)
 
             val tx =
-                if (network == "bnb" || network == "bnbTest") {
+                if (network == "bnb" || network == "tbnb") {
                     RawTransaction.createTransaction(
                         nonce,
                         BigInteger(gasPrice), // Add 20% to the gas price
@@ -1075,7 +1056,7 @@ suspend fun tokenSwapAppoveAsync(
 
 
             val tx =
-                if (network == "bnb" || network == "bnbTest") {
+                if (network == "bnb" || network == "tbnb") {
                     RawTransaction.createTransaction(
                         nonce,
                         BigInteger(gasPrice), // Add 20% to the gas price
@@ -1221,7 +1202,7 @@ suspend fun coinForTokenswapAsync(
             }
 
             val tx =
-                if (network == "bnb" || network == "bnbTest") {
+                if (network == "bnb" || network == "tbnb") {
                     RawTransaction.createTransaction(
                         nonce,
                         BigInteger(gasPrice), // Add 20% to the gas price
@@ -1390,7 +1371,7 @@ suspend fun tokenForTokenswapAsync(
             val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
             val tx =
-                if (network == "bnb" || network == "bnbTest") {
+                if (network == "bnb" || network == "tbnb") {
                     RawTransaction.createTransaction(
                         nonce,
                         BigInteger(gasPrice), // Add 20% to the gas price
@@ -1563,7 +1544,7 @@ suspend fun tokenForCoinswapAsync(
             }
 
             val tx =
-                if (network == "bnb" || network == "bnbTest") {
+                if (network == "bnb" || network == "tbnb") {
                     RawTransaction.createTransaction(
                         nonce,
                         BigInteger(gasPrice), // Add 20% to the gas price

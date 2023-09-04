@@ -40,49 +40,54 @@ import java.util.Date
 suspend fun getMintableAddress(
     owner: Array<String>
 ): JSONObject = withContext(Dispatchers.IO) {
+    val jsonData = JSONObject()
 
-    val dbConnector = DBConnector()
-    dbConnector.connect()
-    val connection = dbConnector.getConnection()
-    val CAArray = JSONArray()
-    val CAData = JSONObject()
-
-    val own = owner?.joinToString("','", "'", "'")
-
-    val CAQuery=
-        "SELECT " +
-                "network, " +
-                "collection_id, " +
-                "collection_name, " +
-                "collection_symbol, " +
-                "nft_type, " +
-                "creator, " +
-                "owner, " +
-                "total_supply, " +
-                "deployment_date, " +
-                "slug, " +
-                "category, "+
-                "logo_url, "+
-                "s3_image_url, "+
-                "isverified, "+
-                "numOwners, "+
-                "currency, "+
-                "discord_link, "+
-                "twitter_link, "+
-                "instagram_link, "+
-                "facebook_link, "+
-                "telegram_link, "+
-                "external_url "+
-                "FROM " +
-                "nft_collection_table " +
-                "WHERE " +
-                "network IN ('ethereum','cypress','polygon','bnb') " +
-                "AND " +
-                "creator IN ('0x780A19638D126d59f4Ed048Ae1e0DC77DAf39a77','0x7E055Cb85FBE64da619865Df8a392d12f009aD81')" +
-                "AND " +
-                " owner IN (${own})"
+    // return array & object
+    var resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
 
     try {
+        val dbConnector = DBConnector()
+        dbConnector.connect()
+        val connection = dbConnector.getConnection()
+
+        val own = owner?.joinToString("','", "'", "'")
+
+        val CAQuery=
+            "SELECT " +
+                    "network, " +
+                    "collection_id, " +
+                    "collection_name, " +
+                    "collection_symbol, " +
+                    "nft_type, " +
+                    "creator, " +
+                    "owner, " +
+                    "total_supply, " +
+                    "deployment_date, " +
+                    "slug, " +
+                    "category, "+
+                    "logo_url, "+
+                    "s3_image_url, "+
+                    "isverified, "+
+                    "numOwners, "+
+                    "currency, "+
+                    "discord_link, "+
+                    "twitter_link, "+
+                    "instagram_link, "+
+                    "facebook_link, "+
+                    "telegram_link, "+
+                    "external_url "+
+                    "FROM " +
+                    "nft_collection_table " +
+                    "WHERE " +
+                    "network IN ('ethereum','cypress','polygon','bnb') " +
+                    "AND " +
+                    "creator IN ('0x780A19638D126d59f4Ed048Ae1e0DC77DAf39a77','0x7E055Cb85FBE64da619865Df8a392d12f009aD81')" +
+                    "AND " +
+                    " owner IN (${own})"
+
         if (connection != null) {
             val dbQueryExector = DBQueryExector(connection)
             val getCA: ResultSet? = dbQueryExector.executeQuery(CAQuery)
@@ -90,8 +95,6 @@ suspend fun getMintableAddress(
             if (getCA != null) {
                 try {
                     while (getCA.next()) {
-                        val objRes = JSONObject()
-
                         val network = getCA.getString("network")
                         val collection_id = getCA.getString("collection_id")
                         val collection_name = getCA.getString("collection_name")
@@ -115,30 +118,30 @@ suspend fun getMintableAddress(
                         val telegram_link = getCA.getString("telegram_link")
                         val external_url = getCA.getString("external_url")
 
-                        objRes.put("network", network)
-                        objRes.put("collection_id", collection_id)
-                        objRes.put("collection_name", collection_name)
-                        objRes.put("collection_symbol", collection_symbol)
-                        objRes.put("nft_type", nft_type)
-                        objRes.put("creator", creator)
-                        objRes.put("owner", owner)
-                        objRes.put("total_supply", total_supply)
-                        objRes.put("deployment_date", deployment_date)
-                        objRes.put("slug", slug)
-                        objRes.put("category", category)
-                        objRes.put("logo_url", logo_url)
-                        objRes.put("s3_image_url", s3_image_url)
-                        objRes.put("isverified", isverified)
-                        objRes.put("numOwners", numOwners)
-                        objRes.put("currency", currency)
-                        objRes.put("discord_link", discord_link)
-                        objRes.put("twitter_link", twitter_link)
-                        objRes.put("instagram_link", instagram_link)
-                        objRes.put("facebook_link", facebook_link)
-                        objRes.put("telegram_link", telegram_link)
-                        objRes.put("external_url", external_url)
+                        jsonData.put("network", network)
+                        jsonData.put("collection_id", collection_id)
+                        jsonData.put("collection_name", collection_name)
+                        jsonData.put("collection_symbol", collection_symbol)
+                        jsonData.put("nft_type", nft_type)
+                        jsonData.put("creator", creator)
+                        jsonData.put("owner", owner)
+                        jsonData.put("total_supply", total_supply)
+                        jsonData.put("deployment_date", deployment_date)
+                        jsonData.put("slug", slug)
+                        jsonData.put("category", category)
+                        jsonData.put("logo_url", logo_url)
+                        jsonData.put("s3_image_url", s3_image_url)
+                        jsonData.put("isverified", isverified)
+                        jsonData.put("numOwners", numOwners)
+                        jsonData.put("currency", currency)
+                        jsonData.put("discord_link", discord_link)
+                        jsonData.put("twitter_link", twitter_link)
+                        jsonData.put("instagram_link", instagram_link)
+                        jsonData.put("facebook_link", facebook_link)
+                        jsonData.put("telegram_link", telegram_link)
+                        jsonData.put("external_url", external_url)
 
-                        CAArray.put(objRes)
+                        resultArray.put(jsonData)
                     }
                 }
                 catch (ex: SQLException){
@@ -151,11 +154,11 @@ suspend fun getMintableAddress(
         }
         dbConnector.disconnect()
 
-        CAData.put("result", "OK")
-        CAData.put("value", CAArray)
+        resultData.put("result", "OK")
+        resultData.put("value", resultArray)
     }catch (e: Exception){
-        CAData.put("result", "FAIL")
-        CAData.put("reason", e)
+        resultData.put("result", "FAIL")
+        resultData.put("reason", e)
     }
 }
 
@@ -165,12 +168,18 @@ suspend fun setNFTsHide(
     collection_id: String,
     token_id: String
 ): JSONObject = withContext(Dispatchers.IO) {
-    val dbConnector = DBConnector()
-    dbConnector.connect()
-    val connection = dbConnector.getConnection()
-    val hideData = JSONObject()
+
+    val jsonData = JSONObject()
+
+    // return array & object
+    var resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
 
     try {
+        val dbConnector = DBConnector()
+        dbConnector.connect()
+        val connection = dbConnector.getConnection()
         val insertQuery =
             "INSERT INTO " +
                     "nft_hide_table (network, account, collection_id, token_id, image_url, nft_name) " +
@@ -190,36 +199,34 @@ suspend fun setNFTsHide(
                     "AND " +
                     "token.token_id = '${token_id}'"
 
-        println(insertQuery)
-
         val statement: Statement = connection!!.createStatement()
         statement.executeUpdate(insertQuery)
-        hideData.put("result", "OK")
+        resultData.put("result", "OK")
     } catch (e: SQLException) {
-        e.printStackTrace()
-        hideData.put("result", "FAIL")
+        resultArray = JSONArray()
         if (e.message?.contains("Duplicate entry") == true) {
-            hideData.put("reason", "Duplicate entry")
+            jsonData.put("error", "Duplicate entry")
         }
         else if (e.message?.contains("Table not found") == true) {
-            hideData.put("reason", "Table not found")
+            jsonData.put("error", "Table not found")
         }
         else if (e.message?.contains("Column not found") == true) {
-            hideData.put("reason", "Column not found")
+            jsonData.put("error", "Column not found")
         }
         else if (e.message?.contains("Connection timeout") == true) {
-            hideData.put("reason", "Connection timeout")
+            jsonData.put("error", "Connection timeout")
         }
         else if (e.message?.contains("Connection refused") == true) {
-            hideData.put("reason", "Connection refused")
+            jsonData.put("error", "Connection refused")
         }
         else {
-            hideData.put("reason", e.printStackTrace())
+            jsonData.put("error", e.message)
         }
-    } finally {
-        connection?.close()
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
+        return@withContext resultData
     }
-    hideData
 }
 suspend fun deleteNFTsHide(
     network: String,
@@ -227,12 +234,17 @@ suspend fun deleteNFTsHide(
     collection_id: String,
     token_id: String
 ): JSONObject = withContext(Dispatchers.IO) {
-    val dbConnector = DBConnector()
-    dbConnector.connect()
-    val connection = dbConnector.getConnection()
-    val hideData = JSONObject()
+    val jsonData = JSONObject()
+
+    // return array & object
+    var resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
 
     try {
+        val dbConnector = DBConnector()
+        dbConnector.connect()
+        val connection = dbConnector.getConnection()
         val deleteQuery =
             "DELETE FROM " +
                     "nft_hide_table " +
@@ -245,23 +257,27 @@ suspend fun deleteNFTsHide(
                     "AND " +
                     "token_id = '$token_id' "
 
-        println(deleteQuery)
 
         val statement: Statement = connection!!.createStatement()
         val rowsAffected = statement.executeUpdate(deleteQuery)
 
         if (rowsAffected > 0) {
-            hideData.put("result", "OK")
+            resultData.put("result", "OK")
         } else {
-            hideData.put("result", "FAIL1")
+            resultArray = JSONArray()
+            jsonData.put("error", "delete error")
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
         }
-    } catch (e: SQLException) {
-        e.printStackTrace()
-        hideData.put("result", "FAIL2")
-    } finally {
-        connection?.close()
+    } catch (e: Exception) {
+        resultArray = JSONArray()
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
+        return@withContext resultData
     }
-    hideData
 }
 
 @SuppressLint("SuspiciousIndentation")
@@ -273,116 +289,110 @@ suspend fun getNFTsByWallet(
     limit: Int ?= null,
     page_number: Int ?= null
 ): JSONObject = withContext(Dispatchers.IO) {
+    var resultArray = JSONArray() // { ..., value : [ nftArray ]}
+    var resultData = JSONObject() // { "result": OK, "sum": 1, "sort": "desc", "page_count": 1, "value" : nftArray }
 
-    val dbConnector = DBConnector()
-    dbConnector.connect()
-    val connection = dbConnector.getConnection()
-    val nftArray = JSONArray() // { ..., value : [ nftArray ]}
-    val nftData = JSONObject() // { "result": OK, "sum": 1, "sort": "desc", "page_count": 1, "value" : nftArray }
+    try {
+        val dbConnector = DBConnector()
+        dbConnector.connect()
+        val connection = dbConnector.getConnection()
 
-    val net = network.joinToString("','", "'", "'")
 
-//    var offset = limit?.let { (page_number?.minus(1))?.times(it) }
-    var offset = if (page_number != null && limit != null) {
-        (page_number - 1) * limit
-    } else {
-        0 // 또는 적절한 기본값 설정
-    }
-    if(page_number==null || page_number==0 || page_number==1){
-        offset = 0
-    }
-    var strQuery =
-        "SELECT" +
-                " owner.network AS network," +
-                " collection.collection_id AS collection_id," +
-                " collection.collection_name AS collection_name," +
-                " collection.collection_symbol AS collection_symbol," +
-                " collection.creator AS creator," +
-                " collection.deployment_date AS deployment_date," +
-                " collection.total_supply AS total_supply," +
-                " token.nft_type AS nft_type," +
-                " token.minted_time AS minted_time," +
-                " token.block_number AS block_number," +
-                " owner.owner_account AS owner_account," +
-                " token.token_id AS token_id," +
-                " owner.balance AS balance," +
-                " token.token_uri AS token_uri," +
-                " token.nft_name AS nft_name," +
-                " token.image_url AS image_url," +
-                " token.external_url AS external_url," +
-                " token.token_info AS token_info" +
-                " FROM " +
-                "nft_owner_table AS owner" +
-                " JOIN " +
-                "nft_token_table AS token" +
-                " ON" +
-                " owner.collection_id = token.collection_id" +
-                " AND " +
-                " owner.token_id = token.token_id" +
-                " AND " +
-                " owner.network = token.network" +
-                " JOIN " +
-                "nft_collection_table AS collection" +
-                " ON" +
-                " token.collection_id = collection.collection_id" +
-                " AND" +
-                " token.network = collection.network" +
-                " WHERE" +
-                " owner.network IN (${net})" +
-                " AND" +
-                " owner.balance != '0'"
-    if (account != null) {
-        strQuery += " AND owner.owner_account = '$account'"
-    }
-    if (collection_id != null) {
-        strQuery += " AND owner.collection_id = '$collection_id'"
-    }
-    strQuery += " AND NOT EXISTS ( SELECT 1 FROM nft_hide_table AS hide WHERE hide.network = owner.network AND hide.account = owner.owner_account AND hide.token_id = owner.token_id AND hide.collection_id = owner.collection_id)"
-    strQuery += " ORDER BY token.block_number"
-    if (sort == " asc") {
-        strQuery += " asc"
-    } else {
-        strQuery += " desc"
-    }
-    strQuery += ", CAST(token.token_id AS SIGNED) desc"
-    if (limit != null) {
-        strQuery += " LIMIT $limit OFFSET $offset"
-    }
-    println(strQuery)
+        val net = network.joinToString("','", "'", "'")
 
-    var sumQuery =
-        "SELECT" +
-                " count(*) AS sum" +
-                " FROM" +
-                " nft_owner_table AS owner" +
-                " JOIN" +
-                " nft_token_table AS token" +
-                " ON" +
-                " owner.collection_id = token.collection_id" +
-                " AND" +
-                " owner.token_id = token.token_id" +
-                " AND" +
-                " owner.network = token.network" +
-                " JOIN" +
-                " nft_collection_table AS collection" +
-                " ON" +
-                " token.collection_id = collection.collection_id" +
-                " AND" +
-                " token.network = collection.network" +
-                " WHERE" +
-                " owner.network IN ($net)" +
-                " AND" +
-                " owner.balance != '0'"
-    if (account != null) {
-        sumQuery += " AND owner.owner_account = '$account' "
-    }
-    if (collection_id != null) {
-        sumQuery += " AND owner.collection_id = '$collection_id' "
-    }
-    sumQuery += " AND NOT EXISTS ( SELECT 1 FROM nft_hide_table AS hideWHERE hide.network = owner.network AND hide.account = owner.owner_account AND hide.token_id = owner.token_id AND hide.collection_id = owner.collection_id)"
+        // var offset = limit?.let { (page_number?.minus(1))?.times(it) }
+        val offset = if (page_number != null && limit != null) {
+            (page_number - 1) * limit
+        } else {
+            0
+        }
 
-    println(sumQuery)
-    try{
+        var strQuery =
+            "SELECT" +
+                    " owner.network AS network," +
+                    " collection.collection_id AS collection_id," +
+                    " collection.collection_name AS collection_name," +
+                    " collection.collection_symbol AS collection_symbol," +
+                    " collection.creator AS creator," +
+                    " collection.deployment_date AS deployment_date," +
+                    " collection.total_supply AS total_supply," +
+                    " token.nft_type AS nft_type," +
+                    " token.minted_time AS minted_time," +
+                    " token.block_number AS block_number," +
+                    " owner.owner_account AS owner_account," +
+                    " token.token_id AS token_id," +
+                    " owner.balance AS balance," +
+                    " token.token_uri AS token_uri," +
+                    " token.nft_name AS nft_name," +
+                    " token.image_url AS image_url," +
+                    " token.external_url AS external_url," +
+                    " token.token_info AS token_info" +
+                    " FROM " +
+                    "nft_owner_table AS owner" +
+                    " JOIN " +
+                    "nft_token_table AS token" +
+                    " ON" +
+                    " owner.collection_id = token.collection_id" +
+                    " AND " +
+                    " owner.token_id = token.token_id" +
+                    " AND " +
+                    " owner.network = token.network" +
+                    " JOIN " +
+                    "nft_collection_table AS collection" +
+                    " ON" +
+                    " token.collection_id = collection.collection_id" +
+                    " AND" +
+                    " token.network = collection.network" +
+                    " WHERE" +
+                    " owner.network IN (${net})" +
+                    " AND" +
+                    " owner.balance != '0'"
+        if (account != null) {
+            strQuery += " AND owner.owner_account = '$account'"
+        }
+        if (collection_id != null) {
+            strQuery += " AND owner.collection_id = '$collection_id'"
+        }
+        strQuery += " AND NOT EXISTS ( SELECT 1 FROM nft_hide_table AS hide WHERE hide.network = owner.network AND hide.account = owner.owner_account AND hide.token_id = owner.token_id AND hide.collection_id = owner.collection_id)"
+        strQuery += " ORDER BY token.block_number"
+        if (sort == " asc") {
+            strQuery += " asc"
+        } else {
+            strQuery += " desc"
+        }
+        strQuery += ", CAST(token.token_id AS SIGNED) desc"
+        if (limit != null) {
+            strQuery += " LIMIT $limit OFFSET $offset"
+        }
+
+        var sumQuery =
+            "SELECT count(*) AS sum " +
+                    "FROM nft_owner_table AS owner " +
+                    "JOIN nft_token_table AS token " +
+                    "ON owner.collection_id = token.collection_id " +
+                    "AND owner.token_id = token.token_id " +
+                    "AND owner.network = token.network " +
+                    "JOIN nft_collection_table AS collection " +
+                    "ON token.collection_id = collection.collection_id " +
+                    "AND token.network = collection.network " +
+                    "WHERE owner.network IN ($net) " +
+                    "AND owner.balance != '0'";
+
+            if (account != null) {
+                sumQuery += " AND owner.owner_account = '$account' ";
+            }
+
+            if (collection_id != null) {
+                sumQuery += " AND owner.collection_id = '$collection_id' ";
+            }
+
+            sumQuery += " AND NOT EXISTS ( " +
+                    "SELECT 1 " +
+                    "FROM nft_hide_table AS hide " +   // Added a space after 'hide'
+                    "WHERE hide.network = owner.network " +
+                    "AND hide.account = owner.owner_account " +
+                    "AND hide.token_id = owner.token_id " +
+                    "AND hide.collection_id = owner.collection_id)";
         var sum: Int? = null
         if ((account==null && collection_id==null) || (limit == null && page_number != null)) {
             throw Exception() // 예외 발생
@@ -446,7 +456,7 @@ suspend fun getNFTsByWallet(
                         objRes.put("attributes", attribute ?: JSONObject.NULL)
                         objRes.put("metadata", token_info ?: JSONObject.NULL)
 
-                        nftArray.put(objRes)
+                        resultArray.put(objRes)
                     }
                 }
                 catch (ex: SQLException){
@@ -478,20 +488,25 @@ suspend fun getNFTsByWallet(
         val page_count: Int? = if (sum != null && limit != null) {
             Math.ceil(sum.toDouble() / limit.toDouble()).toInt()
         } else {
-            0
+            1
         }
 
-        nftData.put("result", "OK")
-        nftData.put("sum", sum)
-        val sort = sort ?: "desc" // 기본값을 "default_value"로 지정하거나 원하는 대체값을 사용하세요.
-        nftData.put("sort", sort)
-        nftData.put("page_count", page_count)
-        nftData.put("value", nftArray)
+        resultData.put("result", "OK")
+        resultData.put("sum", sum)
+        resultData.put("page_count", page_count)
+        resultData.put("sort", sort)
+        resultData.put("value", resultArray)
+
     }
     catch (e: Exception) {
-        nftData.put("result", "FAIL")
-        nftData.put("error", e.message)
+        resultArray = JSONArray()
+        val jsonData = JSONObject()
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
+
 }
 suspend fun getNFTsByWalletArray(
     network: Array<String>,
@@ -505,8 +520,8 @@ suspend fun getNFTsByWalletArray(
     val dbConnector = DBConnector()
     dbConnector.connect()
     val connection = dbConnector.getConnection()
-    val nftArray = JSONArray() // { ..., value : [ nftArray ]}
-    val nftData = JSONObject() // { "result": OK, "sum": 1, "sort": "desc", "page_count": 1, "value" : nftArray }
+    var nftArray = JSONArray() // { ..., value : [ nftArray ]}
+    var nftData = JSONObject() // { "result": OK, "sum": 1, "sort": "desc", "page_count": 1, "value" : nftArray }
 
     val net = network.joinToString("','", "'", "'")
     val acc = account?.joinToString("','", "'", "'")
@@ -707,7 +722,7 @@ suspend fun getNFTsByWalletArray(
         val page_count: Int? = if (sum != null && limit != null) {
             Math.ceil(sum.toDouble() / limit.toDouble()).toInt()
         } else {
-            0
+            1
         }
 
         nftData.put("result", "OK")
@@ -718,8 +733,12 @@ suspend fun getNFTsByWalletArray(
         nftData.put("value", nftArray)
     }
     catch (e: Exception) {
-        nftData.put("result", "FAIL")
+        nftArray = JSONArray()
         nftData.put("error", e.message)
+        nftArray.put(nftData)
+        nftData.put("result", "FAIL")
+        nftData.put("value", nftArray)
+        return@withContext nftData
     }
 }
 
@@ -738,8 +757,8 @@ suspend fun getNFTsTransferHistory(
     val dbConnector = DBConnector()
     dbConnector.connect()
     val connection = dbConnector.getConnection()
-    val transactionArray = JSONArray()
-    val transferData = JSONObject()
+    var transactionArray = JSONArray()
+    var transferData = JSONObject()
 
     var offset = if (page_number != null && limit != null) {
         (page_number - 1) * limit
@@ -897,7 +916,7 @@ suspend fun getNFTsTransferHistory(
         val page_count: Int? = if (sum != null && limit != null) {
             Math.ceil(sum.toDouble() / limit.toDouble()).toInt()
         } else {
-            0
+            1
         }
 
         transferData.put("result", "OK")
@@ -908,8 +927,12 @@ suspend fun getNFTsTransferHistory(
         transferData.put("value", transactionArray)
     }
     catch (e: Exception){
-        transferData.put("result", "FAIL")
+        transactionArray = JSONArray()
         transferData.put("error", e.message)
+        transactionArray.put(transferData)
+        transferData.put("result", "FAIL")
+        transferData.put("value", transactionArray)
+        return@withContext transferData
     }
 }
 //숨김테이블 조회
@@ -923,8 +946,8 @@ suspend fun getNFTsHide(
     val dbConnector = DBConnector()
     dbConnector.connect()
     val connection = dbConnector.getConnection()
-    val hideData = JSONObject()
-    val hideArray = JSONArray()
+    var hideData = JSONObject()
+    var hideArray = JSONArray()
 
     val net = network.joinToString("','", "'", "'")
     val acc = account.joinToString("','", "'", "'")
@@ -1030,7 +1053,7 @@ suspend fun getNFTsHide(
         val page_count: Int? = if (sum != null && limit != null) {
             Math.ceil(sum.toDouble() / limit.toDouble()).toInt()
         } else {
-            0
+            1
         }
 
         hideData.put("result", "OK")
@@ -1041,8 +1064,12 @@ suspend fun getNFTsHide(
         hideData.put("value", hideArray)
     }
     catch (e: Exception){
-        hideData.put("result", "FAIL")
+        hideArray = JSONArray()
         hideData.put("error", e.message)
+        hideArray.put(hideData)
+        hideData.put("result", "FAIL")
+        hideData.put("value", hideArray)
+        return@withContext hideData
     }
 }
 
@@ -1114,7 +1141,7 @@ suspend fun sendNFT721TransactionAsync(
             .getJSONObject(0)
             .getString("gas")
 
-        val tx = if (network == "bnb" || network == "bnbTest") {
+        val tx = if (network == "bnb" || network == "tbnb") {
             RawTransaction.createTransaction(
                 nonce,
                 BigInteger(gasPrice),
@@ -1239,7 +1266,7 @@ suspend fun sendNFT1155TransactionAsync(
             .getJSONObject(0)
             .getString("gas")
 
-        val tx = if (network == "bnb" || network == "bnbTest") {
+        val tx = if (network == "bnb" || network == "tbnb") {
             RawTransaction.createTransaction(
                 nonce,
                 BigInteger(gasPrice),
@@ -1359,7 +1386,7 @@ suspend fun sendNFT721BatchTransactionAsync(
             .getJSONObject(0)
             .getString("gas")
 
-        val tx = if (network == "bnb" || network == "bnbTest") {
+        val tx = if (network == "bnb" || network == "tbnb") {
             RawTransaction.createTransaction(
                 nonce,
                 BigInteger(gasPrice),
@@ -1492,7 +1519,7 @@ suspend fun sendNFT1155BatchTransactionAsync(
             .getJSONObject(0)
             .getString("gas")
 
-        val tx = if (network == "bnb" || network == "bnbTest") {
+        val tx = if (network == "bnb" || network == "tbnb") {
             RawTransaction.createTransaction(
                 nonce,
                 BigInteger(gasPrice), // Add 20% to the gas price
@@ -1615,7 +1642,7 @@ suspend fun deployErc721Async(
             .getJSONObject(0)
             .getString("gas")
 
-        val tx = if (network == "bnb" || network == "bnbTest") {
+        val tx = if (network == "bnb" || network == "tbnb") {
             RawTransaction.createTransaction(
                 nonce,
                 BigInteger(gasPrice), // Add 20% to the gas price
@@ -1738,7 +1765,7 @@ suspend fun deployErc1155Async(
             .getJSONObject(0)
             .getString("gas")
 
-        val tx = if (network == "bnb" || network == "bnbTest") {
+        val tx = if (network == "bnb" || network == "tbnb") {
             RawTransaction.createTransaction(
                 nonce,
                 BigInteger(gasPrice), // Add 20% to the gas price
@@ -1854,7 +1881,7 @@ suspend fun mintErc721Async(
             .getJSONObject(0)
             .getString("gas")
 
-        val tx = if (network == "bnb" || network == "bnbTest") {
+        val tx = if (network == "bnb" || network == "tbnb") {
             RawTransaction.createTransaction(
                 nonce,
                 BigInteger(gasPrice), // Add 20% to the gas price
@@ -1970,7 +1997,7 @@ suspend fun mintErc1155Async(
             .getJSONObject(0)
             .getString("gas")
 
-        val tx = if (network == "bnb" || network == "bnbTest") {
+        val tx = if (network == "bnb" || network == "tbnb") {
             RawTransaction.createTransaction(
                 nonce,
                 BigInteger(gasPrice), // Add 20% to the gas price
@@ -2088,7 +2115,7 @@ suspend fun batchMintErc721Async(
             .getJSONObject(0)
             .getString("gas")
 
-        val tx = if (network == "bnb" || network == "bnbTest") {
+        val tx = if (network == "bnb" || network == "tbnb") {
             RawTransaction.createTransaction(
                 nonce,
                 BigInteger(gasPrice), // Add 20% to the gas price
@@ -2207,7 +2234,7 @@ suspend fun batchMintErc1155Async(
             .getJSONObject(0)
             .getString("gas")
 
-        val tx = if (network == "bnb" || network == "bnbTest") {
+        val tx = if (network == "bnb" || network == "tbnb") {
             RawTransaction.createTransaction(
                 nonce,
                 BigInteger(gasPrice), // Add 20% to the gas price
@@ -2320,7 +2347,7 @@ suspend fun burnErc721Async(
             .getJSONObject(0)
             .getString("gas")
 
-        val tx = if (network == "bnb" || network == "bnbTest") {
+        val tx = if (network == "bnb" || network == "tbnb") {
             RawTransaction.createTransaction(
                 nonce,
                 BigInteger(gasPrice), // Add 20% to the gas price
@@ -2429,7 +2456,7 @@ suspend fun approveSetupNftAsync(
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
             val tx =
-                if (network == "bnb" || network == "bnbTest") {
+                if (network == "bnb" || network == "tbnb") {
                     RawTransaction.createTransaction(
                         nonce,
                         BigInteger(gasPrice), // Add 20% to the gas price
@@ -2541,7 +2568,7 @@ suspend fun burnErc1155Async(
             .getJSONObject(0)
             .getString("gas")
 
-        val tx = if (network == "bnb" || network == "bnbTest") {
+        val tx = if (network == "bnb" || network == "tbnb") {
             RawTransaction.createTransaction(
                 nonce,
                 BigInteger(gasPrice), // Add 20% to the gas price
@@ -2622,6 +2649,14 @@ suspend fun bridgeErc721Async(
         val credentials =
             Credentials.create(privateKey)
 
+        var toNetwork = when (toNetwork) {
+            "ethereum" -> "ETHEREUM"
+            "cypress" -> "KLAYTN"
+            "polygon" -> "POLYGON"
+            "bnb" -> "BNBMAIN"
+            else -> throw IllegalArgumentException("Invalid main network type")
+        }
+
         val hex = textToHex(toNetwork)
 
         // Convert hex string to BigInteger
@@ -2634,32 +2669,7 @@ suspend fun bridgeErc721Async(
             emptyList()
         )
 
-        val networkFeeIdxFunction = Function("getNetworkFeeIdxByName", listOf(Uint256(toNetworkHex)), emptyList())
-        val encodedNetworkFeeIdxFunction = FunctionEncoder.encode(networkFeeIdxFunction)
-        val networkFeeIdxResponse = web3j.ethCall(
-            Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeIdxFunction),
-            DefaultBlockParameterName.LATEST
-        ).send()
-
-        val networkFeeIdx = BigInteger(networkFeeIdxResponse.result.replace("0x", ""), 16)
-
-        val networkFeeFunction = Function("getNetworkFeeByIdx", listOf(Uint32(networkFeeIdx)), emptyList())
-        val encodedNetworkFeeFunction = FunctionEncoder.encode(networkFeeFunction)
-        val networkFeeResponse = web3j.ethCall(
-            Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeFunction),
-            DefaultBlockParameterName.LATEST
-        ).send()
-
-        // Assuming each value is of length 64 characters (32 bytes, which is standard for Ethereum)
-//        val networkHex = networkFeeResponse.result.substring(2, 66)
-//        val tokenFeeHex = networkFeeResponse.result.substring(66, 130)
-//        val nftFeeHex = networkFeeResponse.result.substring(130, 194)
-        val regFeeHex = networkFeeResponse.result.substring(194, 258)
-
-//        val network = String(BigInteger(networkHex, 16).toByteArray())
-//        val tokenFee = BigInteger(tokenFeeHex, 16)
-//        val nftFee = BigInteger(nftFeeHex, 16)
-        val regFee = BigInteger(regFeeHex, 16)
+        val regFee = getNetworkFee(network, toNetwork, "setup")
 
         val encodedFunction = FunctionEncoder.encode(function)
 
@@ -2676,7 +2686,7 @@ suspend fun bridgeErc721Async(
             .getString("gas")
 
         val tx =
-            if (network == "bnb" || network == "bnbTest") {
+            if (network == "bnb" || network == "tbnb") {
                 RawTransaction.createTransaction(
                     nonce,
                     BigInteger(gasPrice), // Add 20% to the gas price
@@ -2756,6 +2766,14 @@ suspend fun bridgeErc1155Async(
         val credentials =
             Credentials.create(privateKey)
 
+        var toNetwork = when (toNetwork) {
+            "ethereum" -> "ETHEREUM"
+            "cypress" -> "KLAYTN"
+            "polygon" -> "POLYGON"
+            "bnb" -> "BNBMAIN"
+            else -> throw IllegalArgumentException("Invalid main network type")
+        }
+
         val hex = textToHex(toNetwork)
 
         // Convert hex string to BigInteger
@@ -2768,32 +2786,7 @@ suspend fun bridgeErc1155Async(
             emptyList()
         )
 
-        val networkFeeIdxFunction = Function("getNetworkFeeIdxByName", listOf(Uint256(toNetworkHex)), emptyList())
-        val encodedNetworkFeeIdxFunction = FunctionEncoder.encode(networkFeeIdxFunction)
-        val networkFeeIdxResponse = web3j.ethCall(
-            Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeIdxFunction),
-            DefaultBlockParameterName.LATEST
-        ).send()
-
-        val networkFeeIdx = BigInteger(networkFeeIdxResponse.result.replace("0x", ""), 16)
-
-        val networkFeeFunction = Function("getNetworkFeeByIdx", listOf(Uint32(networkFeeIdx)), emptyList())
-        val encodedNetworkFeeFunction = FunctionEncoder.encode(networkFeeFunction)
-        val networkFeeResponse = web3j.ethCall(
-            Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeFunction),
-            DefaultBlockParameterName.LATEST
-        ).send()
-
-        // Assuming each value is of length 64 characters (32 bytes, which is standard for Ethereum)
-//        val networkHex = networkFeeResponse.result.substring(2, 66)
-//        val tokenFeeHex = networkFeeResponse.result.substring(66, 130)
-//        val nftFeeHex = networkFeeResponse.result.substring(130, 194)
-        val regFeeHex = networkFeeResponse.result.substring(194, 258)
-
-//        val network = String(BigInteger(networkHex, 16).toByteArray())
-//        val tokenFee = BigInteger(tokenFeeHex, 16)
-//        val nftFee = BigInteger(nftFeeHex, 16)
-        val regFee = BigInteger(regFeeHex, 16)
+        val regFee = getNetworkFee(network, toNetwork, "setup")
 
         val encodedFunction = FunctionEncoder.encode(function)
 
@@ -2810,7 +2803,7 @@ suspend fun bridgeErc1155Async(
             .getString("gas")
 
         val tx =
-            if (network == "bnb" || network == "bnbTest") {
+            if (network == "bnb" || network == "tbnb") {
                 RawTransaction.createTransaction(
                     nonce,
                     BigInteger(gasPrice), // Add 20% to the gas price
@@ -3172,10 +3165,14 @@ suspend fun verifyNFT(
         }
         resultData.put("result", "OK")
         resultData.put("value", result)
-        resultData
     } catch (e: Exception) {
-        println(e)
-        resultData
+        val resultArray = JSONArray()
+        val jsonData = JSONObject()
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
+        return@withContext resultData
     }
 }
 
@@ -3275,14 +3272,24 @@ suspend fun chkNFTHolder(
             if (balance >= 1) {
                 result.put("result", "OK")
             } else {
-                result.put("result", "FAIL")
+                val resultArray = JSONArray()
+                val jsonData = JSONObject()
                 result.put("error", "NOT OWNER")
+                resultArray.put(jsonData)
+                result.put("result", "FAIL")
+                result.put("value", resultArray)
+                return@withContext result
             }
         }
     }
     catch (e: Exception){
+        val resultArray = JSONArray()
+        val jsonData = JSONObject()
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
         result.put("result", "FAIL")
-        result.put("error", e.message)
+        result.put("value", resultArray)
+        return@withContext result
     }
 }
 

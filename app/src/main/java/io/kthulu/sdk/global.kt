@@ -14,6 +14,7 @@ import org.web3j.abi.datatypes.DynamicBytes
 import org.web3j.abi.datatypes.Function
 import org.web3j.abi.datatypes.Utf8String
 import org.web3j.abi.datatypes.generated.Uint256
+import org.web3j.abi.datatypes.generated.Uint32
 import org.web3j.abi.datatypes.generated.Uint8
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.core.DefaultBlockParameterName
@@ -83,7 +84,7 @@ fun networkSettings(network: String) {
         "ethereum" -> "0xf643a4fb01cbbfb561cc906c1f37d5718ef3bba3"
         "cypress" -> "0x33fcf21e795447cc1668ef2ca06dbf78eb180763"
         "polygon" -> "0xf643a4fb01cbbfb561cc906c1f37d5718ef3bba3"
-        "bnb" -> ""
+        "bnb" -> "0xf643a4fb01cbbfb561cc906c1f37d5718ef3bba3"
         "goerli" -> ""
         "baobab" -> ""
         "mumbai" -> ""
@@ -94,11 +95,22 @@ fun networkSettings(network: String) {
         "ethereum" -> "0x7362fa30ada8ccf2130017f2a8f0b6be78aa38de"
         "cypress" -> "0xb7e2b748364c7d38311444a62a57d76dd697e99b"
         "polygon" -> "0x7362fa30ada8ccf2130017f2a8f0b6be78aa38de"
-        "bnb" -> ""
+        "bnb" -> "0x873caf09b6668db216191a0121bc481e261643b3"
         "goerli" -> "0xc11735Ce3c155E755bC9839A5B5d06dEa0482306"
         "baobab" -> "0x808ee7147d91eae0f658164248402ac380eb5f17"
         "mumbai" -> "0x95f34cD3FE7ca6273f7EaFcA35E65A36aa8894cC"
         "tbnb" -> "0x808EE7147d91EAe0f658164248402ac380EB5F17"
+        else -> throw IllegalArgumentException("Invalid main network type")
+    }
+    bridgeSetupContractAddress = when (network) {
+        "ethereum" -> "0x3cf93d43251324c527346abf3e0559f4c7a713d1"
+        "cypress" -> "0x41ec118425e4d13b509382e97cdc3f09dbba8fd9"
+        "polygon" -> "0x4f5d095ccda117e168ea58bcccffafb9c3617491"
+        "bnb" -> "0x35baced894af326573a85565c1cf3aed54394b60"
+        "goerli" -> ""
+        "baobab" -> ""
+        "mumbai" -> ""
+        "tbnb" -> ""
         else -> throw IllegalArgumentException("Invalid main network type")
     }
     uniswapV2RouterAddress = when (network) {
@@ -127,24 +139,14 @@ fun networkSettings(network: String) {
         "ethereum" -> "0x9a1c0ef3989f944e692232d491fe5395927be9bd"
         "cypress" -> "0x534d102f2bf1bcad450c8a5da6e1cfb6cdb93b2f"
         "polygon" -> "0x9a1c0ef3989f944e692232d491fe5395927be9bd"
-        "bnb" -> "0x534d102f2bf1bcad450c8a5da6e1cfb6cdb93b2f"
+        "bnb" -> "0x718e40874dac43d840f1e9bb135c3c098174e832"
         "goerli" -> ""
         "baobab" -> ""
         "mumbai" -> ""
         "tbnb" -> ""
         else -> throw IllegalArgumentException("Invalid main network type")
     }
-    bridgeSetupContractAddress = when (network) {
-        "ethereum" -> "0x3cf93d43251324c527346abf3e0559f4c7a713d1"
-        "cypress" -> "0x41ec118425e4d13b509382e97cdc3f09dbba8fd9"
-        "polygon" -> "0x4f5d095ccda117e168ea58bcccffafb9c3617491"
-        "bnb" -> ""
-        "goerli" -> ""
-        "baobab" -> ""
-        "mumbai" -> ""
-        "tbnb" -> ""
-        else -> throw IllegalArgumentException("Invalid main network type")
-    }
+
 }
 
 // Create RSA key
@@ -645,4 +647,47 @@ suspend fun getEstimateGasAsync(
 fun textToHex(text: String): String {
     if (text.isEmpty()) return "0x00"
     return text.map { it.toInt().toString(16).padStart(2, '0') }.joinToString("")
+}
+
+fun getNetworkFee(network: String, toNetwork: String, type: String): BigInteger {
+    networkSettings(network)
+    val web3j = Web3j.build(HttpService(rpcUrl))
+    val hex = textToHex(toNetwork)
+    // Convert hex string to BigInteger
+    val toNetworkHex = BigInteger(hex, 16)
+    val networkFeeIdxFunction = Function("getNetworkFeeIdxByName", listOf(Uint256(toNetworkHex)), emptyList())
+    val encodedNetworkFeeIdxFunction = FunctionEncoder.encode(networkFeeIdxFunction)
+    val networkFeeIdxResponse = web3j.ethCall(
+        Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeIdxFunction),
+        DefaultBlockParameterName.LATEST
+    ).send()
+
+    val networkFeeIdx = BigInteger(networkFeeIdxResponse.result.replace("0x", ""), 16)
+
+    val networkFeeFunction = Function("getNetworkFeeByIdx", listOf(Uint32(networkFeeIdx)), emptyList())
+    val encodedNetworkFeeFunction = FunctionEncoder.encode(networkFeeFunction)
+    val networkFeeResponse = web3j.ethCall(
+        Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeFunction),
+        DefaultBlockParameterName.LATEST
+    ).send()
+
+    // Assuming each value is of length 64 characters (32 bytes, which is standard for Ethereum)
+//    val networkHex = networkFeeResponse.result.substring(2, 66)
+    val tokenFeeHex = networkFeeResponse.result.substring(66, 130)
+    val nftFeeHex = networkFeeResponse.result.substring(130, 194)
+    val regFeeHex = networkFeeResponse.result.substring(194, 258)
+
+//    val network = String(BigInteger(networkHex, 16).toByteArray())
+    val tokenFee = BigInteger(tokenFeeHex, 16)
+    val nftFee = BigInteger(nftFeeHex, 16)
+    val regFee = BigInteger(regFeeHex, 16)
+
+    val resultFee = when (type) {
+        "nft" -> nftFee
+        "token" -> tokenFee
+        "setup" -> regFee
+        else -> throw IllegalArgumentException("Invalid main network type")
+    }
+
+    return resultFee
 }

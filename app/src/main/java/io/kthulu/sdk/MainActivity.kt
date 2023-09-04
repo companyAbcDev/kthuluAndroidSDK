@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import io.kthulu.sdk.MyContext.Companion.setAppContext
 import kotlinx.coroutines.*
 
 // Application에서 Context를 가져올 수 있도록 구현
@@ -29,8 +30,12 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        setAppContext(this)
+
         launch {
             withContext(Dispatchers.IO) {
+                val a = getNFTsByWallet(arrayOf("cypress"), "0x1400594A07925C7110B9D22791f220Ee924C0513")
+                println(a)
             }
         }
     }
