@@ -200,8 +200,16 @@ suspend fun setNFTsHide(
                     "token.token_id = '${token_id}'"
 
         val statement: Statement = connection!!.createStatement()
-        statement.executeUpdate(insertQuery)
-        resultData.put("result", "OK")
+        val rowsAffected = statement.executeUpdate(insertQuery)
+        if (rowsAffected > 0) {
+            resultData.put("result", "OK")
+        } else {
+            resultArray = JSONArray()
+            jsonData.put("error", "nft does not exist to hide")
+            resultArray.put(jsonData)
+            resultData.put("value", resultArray)
+        }
+
     } catch (e: SQLException) {
         resultArray = JSONArray()
         if (e.message?.contains("Duplicate entry") == true) {
@@ -265,7 +273,7 @@ suspend fun deleteNFTsHide(
             resultData.put("result", "OK")
         } else {
             resultArray = JSONArray()
-            jsonData.put("error", "delete error")
+            jsonData.put("error", "nft does not exist to cancel")
             resultArray.put(jsonData)
             resultData.put("result", "FAIL")
             resultData.put("value", resultArray)
@@ -2855,11 +2863,23 @@ suspend fun verifyNFT(
 ): JSONObject = withContext(Dispatchers.IO) {
     val result = JSONObject()
     var resultData = JSONObject()
+    var resultArray = JSONArray()
     resultData.put("result", "FAIL")
 
-    val dbConnector = DBConnector()
-    dbConnector.connect()
-    val connection = dbConnector.getConnection()
+    if(api_key.isNullOrEmpty()) {
+        result.put("error", "API Key is NULL")
+        resultArray.put(result)
+        resultData.put("value", resultArray)
+        return@withContext resultData
+    }
+
+    if (network == "cypress") {
+        return@withContext JSONObject().apply {
+            put("result", "FAIL")
+            put("value", JSONArray().put(JSONObject().put("error", "cypress is not supported")))
+        }
+    }
+
     result.put("ContractVerify", false)
     result.put("TokenURIAvailable", false)
     result.put("TokenURIResponseOnTime", false)
@@ -2883,6 +2903,9 @@ suspend fun verifyNFT(
                 "AND " +
                 "token_id = '${token_id}' "
     try {
+        val dbConnector = DBConnector()
+        dbConnector.connect()
+        val connection = dbConnector.getConnection()
         if (connection != null) {
             val dbQueryExector = DBQueryExector(connection)
             val getTransaction1: ResultSet? = dbQueryExector.executeQuery(query)
@@ -2902,8 +2925,9 @@ suspend fun verifyNFT(
             }
         }
         if(nftType.isNullOrEmpty()) {
-            resultData.put("error", "DB info NULL")
-            resultData.put("result", "FAIL")
+            result.put("error", "DB info NULL")
+            resultArray.put(result)
+            resultData.put("value", resultArray)
             return@withContext resultData
         }
         val hostUrl: String
@@ -3182,107 +3206,106 @@ suspend fun chkNFTHolder(
     collection_id: String,
     token_id: String
 ): JSONObject = withContext(Dispatchers.IO){
-    val dbConnector = DBConnector()
-    dbConnector.connect()
-    val connection = dbConnector.getConnection()
     val result = JSONObject()
-    var query =
-        "SELECT " +
-                "network, " +
-                "collection_id, " +
-                "token_id, " +
-                "nft_type " +
-                "FROM " +
-                "nft_token_table " +
-                "WHERE " +
-                "network = '${network}' " +
-                "AND " +
-                "collection_id = '${collection_id}' " +
-                "AND " +
-                "token_id = '${token_id}' "
-
     try {
-        var network: String? = null
-        var collection_id: String? = null
-        var token_id: String? = null
-        var nft_type: String? = null
-        if (connection != null) {
-            val dbQueryExector = DBQueryExector(connection)
-            val getTransaction1: ResultSet? = dbQueryExector.executeQuery(query)
-            if (getTransaction1 != null) {
-                try {
-                    while (getTransaction1.next()) {
-                        network = getTransaction1.getString("network")
-                        collection_id = getTransaction1.getString("collection_id")
-                        token_id = getTransaction1.getString("token_id")
-                        nft_type = getTransaction1.getString("nft_type")
+        val dbConnector = DBConnector()
+        dbConnector.connect()
+        val connection = dbConnector.getConnection()
+        var query =
+            "SELECT " +
+                    "network, " +
+                    "collection_id, " +
+                    "token_id, " +
+                    "nft_type " +
+                    "FROM " +
+                    "nft_token_table " +
+                    "WHERE " +
+                    "network = '${network}' " +
+                    "AND " +
+                    "collection_id = '${collection_id}' " +
+                    "AND " +
+                    "token_id = '${token_id}' "
+
+            var network: String? = null
+            var collection_id: String? = null
+            var token_id: String? = null
+            var nft_type: String? = null
+            if (connection != null) {
+                val dbQueryExector = DBQueryExector(connection)
+                val getTransaction1: ResultSet? = dbQueryExector.executeQuery(query)
+                if (getTransaction1 != null) {
+                    try {
+                        while (getTransaction1.next()) {
+                            network = getTransaction1.getString("network")
+                            collection_id = getTransaction1.getString("collection_id")
+                            token_id = getTransaction1.getString("token_id")
+                            nft_type = getTransaction1.getString("nft_type")
+                        }
+                    }
+                    catch (ex: SQLException) {
+                        ex.printStackTrace()
+                    } finally {
+                        getTransaction1.close()
                     }
                 }
-                catch (ex: SQLException) {
-                    ex.printStackTrace()
-                } finally {
-                    getTransaction1.close()
-                }
             }
-        }
-        dbConnector.disconnect()
+            dbConnector.disconnect()
 
-        if(nft_type == null) {
-            result.put("result", "FAIL")
-            result.put("error", "DB info is null")
-            return@withContext result
-        }
-
-        networkSettings(network!!)
-        val web3 = Web3j.build(HttpService(rpcUrl))
-        if(nft_type == "erc721") {
-            val ownerFunction = Function(
-                "ownerOf",
-                listOf(Uint256(BigInteger(token_id))),
-                listOf(object : TypeReference<Address>() {})
-            )
-            val encodedOwnerFunction = FunctionEncoder.encode(ownerFunction)
-            val ownerResponse = web3.ethCall(
-                Transaction.createEthCallTransaction(null, collection_id, encodedOwnerFunction),
-                DefaultBlockParameterName.LATEST
-            ).send()
-            val ownerOutput =
-                FunctionReturnDecoder.decode(ownerResponse.result, ownerFunction.outputParameters)
-            val owner = ownerOutput[0].value.toString()
-            if (owner.toLowerCase() == account.toLowerCase()) {
-                result.put("result", "OK")
-            } else {
+            if(nft_type == null) {
                 result.put("result", "FAIL")
-                result.put("error", "NOT OWNER")
-            }
-        } else {
-            val balanceOfFunction = Function(
-                "balanceOf",
-                listOf(Address(account), Uint256(BigInteger(token_id))),
-                listOf(object : TypeReference<Uint256>() {})
-            )
-            val encodedbalanceOfFunction = FunctionEncoder.encode(balanceOfFunction)
-            val balanceOfResponse = web3.ethCall(
-                Transaction.createEthCallTransaction(null, collection_id, encodedbalanceOfFunction),
-                DefaultBlockParameterName.LATEST
-            ).send()
-            val balanceOfOutput =
-                FunctionReturnDecoder.decode(balanceOfResponse.result, balanceOfFunction.outputParameters)
-            val balance = (balanceOfOutput[0].value as BigInteger).toInt()
-            if (balance >= 1) {
-                result.put("result", "OK")
-            } else {
-                val resultArray = JSONArray()
-                val jsonData = JSONObject()
-                result.put("error", "NOT OWNER")
-                resultArray.put(jsonData)
-                result.put("result", "FAIL")
-                result.put("value", resultArray)
+                result.put("error", "DB info is null")
                 return@withContext result
             }
-        }
-    }
-    catch (e: Exception){
+
+            networkSettings(network!!)
+            val web3 = Web3j.build(HttpService(rpcUrl))
+            if(nft_type == "erc721") {
+                val ownerFunction = Function(
+                    "ownerOf",
+                    listOf(Uint256(BigInteger(token_id))),
+                    listOf(object : TypeReference<Address>() {})
+                )
+                val encodedOwnerFunction = FunctionEncoder.encode(ownerFunction)
+                val ownerResponse = web3.ethCall(
+                    Transaction.createEthCallTransaction(null, collection_id, encodedOwnerFunction),
+                    DefaultBlockParameterName.LATEST
+                ).send()
+                val ownerOutput =
+                    FunctionReturnDecoder.decode(ownerResponse.result, ownerFunction.outputParameters)
+                val owner = ownerOutput[0].value.toString()
+                if (owner.toLowerCase() == account.toLowerCase()) {
+                    result.put("result", "OK")
+                } else {
+                    result.put("result", "FAIL")
+                    result.put("error", "NOT OWNER")
+                }
+            } else {
+                val balanceOfFunction = Function(
+                    "balanceOf",
+                    listOf(Address(account), Uint256(BigInteger(token_id))),
+                    listOf(object : TypeReference<Uint256>() {})
+                )
+                val encodedbalanceOfFunction = FunctionEncoder.encode(balanceOfFunction)
+                val balanceOfResponse = web3.ethCall(
+                    Transaction.createEthCallTransaction(null, collection_id, encodedbalanceOfFunction),
+                    DefaultBlockParameterName.LATEST
+                ).send()
+                val balanceOfOutput =
+                    FunctionReturnDecoder.decode(balanceOfResponse.result, balanceOfFunction.outputParameters)
+                val balance = (balanceOfOutput[0].value as BigInteger).toInt()
+                if (balance >= 1) {
+                    result.put("result", "OK")
+                } else {
+                    val resultArray = JSONArray()
+                    val jsonData = JSONObject()
+                    result.put("error", "NOT OWNER")
+                    resultArray.put(jsonData)
+                    result.put("result", "FAIL")
+                    result.put("value", resultArray)
+                    return@withContext result
+                }
+            }
+    } catch (e: Exception){
         val resultArray = JSONArray()
         val jsonData = JSONObject()
         jsonData.put("error", e.message)

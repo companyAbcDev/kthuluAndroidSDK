@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import io.kthulu.sdk.MyContext.Companion.setAppContext
 import kotlinx.coroutines.*
+import java.math.BigInteger
 
 // Application에서 Context를 가져올 수 있도록 구현
 class MyContext : Application() {
@@ -34,8 +35,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
 
         launch {
             withContext(Dispatchers.IO) {
-                val a = getNFTsByWallet(arrayOf("cypress"), "0x1400594A07925C7110B9D22791f220Ee924C0513")
-                println(a)
+                var outValue = getExpectedAmountOutAsync("polygon", "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", BigInteger("10")
+                    )
+                println("outValue: $outValue")
             }
         }
     }

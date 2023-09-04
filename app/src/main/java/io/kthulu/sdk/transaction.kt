@@ -1126,6 +1126,13 @@ suspend fun coinForTokenswapAsync(
     resultData.put("result", "FAIL")
     resultData.put("value", resultArray)
 
+    if (network == "cypress") {
+        return@withContext JSONObject().apply {
+            put("result", "FAIL")
+            put("value", JSONArray().put(JSONObject().put("error", "cypress is not supported")))
+        }
+    }
+
     try {
         val getAddressInfo = getAccountInfoAsync(fromAddress)
         val privateKey = runCatching {
@@ -1275,6 +1282,13 @@ suspend fun tokenForTokenswapAsync(
     var resultData = JSONObject()
     resultData.put("result", "FAIL")
     resultData.put("value", resultArray)
+
+    if (network == "cypress") {
+        return@withContext JSONObject().apply {
+            put("result", "FAIL")
+            put("value", JSONArray().put(JSONObject().put("error", "cypress is not supported")))
+        }
+    }
 
     try {
         val getAddressInfo = getAccountInfoAsync(fromAddress)
@@ -1440,6 +1454,13 @@ suspend fun tokenForCoinswapAsync(
     var resultData = JSONObject()
     resultData.put("result", "FAIL")
     resultData.put("value", resultArray)
+
+    if (network == "cypress") {
+        return@withContext JSONObject().apply {
+            put("result", "FAIL")
+            put("value", JSONArray().put(JSONObject().put("error", "cypress is not supported")))
+        }
+    }
 
     try {
         val getAddressInfo = getAccountInfoAsync(fromAddress)
@@ -1614,4 +1635,109 @@ suspend fun checkTransactionStatusAsync(network: String, txHash: String): String
     } else {
         return "Transaction not yet mined"
     }
+}
+
+suspend fun getExpectedAmountOutAsync(
+    network: String,
+    fromTokenId: String? = null,
+    toTokenId: String? = null,
+    amount: BigInteger
+): JSONObject = withContext(Dispatchers.IO) {
+    networkSettings(network)
+    val jsonData = JSONObject()
+    // return array & object
+    var resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
+
+    val defaultTokenIds = mapOf(
+        "ethereum" to "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+        "cypress" to "0",
+        "polygon" to "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+        "bnb" to "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+    )
+
+    var fromTokenId = fromTokenId ?: defaultTokenIds[network]
+    var toTokenId = toTokenId ?: defaultTokenIds[network]
+
+    if (network == "cypress") {
+        return@withContext JSONObject().apply {
+            put("result", "FAIL")
+            put("value", JSONArray().put(JSONObject().put("error", "cypress is not supported")))
+        }
+    }
+
+    try {
+        val web3j = Web3j.build(HttpService(rpcUrl))
+
+        val getPairFunction = Function("getPair", listOf(Address(fromTokenId), Address(toTokenId)), emptyList())
+
+        val encodedGetPairFunction = FunctionEncoder.encode(getPairFunction)
+
+        val getPairResponse = web3j.ethCall(
+            Transaction.createEthCallTransaction(null, uniswapV2FactoryAddress, encodedGetPairFunction),
+            DefaultBlockParameterName.LATEST
+        ).send()
+
+        val getPair = BigInteger(getPairResponse.result.replace("0x", ""), 16)
+
+        if (getPair != BigInteger.ZERO) {
+            val fromDecimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
+            val encodedFromDecimalsFunction = FunctionEncoder.encode(fromDecimalsFunction)
+            val fromDecimalsResponse = web3j.ethCall(
+                Transaction.createEthCallTransaction(null, fromTokenId, encodedFromDecimalsFunction),
+                DefaultBlockParameterName.LATEST
+            ).send()
+            val fromDecimalsOutput =
+                FunctionReturnDecoder.decode(fromDecimalsResponse.result, fromDecimalsFunction.outputParameters)
+            var fromDecimals = (fromDecimalsOutput[0].value as BigInteger).toInt()
+            var decimalMultiplier = BigDecimal.TEN.pow(fromDecimals)
+            var amountInWei = BigDecimal(amount).multiply(decimalMultiplier).toBigInteger()
+
+            val function = Function(
+                "getAmountsOut",
+                listOf(
+                    Uint256(amountInWei),
+                    DynamicArray(Address::class.java, listOf(Address(fromTokenId), Address(toTokenId)))
+                ),
+                listOf(object : TypeReference<DynamicArray<Uint256>>() {})
+            )
+
+            val encodedFunction = FunctionEncoder.encode(function)
+
+            val callResponse = web3j.ethCall(
+                Transaction.createEthCallTransaction(null, uniswapV2RouterAddress, encodedFunction),
+                DefaultBlockParameterName.LATEST
+            ).send()
+
+            val output = FunctionReturnDecoder.decode(callResponse.result, function.outputParameters)
+            val amountsOut = output[0].value as List<Uint256>
+
+            val toDecimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
+            val encodedToDecimalsFunction = FunctionEncoder.encode(toDecimalsFunction)
+            val toDecimalsResponse = web3j.ethCall(
+                Transaction.createEthCallTransaction(null, fromTokenId, encodedToDecimalsFunction),
+                DefaultBlockParameterName.LATEST
+            ).send()
+            val toDecimalsOutput =
+                FunctionReturnDecoder.decode(toDecimalsResponse.result, toDecimalsFunction.outputParameters)
+            var toDecimals = (toDecimalsOutput[0].value as BigInteger).toInt()
+
+            var newBalance =
+                BigDecimal(amountsOut.last().value.toDouble()).divide(BigDecimal.TEN.pow(toDecimals.toInt()))
+
+            jsonData.put("amount", newBalance)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        }
+    } catch (e: Exception) {
+        resultArray = JSONArray()
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
+    }
+    resultData
 }
