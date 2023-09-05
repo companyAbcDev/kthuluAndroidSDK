@@ -56,6 +56,7 @@ var bridgeSetupContractAddress = "";
 var uniswapV2RouterAddress = "";
 var uniswapV2FactoryAddress = "";
 var maxPriorityFeePerGas = "";
+var gasLimit = "";
 
 fun networkSettings(network: String) {
     rpcUrl = when (network) {
@@ -144,6 +145,17 @@ fun networkSettings(network: String) {
         "baobab" -> ""
         "mumbai" -> ""
         "tbnb" -> ""
+        else -> throw IllegalArgumentException("Invalid main network type")
+    }
+    gasLimit = when (network) {
+        "ethereum" -> "200000"
+        "cypress" -> "2000000"
+        "polygon" -> "200000"
+        "bnb" -> "2000000"
+        "goerli" -> "0"
+        "baobab" -> "0"
+        "mumbai" -> "0"
+        "tbnb" -> "0"
         else -> throw IllegalArgumentException("Invalid main network type")
     }
 
