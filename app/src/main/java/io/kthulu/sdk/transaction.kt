@@ -1636,12 +1636,11 @@ suspend fun checkTransactionStatusAsync(network: String, txHash: String): String
         return "Transaction not yet mined"
     }
 }
-
 suspend fun getExpectedAmountOutAsync(
     network: String,
     fromTokenId: String? = null,
     toTokenId: String? = null,
-    amount: BigInteger
+    amount: String
 ): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
@@ -1741,3 +1740,4 @@ suspend fun getExpectedAmountOutAsync(
     }
     resultData
 }
+
