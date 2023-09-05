@@ -81,7 +81,7 @@ suspend fun getMintableAddress(
                     "WHERE " +
                     "network IN ('ethereum','cypress','polygon','bnb') " +
                     "AND " +
-                    "creator IN ('0x780A19638D126d59f4Ed048Ae1e0DC77DAf39a77','0x7E055Cb85FBE64da619865Df8a392d12f009aD81')" +
+                    "creator IN ('0x9a1c0ef3989f944e692232d491fe5395927be9bd','0x534d102f2bf1bcad450c8a5da6e1cfb6cdb93b2f', '0x718e40874dac43d840f1e9bb135c3c098174e832')" +
                     "AND " +
                     " owner IN (${own})"
 
@@ -1747,25 +1747,25 @@ suspend fun deployErc1155Async(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-        val gasLimitEstimate =getEstimateGasAsync(
-            network,
-            "deployERC1155",
-            null,
-            from,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            name, symbol, token_base_uri, uri_type
-        )
+//        val gasLimitEstimate =getEstimateGasAsync(
+//            network,
+//            "deployERC1155",
+//            null,
+//            from,
+//            null,
+//            null,
+//            null,
+//            null,
+//            null,
+//            null,
+//            null,
+//            name, symbol, token_base_uri, uri_type
+//        )
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
-        val gasLimit = gasLimitEstimate.getJSONArray("value")
-            .getJSONObject(0)
-            .getString("gas")
+//        val gasLimit = gasLimitEstimate.getJSONArray("value")
+//            .getJSONObject(0)
+//            .getString("gas")
         val gasPrice = gasPriceEstimate.getJSONArray("value")
             .getJSONObject(0)
             .getString("gas")
@@ -1774,7 +1774,7 @@ suspend fun deployErc1155Async(
             RawTransaction.createTransaction(
                 nonce,
                 BigInteger(gasPrice), // Add 20% to the gas price
-                BigInteger(gasLimit), // Add 20% to the gas limit
+                BigInteger("200000"), // Add 20% to the gas limit
                 nftTransferContractAddress,
                 encodedFunction
             )
@@ -1782,7 +1782,7 @@ suspend fun deployErc1155Async(
             RawTransaction.createTransaction(
                 chainId,
                 nonce,
-                BigInteger(gasLimit),
+                BigInteger("200000"),
                 nftTransferContractAddress,
                 BigInteger.ZERO,
                 encodedFunction,
