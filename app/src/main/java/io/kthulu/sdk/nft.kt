@@ -1771,7 +1771,7 @@ suspend fun deployErc1155Async(
             RawTransaction.createTransaction(
                 nonce,
                 BigInteger(gasPrice), // Add 20% to the gas price
-                BigInteger("200000"), // Add 20% to the gas limit
+                BigInteger(gasLimit), // Add 20% to the gas limit
                 nftTransferContractAddress,
                 encodedFunction
             )
@@ -1779,7 +1779,7 @@ suspend fun deployErc1155Async(
             RawTransaction.createTransaction(
                 chainId,
                 nonce,
-                BigInteger("200000"),
+                BigInteger(gasLimit),
                 nftTransferContractAddress,
                 BigInteger.ZERO,
                 encodedFunction,
@@ -1863,22 +1863,22 @@ suspend fun mintErc721Async(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-        val gasLimitEstimate = getEstimateGasAsync(
-            network,
-            "mintERC721",
-            collection_id,
-            from,
-            to,
-            null,
-            token_id,
-            null, null, null, null, null, null, null, null,
-            token_uri
-        )
+//        val gasLimitEstimate = getEstimateGasAsync(
+//            network,
+//            "mintERC721",
+//            collection_id,
+//            from,
+//            to,
+//            null,
+//            token_id,
+//            null, null, null, null, null, null, null, null,
+//            token_uri
+//        )
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
-        val gasLimit = gasLimitEstimate.getJSONArray("value")
-            .getJSONObject(0)
-            .getString("gas")
+//        val gasLimit = gasLimitEstimate.getJSONArray("value")
+//            .getJSONObject(0)
+//            .getString("gas")
         val gasPrice = gasPriceEstimate.getJSONArray("value")
             .getJSONObject(0)
             .getString("gas")
@@ -1979,22 +1979,22 @@ suspend fun mintErc1155Async(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-        val gasLimitEstimate = getEstimateGasAsync(
-            network,
-            "mintERC1155",
-            collection_id,
-            from,
-            to,
-            amount,
-            token_id,
-            null, null, null, null, null, null, null, null,
-            token_uri
-        )
+//        val gasLimitEstimate = getEstimateGasAsync(
+//            network,
+//            "mintERC1155",
+//            collection_id,
+//            from,
+//            to,
+//            amount,
+//            token_id,
+//            null, null, null, null, null, null, null, null,
+//            token_uri
+//        )
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
-        val gasLimit = gasLimitEstimate.getJSONArray("value")
-            .getJSONObject(0)
-            .getString("gas")
+//        val gasLimit = gasLimitEstimate.getJSONArray("value")
+//            .getJSONObject(0)
+//            .getString("gas")
         val gasPrice = gasPriceEstimate.getJSONArray("value")
             .getJSONObject(0)
             .getString("gas")
@@ -2097,22 +2097,22 @@ suspend fun batchMintErc721Async(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-        val gasLimitEstimate =  getEstimateGasAsync(
-            network,
-            "batchMintERC721",
-            collection_id,
-            from,
-            to,
-            null,
-            null,
-            null, null, null, null, null, null, null,
-            null, null, token_uri, start_id, end_id
-        )
+//        val gasLimitEstimate =  getEstimateGasAsync(
+//            network,
+//            "batchMintERC721",
+//            collection_id,
+//            from,
+//            to,
+//            null,
+//            null,
+//            null, null, null, null, null, null, null,
+//            null, null, token_uri, start_id, end_id
+//        )
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
-        val gasLimit = gasLimitEstimate.getJSONArray("value")
-            .getJSONObject(0)
-            .getString("gas")
+//        val gasLimit = gasLimitEstimate.getJSONArray("value")
+//            .getJSONObject(0)
+//            .getString("gas")
         val gasPrice = gasPriceEstimate.getJSONArray("value")
             .getJSONObject(0)
             .getString("gas")
@@ -2216,22 +2216,22 @@ suspend fun batchMintErc1155Async(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-        val gasLimitEstimate = getEstimateGasAsync(
-            network,
-            "batchMintERC1155",
-            collection_id,
-            from,
-            to,
-            null,
-            null,
-            null, null, token_id, amount, null, null, null, null, null,
-            token_uri
-        )
+//        val gasLimitEstimate = getEstimateGasAsync(
+//            network,
+//            "batchMintERC1155",
+//            collection_id,
+//            from,
+//            to,
+//            null,
+//            null,
+//            null, null, token_id, amount, null, null, null, null, null,
+//            token_uri
+//        )
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
-        val gasLimit = gasLimitEstimate.getJSONArray("value")
-            .getJSONObject(0)
-            .getString("gas")
+//        val gasLimit = gasLimitEstimate.getJSONArray("value")
+//            .getJSONObject(0)
+//            .getString("gas")
         val gasPrice = gasPriceEstimate.getJSONArray("value")
             .getJSONObject(0)
             .getString("gas")
@@ -2329,22 +2329,22 @@ suspend fun burnErc721Async(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-        val gasLimitEstimate = getEstimateGasAsync(
-            network,
-            "burnERC721",
-            collection_id,
-            owner,
-            null,
-            null,
-            token_id,
-            null, null, null, null, null, null, null, null, null, null,
-
-            )
+//        val gasLimitEstimate = getEstimateGasAsync(
+//            network,
+//            "burnERC721",
+//            collection_id,
+//            owner,
+//            null,
+//            null,
+//            token_id,
+//            null, null, null, null, null, null, null, null, null, null,
+//
+//            )
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
-        val gasLimit = gasLimitEstimate.getJSONArray("value")
-            .getJSONObject(0)
-            .getString("gas")
+//        val gasLimit = gasLimitEstimate.getJSONArray("value")
+//            .getJSONObject(0)
+//            .getString("gas")
         val gasPrice = gasPriceEstimate.getJSONArray("value")
             .getJSONObject(0)
             .getString("gas")
@@ -2462,7 +2462,7 @@ suspend fun approveSetupNftAsync(
                 RawTransaction.createTransaction(
                     nonce,
                     BigInteger(gasPrice), // Add 20% to the gas price
-                    BigInteger("100000"), // Add 20% to the gas limit
+                    BigInteger(gasLimit), // Add 20% to the gas limit
                     token_address,
                     encodedFunction
                 )
@@ -2470,7 +2470,7 @@ suspend fun approveSetupNftAsync(
                 RawTransaction.createTransaction(
                     chainId,
                     nonce,
-                    BigInteger("100000"), // Add 20% to the gas limit
+                    BigInteger(gasLimit), // Add 20% to the gas limit
                     token_address,
                     BigInteger.ZERO, // value
                     encodedFunction,
@@ -2692,7 +2692,7 @@ suspend fun bridgeErc721Async(
                 RawTransaction.createTransaction(
                     nonce,
                     BigInteger(gasPrice), // Add 20% to the gas price
-                    BigInteger.valueOf(1000000), // Add 20% to the gas limit
+                    BigInteger(gasLimit), // Add 20% to the gas limit
                     bridgeSetupContractAddress,
                     encodedFunction
                 )
@@ -2700,7 +2700,7 @@ suspend fun bridgeErc721Async(
                 RawTransaction.createTransaction(
                     chainId,
                     nonce,
-                    BigInteger.valueOf(1000000), // Add 20% to the gas limit
+                    BigInteger(gasLimit), // Add 20% to the gas limit
                     bridgeSetupContractAddress,
                     regFee, // value
                     encodedFunction,
@@ -2809,7 +2809,7 @@ suspend fun bridgeErc1155Async(
                 RawTransaction.createTransaction(
                     nonce,
                     BigInteger(gasPrice), // Add 20% to the gas price
-                    BigInteger.valueOf(1000000), // Add 20% to the gas limit
+                    BigInteger(gasLimit), // Add 20% to the gas limit
                     bridgeSetupContractAddress,
                     encodedFunction
                 )
@@ -2817,7 +2817,7 @@ suspend fun bridgeErc1155Async(
                 RawTransaction.createTransaction(
                     chainId,
                     nonce,
-                    BigInteger.valueOf(1000000), // Add 20% to the gas limit
+                    BigInteger(gasLimit), // Add 20% to the gas limit
                     bridgeSetupContractAddress,
                     regFee, // value
                     encodedFunction,
