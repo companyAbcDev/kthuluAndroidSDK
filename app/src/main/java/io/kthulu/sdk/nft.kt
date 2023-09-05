@@ -38,8 +38,6 @@ import java.util.Date
 suspend fun getMintableAddress(
     owner: Array<String>
 ): JSONObject = withContext(Dispatchers.IO) {
-    val jsonData = JSONObject()
-
     // return array & object
     var resultArray = JSONArray()
     var resultData = JSONObject()
@@ -92,6 +90,7 @@ suspend fun getMintableAddress(
             if (getCA != null) {
                 try {
                     while (getCA.next()) {
+                        val jsonData = JSONObject()
                         val network = getCA.getString("network")
                         val collection_id = getCA.getString("collection_id")
                         val collection_name = getCA.getString("collection_name")
@@ -381,21 +380,21 @@ suspend fun getNFTsByWallet(
                     "WHERE owner.network IN ($net) " +
                     "AND owner.balance != '0'";
 
-            if (account != null) {
-                sumQuery += " AND owner.owner_account = '$account' ";
-            }
+        if (account != null) {
+            sumQuery += " AND owner.owner_account = '$account' ";
+        }
 
-            if (collection_id != null) {
-                sumQuery += " AND owner.collection_id = '$collection_id' ";
-            }
+        if (collection_id != null) {
+            sumQuery += " AND owner.collection_id = '$collection_id' ";
+        }
 
-            sumQuery += " AND NOT EXISTS ( " +
-                    "SELECT 1 " +
-                    "FROM nft_hide_table AS hide " +   // Added a space after 'hide'
-                    "WHERE hide.network = owner.network " +
-                    "AND hide.account = owner.owner_account " +
-                    "AND hide.token_id = owner.token_id " +
-                    "AND hide.collection_id = owner.collection_id)";
+        sumQuery += " AND NOT EXISTS ( " +
+                "SELECT 1 " +
+                "FROM nft_hide_table AS hide " +   // Added a space after 'hide'
+                "WHERE hide.network = owner.network " +
+                "AND hide.account = owner.owner_account " +
+                "AND hide.token_id = owner.token_id " +
+                "AND hide.collection_id = owner.collection_id)";
         var sum: Int? = null
         if ((account==null && collection_id==null) || (limit == null && page_number != null)) {
             throw Exception() // 예외 발생
@@ -2430,20 +2429,20 @@ suspend fun approveSetupNftAsync(
         val credentials =
             Credentials.create(privateKey)
 
-            var gasPrice = ""
-            try {
-                val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
-                gasPrice = gasPriceEstimate.getJSONArray("value")
-                    .getJSONObject(0)
-                    .getString("gas")
+        var gasPrice = ""
+        try {
+            val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+            gasPrice = gasPriceEstimate.getJSONArray("value")
+                .getJSONObject(0)
+                .getString("gas")
 
-            } catch (e: Exception){
-                jsonData.put("error", e.message)
-                resultArray.put(jsonData)
-                resultData.put("result", "FAIL")
-                resultData.put("value", resultArray)
-                return@withContext resultData
-            }
+        } catch (e: Exception){
+            jsonData.put("error", e.message)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+            return@withContext resultData
+        }
 
         val function =
             Function("setApprovalForAll",  listOf(Address(bridgeSetupContractAddress), Bool(true)),
@@ -2458,43 +2457,43 @@ suspend fun approveSetupNftAsync(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-            val tx =
-                if (network == "bnb" || network == "tbnb") {
-                    RawTransaction.createTransaction(
-                        nonce,
-                        BigInteger(gasPrice), // Add 20% to the gas price
-                        BigInteger("100000"), // Add 20% to the gas limit
-                        token_address,
-                        encodedFunction
-                    )
-                } else {
-                    RawTransaction.createTransaction(
-                        chainId,
-                        nonce,
-                        BigInteger("100000"), // Add 20% to the gas limit
-                        token_address,
-                        BigInteger.ZERO, // value
-                        encodedFunction,
-                        BigInteger(maxPriorityFeePerGas), // maxPriorityFeePerGas
-                        BigInteger(gasPrice) // Add 20% to the gas price
-                    )
-                }
-            val signedMessage = TransactionEncoder.signMessage(tx, credentials)
-            val signedTx = Numeric.toHexString(signedMessage)
-
-            transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-            if(transactionHash != "") {
-                jsonData.put("transaction_hash", transactionHash)
-                resultArray.put(jsonData)
-                resultData.put("result", "OK")
-                resultData.put("value", resultArray)
+        val tx =
+            if (network == "bnb" || network == "tbnb") {
+                RawTransaction.createTransaction(
+                    nonce,
+                    BigInteger(gasPrice), // Add 20% to the gas price
+                    BigInteger("100000"), // Add 20% to the gas limit
+                    token_address,
+                    encodedFunction
+                )
             } else {
-                jsonData.put("error", "insufficient funds")
-                jsonData.put("transaction_hash", transactionHash)
-                resultArray.put(jsonData)
-                resultData.put("result", "FAIL")
-                resultData.put("value", resultArray)
+                RawTransaction.createTransaction(
+                    chainId,
+                    nonce,
+                    BigInteger("100000"), // Add 20% to the gas limit
+                    token_address,
+                    BigInteger.ZERO, // value
+                    encodedFunction,
+                    BigInteger(maxPriorityFeePerGas), // maxPriorityFeePerGas
+                    BigInteger(gasPrice) // Add 20% to the gas price
+                )
             }
+        val signedMessage = TransactionEncoder.signMessage(tx, credentials)
+        val signedTx = Numeric.toHexString(signedMessage)
+
+        transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if(transactionHash != "") {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
     } catch (e: Exception) {
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
@@ -3221,85 +3220,85 @@ suspend fun chkNFTHolder(
                     "AND " +
                     "token_id = '${token_id}' "
 
-            var network: String? = null
-            var collection_id: String? = null
-            var token_id: String? = null
-            var nft_type: String? = null
-            if (connection != null) {
-                val dbQueryExector = DBQueryExector(connection)
-                val getTransaction1: ResultSet? = dbQueryExector.executeQuery(query)
-                if (getTransaction1 != null) {
-                    try {
-                        while (getTransaction1.next()) {
-                            network = getTransaction1.getString("network")
-                            collection_id = getTransaction1.getString("collection_id")
-                            token_id = getTransaction1.getString("token_id")
-                            nft_type = getTransaction1.getString("nft_type")
-                        }
-                    }
-                    catch (ex: SQLException) {
-                        ex.printStackTrace()
-                    } finally {
-                        getTransaction1.close()
+        var network: String? = null
+        var collection_id: String? = null
+        var token_id: String? = null
+        var nft_type: String? = null
+        if (connection != null) {
+            val dbQueryExector = DBQueryExector(connection)
+            val getTransaction1: ResultSet? = dbQueryExector.executeQuery(query)
+            if (getTransaction1 != null) {
+                try {
+                    while (getTransaction1.next()) {
+                        network = getTransaction1.getString("network")
+                        collection_id = getTransaction1.getString("collection_id")
+                        token_id = getTransaction1.getString("token_id")
+                        nft_type = getTransaction1.getString("nft_type")
                     }
                 }
+                catch (ex: SQLException) {
+                    ex.printStackTrace()
+                } finally {
+                    getTransaction1.close()
+                }
             }
-            dbConnector.disconnect()
+        }
+        dbConnector.disconnect()
 
-            if(nft_type == null) {
+        if(nft_type == null) {
+            result.put("result", "FAIL")
+            result.put("error", "DB info is null")
+            return@withContext result
+        }
+
+        networkSettings(network!!)
+        val web3 = Web3j.build(HttpService(rpcUrl))
+        if(nft_type == "erc721") {
+            val ownerFunction = Function(
+                "ownerOf",
+                listOf(Uint256(BigInteger(token_id))),
+                listOf(object : TypeReference<Address>() {})
+            )
+            val encodedOwnerFunction = FunctionEncoder.encode(ownerFunction)
+            val ownerResponse = web3.ethCall(
+                Transaction.createEthCallTransaction(null, collection_id, encodedOwnerFunction),
+                DefaultBlockParameterName.LATEST
+            ).send()
+            val ownerOutput =
+                FunctionReturnDecoder.decode(ownerResponse.result, ownerFunction.outputParameters)
+            val owner = ownerOutput[0].value.toString()
+            if (owner.toLowerCase() == account.toLowerCase()) {
+                result.put("result", "OK")
+            } else {
                 result.put("result", "FAIL")
-                result.put("error", "DB info is null")
+                result.put("error", "NOT OWNER")
+            }
+        } else {
+            val balanceOfFunction = Function(
+                "balanceOf",
+                listOf(Address(account), Uint256(BigInteger(token_id))),
+                listOf(object : TypeReference<Uint256>() {})
+            )
+            val encodedbalanceOfFunction = FunctionEncoder.encode(balanceOfFunction)
+            val balanceOfResponse = web3.ethCall(
+                Transaction.createEthCallTransaction(null, collection_id, encodedbalanceOfFunction),
+                DefaultBlockParameterName.LATEST
+            ).send()
+            val balanceOfOutput =
+                FunctionReturnDecoder.decode(balanceOfResponse.result, balanceOfFunction.outputParameters)
+            val balance = (balanceOfOutput[0].value as BigInteger).toInt()
+            if (balance >= 1) {
+                result.put("result", "OK")
+            } else {
+                val resultArray = JSONArray()
+                val jsonData = JSONObject()
+                result.put("error", "NOT OWNER")
+                resultArray.put(jsonData)
+                result.put("result", "FAIL")
+                result.put("value", resultArray)
                 return@withContext result
             }
-
-            networkSettings(network!!)
-            val web3 = Web3j.build(HttpService(rpcUrl))
-            if(nft_type == "erc721") {
-                val ownerFunction = Function(
-                    "ownerOf",
-                    listOf(Uint256(BigInteger(token_id))),
-                    listOf(object : TypeReference<Address>() {})
-                )
-                val encodedOwnerFunction = FunctionEncoder.encode(ownerFunction)
-                val ownerResponse = web3.ethCall(
-                    Transaction.createEthCallTransaction(null, collection_id, encodedOwnerFunction),
-                    DefaultBlockParameterName.LATEST
-                ).send()
-                val ownerOutput =
-                    FunctionReturnDecoder.decode(ownerResponse.result, ownerFunction.outputParameters)
-                val owner = ownerOutput[0].value.toString()
-                if (owner.toLowerCase() == account.toLowerCase()) {
-                    result.put("result", "OK")
-                } else {
-                    result.put("result", "FAIL")
-                    result.put("error", "NOT OWNER")
-                }
-            } else {
-                val balanceOfFunction = Function(
-                    "balanceOf",
-                    listOf(Address(account), Uint256(BigInteger(token_id))),
-                    listOf(object : TypeReference<Uint256>() {})
-                )
-                val encodedbalanceOfFunction = FunctionEncoder.encode(balanceOfFunction)
-                val balanceOfResponse = web3.ethCall(
-                    Transaction.createEthCallTransaction(null, collection_id, encodedbalanceOfFunction),
-                    DefaultBlockParameterName.LATEST
-                ).send()
-                val balanceOfOutput =
-                    FunctionReturnDecoder.decode(balanceOfResponse.result, balanceOfFunction.outputParameters)
-                val balance = (balanceOfOutput[0].value as BigInteger).toInt()
-                if (balance >= 1) {
-                    result.put("result", "OK")
-                } else {
-                    val resultArray = JSONArray()
-                    val jsonData = JSONObject()
-                    result.put("error", "NOT OWNER")
-                    resultArray.put(jsonData)
-                    result.put("result", "FAIL")
-                    result.put("value", resultArray)
-                    return@withContext result
-                }
-            }
+        }
     } catch (e: Exception){
         val resultArray = JSONArray()
         val jsonData = JSONObject()
@@ -3384,5 +3383,3 @@ suspend fun getSignerAddressFromSignature(
     val pubKey = Sign.signedPrefixedMessageToKey(message.toByteArray(Charsets.UTF_8), signData)
     return "0x" + Keys.getAddress(pubKey)
 }
-
-
