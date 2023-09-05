@@ -66,8 +66,7 @@ suspend fun getMintableAddress(
                     "deployment_date, " +
                     "slug, " +
                     "category, "+
-                    "logo_url, "+
-                    "s3_image_url, "+
+                    "s3_logo_url, "+
                     "isverified, "+
                     "numOwners, "+
                     "currency, "+
