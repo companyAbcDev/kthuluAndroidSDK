@@ -815,7 +815,9 @@ suspend fun bridgeTokenAsync(
         // Convert hex string to BigInteger
         val toNetworkHex = BigInteger(hex, 16)
 
-        val tokenFee = getNetworkFee(network, toNetwork, "token")
+        val tokenFee = getNetworkFeeAsync(network, toNetwork, "token").getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
 
         if (network == "cypress") {
             val caver = Caver(rpcUrl)
@@ -841,7 +843,7 @@ suspend fun bridgeTokenAsync(
                     bridgeContractAddress,
                     null,
                     null,
-                    tokenFee,
+                    BigInteger(tokenFee),
                     encodedFunction
                 )
                 gasLimit = caver.rpc.klay.estimateGas(callObject).send().value
@@ -915,7 +917,7 @@ suspend fun bridgeTokenAsync(
                         BigInteger(gasPrice), // Add 20% to the gas price
                         BigInteger.valueOf(200000), // Add 20% to the gas limit
                         bridgeContractAddress,
-                        tokenFee, // value
+                        BigInteger(tokenFee), // value
                         encodedFunction
                     )
                 } else {
@@ -924,7 +926,7 @@ suspend fun bridgeTokenAsync(
                         nonce,
                         BigInteger.valueOf(200000), // Add 20% to the gas limit
                         bridgeContractAddress,
-                        tokenFee, // value
+                        BigInteger(tokenFee), // value
                         encodedFunction,
                         BigInteger(maxPriorityFeePerGas), // 35 Gwei maxPriorityFeePerGas
                         BigInteger(gasPrice) // Add 20% to the gas price
@@ -1636,12 +1638,14 @@ suspend fun checkTransactionStatusAsync(network: String, txHash: String): String
         return "Transaction not yet mined"
     }
 }
+
 suspend fun getExpectedAmountOutAsync(
     network: String,
     fromTokenId: String? = null,
     toTokenId: String? = null,
     amount: String
 ): JSONObject = withContext(Dispatchers.IO) {
+
     networkSettings(network)
     val jsonData = JSONObject()
     // return array & object
@@ -1716,7 +1720,7 @@ suspend fun getExpectedAmountOutAsync(
             val toDecimalsFunction = Function("decimals", emptyList(), listOf(object : TypeReference<Uint8>() {}))
             val encodedToDecimalsFunction = FunctionEncoder.encode(toDecimalsFunction)
             val toDecimalsResponse = web3j.ethCall(
-                Transaction.createEthCallTransaction(null, fromTokenId, encodedToDecimalsFunction),
+                Transaction.createEthCallTransaction(null, toTokenId, encodedToDecimalsFunction),
                 DefaultBlockParameterName.LATEST
             ).send()
             val toDecimalsOutput =
@@ -1740,4 +1744,3 @@ suspend fun getExpectedAmountOutAsync(
     }
     resultData
 }
-
