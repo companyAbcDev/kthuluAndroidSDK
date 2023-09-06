@@ -56,6 +56,7 @@ var bridgeSetupContractAddress = "";
 var uniswapV2RouterAddress = "";
 var uniswapV2FactoryAddress = "";
 var maxPriorityFeePerGas = "";
+var gasLimit = "";
 
 fun networkSettings(network: String) {
     rpcUrl = when (network) {
@@ -144,6 +145,17 @@ fun networkSettings(network: String) {
         "baobab" -> ""
         "mumbai" -> ""
         "tbnb" -> ""
+        else -> throw IllegalArgumentException("Invalid main network type")
+    }
+    gasLimit = when (network) {
+        "ethereum" -> "200000"
+        "cypress" -> "2000000"
+        "polygon" -> "200000"
+        "bnb" -> "2000000"
+        "goerli" -> "0"
+        "baobab" -> "0"
+        "mumbai" -> "0"
+        "tbnb" -> "0"
         else -> throw IllegalArgumentException("Invalid main network type")
     }
 
@@ -649,45 +661,61 @@ fun textToHex(text: String): String {
     return text.map { it.toInt().toString(16).padStart(2, '0') }.joinToString("")
 }
 
-fun getNetworkFee(network: String, toNetwork: String, type: String): BigInteger {
+suspend fun getNetworkFeeAsync(network: String, toNetwork: String, type: String): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
-    val web3j = Web3j.build(HttpService(rpcUrl))
-    val hex = textToHex(toNetwork)
-    // Convert hex string to BigInteger
-    val toNetworkHex = BigInteger(hex, 16)
-    val networkFeeIdxFunction = Function("getNetworkFeeIdxByName", listOf(Uint256(toNetworkHex)), emptyList())
-    val encodedNetworkFeeIdxFunction = FunctionEncoder.encode(networkFeeIdxFunction)
-    val networkFeeIdxResponse = web3j.ethCall(
-        Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeIdxFunction),
-        DefaultBlockParameterName.LATEST
-    ).send()
+    val jsonData = JSONObject()
+    // return array & object
+    var resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
+    try {
+        val web3j = Web3j.build(HttpService(rpcUrl))
+        val hex = textToHex(toNetwork)
+        // Convert hex string to BigInteger
+        val toNetworkHex = BigInteger(hex, 16)
+        val networkFeeIdxFunction = Function("getNetworkFeeIdxByName", listOf(Uint256(toNetworkHex)), emptyList())
+        val encodedNetworkFeeIdxFunction = FunctionEncoder.encode(networkFeeIdxFunction)
+        val networkFeeIdxResponse = web3j.ethCall(
+            Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeIdxFunction),
+            DefaultBlockParameterName.LATEST
+        ).send()
 
-    val networkFeeIdx = BigInteger(networkFeeIdxResponse.result.replace("0x", ""), 16)
+        val networkFeeIdx = BigInteger(networkFeeIdxResponse.result.replace("0x", ""), 16)
 
-    val networkFeeFunction = Function("getNetworkFeeByIdx", listOf(Uint32(networkFeeIdx)), emptyList())
-    val encodedNetworkFeeFunction = FunctionEncoder.encode(networkFeeFunction)
-    val networkFeeResponse = web3j.ethCall(
-        Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeFunction),
-        DefaultBlockParameterName.LATEST
-    ).send()
+        val networkFeeFunction = Function("getNetworkFeeByIdx", listOf(Uint32(networkFeeIdx)), emptyList())
+        val encodedNetworkFeeFunction = FunctionEncoder.encode(networkFeeFunction)
+        val networkFeeResponse = web3j.ethCall(
+            Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeFunction),
+            DefaultBlockParameterName.LATEST
+        ).send()
 
-    // Assuming each value is of length 64 characters (32 bytes, which is standard for Ethereum)
+        // Assuming each value is of length 64 characters (32 bytes, which is standard for Ethereum)
 //    val networkHex = networkFeeResponse.result.substring(2, 66)
-    val tokenFeeHex = networkFeeResponse.result.substring(66, 130)
-    val nftFeeHex = networkFeeResponse.result.substring(130, 194)
-    val regFeeHex = networkFeeResponse.result.substring(194, 258)
+        val tokenFeeHex = networkFeeResponse.result.substring(66, 130)
+        val nftFeeHex = networkFeeResponse.result.substring(130, 194)
+        val regFeeHex = networkFeeResponse.result.substring(194, 258)
 
 //    val network = String(BigInteger(networkHex, 16).toByteArray())
-    val tokenFee = BigInteger(tokenFeeHex, 16)
-    val nftFee = BigInteger(nftFeeHex, 16)
-    val regFee = BigInteger(regFeeHex, 16)
+        val tokenFee = BigInteger(tokenFeeHex, 16)
+        val nftFee = BigInteger(nftFeeHex, 16)
+        val regFee = BigInteger(regFeeHex, 16)
 
-    val resultFee = when (type) {
-        "nft" -> nftFee
-        "token" -> tokenFee
-        "setup" -> regFee
-        else -> throw IllegalArgumentException("Invalid main network type")
+        val resultFee = when (type) {
+            "nft" -> nftFee
+            "token" -> tokenFee
+            "setup" -> regFee
+            else -> throw IllegalArgumentException("Invalid main network type")
+        }
+
+        jsonData.put("networkFee", resultFee)
+        resultArray.put(jsonData)
+        resultData.put("result", "OK")
+        resultData.put("value", resultArray)
+    } catch (e: Exception) {
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
-
-    return resultFee
 }

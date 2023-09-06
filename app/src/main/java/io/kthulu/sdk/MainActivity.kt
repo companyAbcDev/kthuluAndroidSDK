@@ -31,33 +31,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        setAppContext(this)
-
         launch {
             withContext(Dispatchers.IO) {
-                // parameters
-                val network = "polygon"
-                val collection_id = "0xEB2f1B36479d995b6753a86Ce70472723497e018"
-                val from = "0x1400594a07925c7110b9d22791f220ee924c0513"
-                val to = "0x3d180de1eb687a594206c68f2cf3363c18e875c8"
-                val token_id = "7070"
-                val token_uri = "https://raw.githubusercontent.com/companyAbcDev/metadatas/master/metadatas/erc721/7070.json"
-                val amount = "1"
-//                //ERC721
-//                val mintERC721 = mintErc721Async(network,
-//                    from,
-//                    to,
-//                    token_uri,
-//                    token_id,
-//                    collection_id)
-//                println(mintERC721)
-                //ERC721
-                val sendERC721 = sendNFT721TransactionAsync(network,
-                    from,
-                    to,
-                    token_id,
-                    collection_id)
-                println(sendERC721)
             }
         }
     }
