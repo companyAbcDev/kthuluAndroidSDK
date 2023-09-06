@@ -1,7 +1,6 @@
-package com.example.android_sdk
+package io.kthulu.sdk
 
 import java.sql.*
-import java.util.*
 
 object ConfigHolder {
     var databaseUrl: String? = null
@@ -77,12 +76,10 @@ class DBConnector() {
 class DBQueryExector(private val connection: Connection){
     fun executeQuery(sqlQuery : String) : ResultSet?{
         var statement : Statement? = null
-        var resultSet : ResultSet? = null
 
         try{
             statement = connection.createStatement()
-            resultSet = statement.executeQuery(sqlQuery)
-            return resultSet
+            return statement.executeQuery(sqlQuery)
         } catch (ex : SQLException){
             ex.printStackTrace()
         } finally {
