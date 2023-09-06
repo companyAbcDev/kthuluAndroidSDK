@@ -1979,22 +1979,22 @@ suspend fun mintErc1155Async(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-//        val gasLimitEstimate = getEstimateGasAsync(
-//            network,
-//            "mintERC1155",
-//            collection_id,
-//            from,
-//            to,
-//            amount,
-//            token_id,
-//            null, null, null, null, null, null, null, null,
-//            token_uri
-//        )
+        val gasLimitEstimate = getEstimateGasAsync(
+            network,
+            "mintERC1155",
+            collection_id,
+            from,
+            to,
+            amount,
+            token_id,
+            null, null, null, null, null, null, null, null,
+            token_uri
+        )
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
-//        val gasLimit = gasLimitEstimate.getJSONArray("value")
-//            .getJSONObject(0)
-//            .getString("gas")
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
         val gasPrice = gasPriceEstimate.getJSONArray("value")
             .getJSONObject(0)
             .getString("gas")
@@ -2097,22 +2097,22 @@ suspend fun batchMintErc721Async(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-//        val gasLimitEstimate =  getEstimateGasAsync(
-//            network,
-//            "batchMintERC721",
-//            collection_id,
-//            from,
-//            to,
-//            null,
-//            null,
-//            null, null, null, null, null, null, null,
-//            null, null, token_uri, start_id, end_id
-//        )
+        val gasLimitEstimate =  getEstimateGasAsync(
+            network,
+            "batchMintERC721",
+            collection_id,
+            from,
+            to,
+            null,
+            null,
+            null, null, null, null, null, null, null,
+            null, null, token_uri, start_id, end_id
+        )
         val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
 
-//        val gasLimit = gasLimitEstimate.getJSONArray("value")
-//            .getJSONObject(0)
-//            .getString("gas")
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
         val gasPrice = gasPriceEstimate.getJSONArray("value")
             .getJSONObject(0)
             .getString("gas")
@@ -2671,7 +2671,9 @@ suspend fun bridgeErc721Async(
             emptyList()
         )
 
-        val regFee = getNetworkFee(network, toNetwork, "setup")
+        val regFee = getNetworkFeeAsync(network, toNetwork, "token").getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
 
         val encodedFunction = FunctionEncoder.encode(function)
 
@@ -2694,6 +2696,7 @@ suspend fun bridgeErc721Async(
                     BigInteger(gasPrice), // Add 20% to the gas price
                     BigInteger(gasLimit), // Add 20% to the gas limit
                     bridgeSetupContractAddress,
+                    BigInteger(regFee), // value
                     encodedFunction
                 )
             } else {
@@ -2702,7 +2705,7 @@ suspend fun bridgeErc721Async(
                     nonce,
                     BigInteger(gasLimit), // Add 20% to the gas limit
                     bridgeSetupContractAddress,
-                    regFee, // value
+                    BigInteger(regFee), // value
                     encodedFunction,
                     BigInteger(maxPriorityFeePerGas), // 35 Gwei maxPriorityFeePerGas
                     BigInteger(gasPrice) // Add 20% to the gas price
@@ -2788,7 +2791,9 @@ suspend fun bridgeErc1155Async(
             emptyList()
         )
 
-        val regFee = getNetworkFee(network, toNetwork, "setup")
+        val regFee = getNetworkFeeAsync(network, toNetwork, "token").getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
 
         val encodedFunction = FunctionEncoder.encode(function)
 
@@ -2811,6 +2816,7 @@ suspend fun bridgeErc1155Async(
                     BigInteger(gasPrice), // Add 20% to the gas price
                     BigInteger(gasLimit), // Add 20% to the gas limit
                     bridgeSetupContractAddress,
+                    BigInteger(regFee), // value
                     encodedFunction
                 )
             } else {
@@ -2819,7 +2825,7 @@ suspend fun bridgeErc1155Async(
                     nonce,
                     BigInteger(gasLimit), // Add 20% to the gas limit
                     bridgeSetupContractAddress,
-                    regFee, // value
+                    BigInteger(regFee), // value
                     encodedFunction,
                     BigInteger(maxPriorityFeePerGas), // 35 Gwei maxPriorityFeePerGas
                     BigInteger(gasPrice) // Add 20% to the gas price
