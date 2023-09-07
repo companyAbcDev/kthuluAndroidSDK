@@ -55,7 +55,7 @@ suspend fun createAccountsAsync(
 
 
 
-    try{
+    try {
         for (network in network) {
 
             // add return value
@@ -78,7 +78,7 @@ suspend fun createAccountsAsync(
         resultData.put("value", resultArray)
         resultData
 
-    } catch(e: Exception){
+    } catch (e: Exception) {
         resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
@@ -131,7 +131,7 @@ suspend fun restoreAccountAsync(
 
     val networkArray: Array<String>
 
-    if(network == null){
+    if (network == null) {
         networkArray = arrayOf("ethereum", "cypress", "polygon", "bnb")
     } else {
         networkArray = network
@@ -151,17 +151,19 @@ suspend fun restoreAccountAsync(
                 val change = Bip32ECKeyPair.deriveKeyPair(account, intArrayOf(0))
                 Bip32ECKeyPair.deriveKeyPair(change, intArrayOf(0))
             }
+
             private != null -> {
                 if (!isValidPrivateKey(private)) {
                     throw IllegalArgumentException("Invalid private key.")
                 }
                 ECKeyPair.create(Numeric.hexStringToByteArray(private))
             }
+
             else -> throw IllegalArgumentException("Either mnemonic or privateKey must be provided.")
         }
 
         val credentials = Credentials.create(keyPair)
-        var keyPairPrivateKey= "0x${Numeric.toHexStringNoPrefix(keyPair.privateKey)}"
+        var keyPairPrivateKey = "0x${Numeric.toHexStringNoPrefix(keyPair.privateKey)}"
 
         mnemonic?.let { it } ?: ""
 
@@ -190,7 +192,7 @@ suspend fun restoreAccountAsync(
         resultData.put("value", resultArray)
 
         resultData
-    } catch(e: Exception){
+    } catch (e: Exception) {
         resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
@@ -235,7 +237,7 @@ suspend fun getAccountInfoAsync(account: String): JSONObject = withContext(Dispa
             put("result", "OK")
             put("value", resultArray)
         }
-    } catch(e: Exception){
+    } catch (e: Exception) {
         resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
@@ -243,7 +245,6 @@ suspend fun getAccountInfoAsync(account: String): JSONObject = withContext(Dispa
         resultData.put("value", resultArray)
     }
 }
-
 
 
 // Get token info asynchronously
@@ -263,7 +264,7 @@ suspend fun getBalanceAsync(
     try {
         val web3j = Web3j.build(HttpService(rpcUrl))
 
-        if(token_address == "0x0000000000000000000000000000000000000000") {
+        if (token_address == "0x0000000000000000000000000000000000000000") {
             val ethGetBalance = web3j.ethGetBalance(owner_account, DefaultBlockParameterName.LATEST).send()
             val balance = ethGetBalance.balance
             val balanceEther = Convert.fromWei(balance.toString(), Convert.Unit.ETHER)
@@ -272,7 +273,8 @@ suspend fun getBalanceAsync(
             resultData.put("result", "OK")
             resultData.put("value", resultArray)
         } else {
-            val balanceFunction = Function("balanceOf", listOf(Address(owner_account)), listOf(object : TypeReference<Uint8>() {}))
+            val balanceFunction =
+                Function("balanceOf", listOf(Address(owner_account)), listOf(object : TypeReference<Uint8>() {}))
             val encodedbalanceFunction = FunctionEncoder.encode(balanceFunction)
             val balanceResponse = web3j.ethCall(
                 Transaction.createEthCallTransaction(null, token_address, encodedbalanceFunction),
@@ -307,7 +309,7 @@ suspend fun getBalanceAsync(
 suspend fun getTokenInfoAsync(
     network: String,
     token_address: String,
-) : JSONObject = withContext(Dispatchers.IO) {
+): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
     // return array & object
@@ -406,7 +408,7 @@ suspend fun getTokenHistoryAsync(
     sort: String? = "DESC",
     limit: Int? = 1000,
     page_number: Int? = 1
-) : JSONObject = withContext(Dispatchers.IO) {
+): JSONObject = withContext(Dispatchers.IO) {
     var resultArray = JSONArray()
     var jsonData = JSONObject()
     val resultData = JSONObject().apply {
@@ -421,25 +423,25 @@ suspend fun getTokenHistoryAsync(
         var total_count = 0
         val query =
             "SELECT " +
-            " network," +
-            " token_address," +
-            " block_number," +
-            " timestamp," +
-            " transaction_hash," +
-            " `from`," +
-            " `to`," +
-            " amount," +
-            " gas_used, " +
-            " (SELECT token_symbol FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS symbol, " +
-            " (SELECT decimals FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS decimals " +
-            "FROM " +
-            " token_transfer_table " +
-            "WHERE " +
-            " network = '$network' AND token_address = '$token_address' AND (`from` ='$owner_account' OR `to` ='$owner_account')" +
-            " ORDER BY" +
-            " block_number $sort ";
-            "LIMIT $limit " +
-            " OFFSET ${(page_number!! - 1) * limit!!}"
+                    " network," +
+                    " token_address," +
+                    " block_number," +
+                    " timestamp," +
+                    " transaction_hash," +
+                    " `from`," +
+                    " `to`," +
+                    " amount," +
+                    " gas_used, " +
+                    " (SELECT token_symbol FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS symbol, " +
+                    " (SELECT decimals FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS decimals " +
+                    "FROM " +
+                    " token_transfer_table " +
+                    "WHERE " +
+                    " network = '$network' AND token_address = '$token_address' AND (`from` ='$owner_account' OR `to` ='$owner_account')" +
+                    " ORDER BY" +
+                    " block_number $sort ";
+        "LIMIT $limit " +
+                " OFFSET ${(page_number!! - 1) * limit!!}"
 
         connection?.use {
             val dbQueryExecutor = DBQueryExector(it)
@@ -491,7 +493,7 @@ suspend fun getTokenHistoryAsync(
 
 suspend fun getUsersAsync(
     owner: String
-) : JSONObject = withContext(Dispatchers.IO) {
+): JSONObject = withContext(Dispatchers.IO) {
     var resultArray = JSONArray()
     var jsonData = JSONObject()
     val resultData = JSONObject().apply {
@@ -547,7 +549,8 @@ suspend fun getTokenListAsync(
     ownerAddress: String,
     sort: String? = "DESC",
     limit: Int? = 1000,
-    page_number: Int? = 1): JSONObject = withContext(Dispatchers.IO) {
+    page_number: Int? = 1
+): JSONObject = withContext(Dispatchers.IO) {
     var resultArray = JSONArray()
     var jsonData = JSONObject()
     val resultData = JSONObject().apply {
@@ -570,21 +573,21 @@ suspend fun getTokenListAsync(
         val offset = limit?.let { lim -> page_number?.minus(1)?.times(lim) } ?: 0
 
         var query =
-        " SELECT" +
-        " idx AS idx," +
-        " network AS network," +
-        " token_address AS token_id," +
-        " owner_account AS owner," +
-        " balance AS balance," +
-        " (SELECT decimals FROM token_table WHERE network = t.network AND token_address = t.token_address LIMIT 1) AS decimals," +
-        " (SELECT token_symbol FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS symbol," +
-        " (SELECT token_name FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS name " +
-        " FROM" +
-        " token_owner_table t" +
-        " WHERE" +
-        " network = '$network' AND owner_account = '$ownerAddress'" +
-        " ORDER BY" +
-                " idx $sort";
+            " SELECT" +
+                    " idx AS idx," +
+                    " network AS network," +
+                    " token_address AS token_id," +
+                    " owner_account AS owner," +
+                    " balance AS balance," +
+                    " (SELECT decimals FROM token_table WHERE network = t.network AND token_address = t.token_address LIMIT 1) AS decimals," +
+                    " (SELECT token_symbol FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS symbol," +
+                    " (SELECT token_name FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS name " +
+                    " FROM" +
+                    " token_owner_table t" +
+                    " WHERE" +
+                    " network = '$network' AND owner_account = '$ownerAddress'" +
+                    " ORDER BY" +
+                    " idx $sort";
         "LIMIT $limit" +
                 " OFFSET ${(page_number!! - 1) * limit!!}"
 
@@ -601,7 +604,7 @@ suspend fun getTokenListAsync(
                         put("decimals", it.getString("decimals"))
                         put("symbol", it.getString("symbol"))
                         put("name", it.getString("name"))
-                        total_count ++
+                        total_count++
                     }
                     resultArray.put(jsonData)
                 }

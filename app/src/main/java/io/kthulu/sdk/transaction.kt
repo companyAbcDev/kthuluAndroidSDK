@@ -140,7 +140,7 @@ suspend fun sendTransactionAsync(
                 gasPrice = gasPriceEstimate.getJSONArray("value")
                     .getJSONObject(0)
                     .getString("gas")
-            } catch (e: Exception){
+            } catch (e: Exception) {
                 jsonData.put("error", e.message)
                 resultArray.put(jsonData)
                 resultData.put("result", "FAIL")
@@ -327,7 +327,7 @@ suspend fun sendTokenTransactionAsync(
                 gasPrice = gasPriceEstimate.getJSONArray("value")
                     .getJSONObject(0)
                     .getString("gas")
-            } catch (e: Exception){
+            } catch (e: Exception) {
                 jsonData.put("error", e.message)
                 resultArray.put(jsonData)
                 resultData.put("result", "FAIL")
@@ -515,7 +515,7 @@ suspend fun deployErc20Async(
                     .getJSONObject(0)
                     .getString("gas")
 
-            } catch (e: Exception){
+            } catch (e: Exception) {
                 resultArray = JSONArray()
                 jsonData.put("error", e.message)
                 resultArray.put(jsonData)
@@ -687,7 +687,7 @@ suspend fun bridgeCoinAsync(
                     .getJSONObject(0)
                     .getString("gas")
 
-            } catch (e: Exception){
+            } catch (e: Exception) {
                 jsonData.put("error", e.message)
                 resultArray.put(jsonData)
                 resultData.put("result", "FAIL")
@@ -817,7 +817,7 @@ suspend fun bridgeTokenAsync(
 
         val tokenFee = getNetworkFeeAsync(network, toNetwork, "token").getJSONArray("value")
             .getJSONObject(0)
-            .getString("gas")
+            .getString("networkFee")
 
         if (network == "cypress") {
             val caver = Caver(rpcUrl)
@@ -895,7 +895,7 @@ suspend fun bridgeTokenAsync(
                     .getJSONObject(0)
                     .getString("gas")
 
-            } catch (e: Exception){
+            } catch (e: Exception) {
                 jsonData.put("error", e.message)
                 resultArray.put(jsonData)
                 resultData.put("result", "FAIL")
@@ -938,7 +938,7 @@ suspend fun bridgeTokenAsync(
             transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
 
         }
-        if(!transactionHash.isNullOrEmpty()) {
+        if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
             resultArray.put(jsonData)
             resultData.put("result", "OK")
@@ -1048,7 +1048,7 @@ suspend fun tokenSwapAppoveAsync(
                     .getJSONObject(0)
                     .getString("gas")
 
-            } catch (e: Exception){
+            } catch (e: Exception) {
                 jsonData.put("error", e.message)
                 resultArray.put(jsonData)
                 resultData.put("result", "FAIL")
@@ -1202,7 +1202,7 @@ suspend fun coinForTokenswapAsync(
                     .getJSONObject(0)
                     .getString("gas")
 
-            } catch (e: Exception){
+            } catch (e: Exception) {
                 jsonData.put("error", e.message)
                 resultArray.put(jsonData)
                 resultData.put("result", "FAIL")
@@ -1236,7 +1236,7 @@ suspend fun coinForTokenswapAsync(
             val signedTx = Numeric.toHexString(signedMessage)
 
             transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-            if(!transactionHash.isNullOrEmpty()) {
+            if (!transactionHash.isNullOrEmpty()) {
                 jsonData.put("transaction_hash", transactionHash)
                 resultArray.put(jsonData)
                 resultData.put("result", "OK")
@@ -1376,7 +1376,7 @@ suspend fun tokenForTokenswapAsync(
                     .getJSONObject(0)
                     .getString("gas")
 
-            } catch (e: Exception){
+            } catch (e: Exception) {
                 jsonData.put("error", e.message)
                 resultArray.put(jsonData)
                 resultData.put("result", "FAIL")
@@ -1558,7 +1558,7 @@ suspend fun tokenForCoinswapAsync(
                     .getJSONObject(0)
                     .getString("gas")
 
-            } catch (e: Exception){
+            } catch (e: Exception) {
                 jsonData.put("error", e.message)
                 resultArray.put(jsonData)
                 resultData.put("result", "FAIL")

@@ -35,7 +35,7 @@ import java.time.Instant
 import java.util.Base64
 import javax.crypto.Cipher
 
-suspend fun kthuluSdkVersion(){
+suspend fun kthuluSdkVersion() {
 //    println("SDK version:1.0.0, Connect OK")
     val resultArray = JSONArray()
     var resultData = JSONObject()
@@ -48,7 +48,7 @@ suspend fun kthuluSdkVersion(){
     println(resultData)
 }
 
-var rpcUrl ="";
+var rpcUrl = "";
 var bridgeConfigContractAddress = "";
 var bridgeContractAddress = "";
 var nftTransferContractAddress = "";
@@ -77,7 +77,7 @@ fun networkSettings(network: String) {
         "bnb" -> "0"
         "goerli" -> "2000000000"
         "baobab" -> "0"
-        "mumbai" -> "50000000000"
+        "mumbai" -> "1500000000"
         "tbnb" -> "0"
         else -> throw IllegalArgumentException("Invalid main network type")
     }
@@ -87,8 +87,8 @@ fun networkSettings(network: String) {
         "polygon" -> "0xf643a4fb01cbbfb561cc906c1f37d5718ef3bba3"
         "bnb" -> "0xf643a4fb01cbbfb561cc906c1f37d5718ef3bba3"
         "goerli" -> ""
-        "baobab" -> ""
-        "mumbai" -> ""
+        "baobab" -> "0xd3cb20c7476d544d9b34878ea352cd460125b34c"
+        "mumbai" -> "0xd6012f44f054a811ffae39c69660d3a759dae7e8"
         "tbnb" -> ""
         else -> throw IllegalArgumentException("Invalid main network type")
     }
@@ -98,8 +98,8 @@ fun networkSettings(network: String) {
         "polygon" -> "0x7362fa30ada8ccf2130017f2a8f0b6be78aa38de"
         "bnb" -> "0x873caf09b6668db216191a0121bc481e261643b3"
         "goerli" -> "0xc11735Ce3c155E755bC9839A5B5d06dEa0482306"
-        "baobab" -> "0x808ee7147d91eae0f658164248402ac380eb5f17"
-        "mumbai" -> "0x95f34cD3FE7ca6273f7EaFcA35E65A36aa8894cC"
+        "baobab" -> "0x68bfcdfd034f050e65ae1de11103c94dc2e7747d"
+        "mumbai" -> "0x9eab88e535d6676649c4b0b7f783ee53a29624df"
         "tbnb" -> "0x808EE7147d91EAe0f658164248402ac380EB5F17"
         else -> throw IllegalArgumentException("Invalid main network type")
     }
@@ -109,8 +109,8 @@ fun networkSettings(network: String) {
         "polygon" -> "0x4f5d095ccda117e168ea58bcccffafb9c3617491"
         "bnb" -> "0x35baced894af326573a85565c1cf3aed54394b60"
         "goerli" -> ""
-        "baobab" -> ""
-        "mumbai" -> ""
+        "baobab" -> "0xa2b3ab85d49caed1b125532d4e6ed8f1153d7929"
+        "mumbai" -> "0x09d51e8bbe25a114e8e1c6f280153dcc041eb1ef"
         "tbnb" -> ""
         else -> throw IllegalArgumentException("Invalid main network type")
     }
@@ -142,8 +142,8 @@ fun networkSettings(network: String) {
         "polygon" -> "0x9a1c0ef3989f944e692232d491fe5395927be9bd"
         "bnb" -> "0x718e40874dac43d840f1e9bb135c3c098174e832"
         "goerli" -> ""
-        "baobab" -> ""
-        "mumbai" -> ""
+        "baobab" -> "0x7ae6b96456d8ba526c8615b75e3c22f7d955b30b"
+        "mumbai" -> "0xe3b3e095c50e3e0c202e496e5bc94df2ec59eef5"
         "tbnb" -> ""
         else -> throw IllegalArgumentException("Invalid main network type")
     }
@@ -153,8 +153,8 @@ fun networkSettings(network: String) {
         "polygon" -> "200000"
         "bnb" -> "2000000"
         "goerli" -> "0"
-        "baobab" -> "0"
-        "mumbai" -> "0"
+        "baobab" -> "5000000"
+        "mumbai" -> "5500000"
         "tbnb" -> "0"
         else -> throw IllegalArgumentException("Invalid main network type")
     }
@@ -162,7 +162,7 @@ fun networkSettings(network: String) {
 }
 
 // Create RSA key
-fun generateRSAKeyPair() : KeyPair {
+fun generateRSAKeyPair(): KeyPair {
     val keyGen = KeyPairGenerator.getInstance("RSA")
     keyGen.initialize(2048)
     return keyGen.generateKeyPair()
@@ -182,7 +182,7 @@ fun encrypt(input: String): String {
     val cipher = Cipher.getInstance("RSA")
     cipher.init(Cipher.ENCRYPT_MODE, getPublicKey())
     val encrypt = cipher.doFinal(input.toByteArray())
-    return  Base64.getEncoder().encodeToString(encrypt)
+    return Base64.getEncoder().encodeToString(encrypt)
 }
 
 // Decrypting
@@ -269,11 +269,11 @@ suspend fun getEstimateGasAsync(
     resultData.put("result", "FAIL")
     resultData.put("value", resultArray)
 
-    try{
+    try {
         val web3 = Web3j.build(HttpService(rpcUrl))
         val gasPrice = web3.ethGasPrice().sendAsync().get().gasPrice
         var result = BigInteger.ZERO;
-        when(tx_type) {
+        when (tx_type) {
             "baseFee" -> result = gasPrice
             "transferCoin" ->
                 result = web3.ethEstimateGas(
@@ -322,6 +322,7 @@ suspend fun getEstimateGasAsync(
                         )
                     ).send().amountUsed
                 }
+
             "deployERC20" ->
                 if (name != null && symbol != null && from != null && amount != null) {
                     val decimals = "18"
@@ -345,6 +346,7 @@ suspend fun getEstimateGasAsync(
                     ).send().amountUsed
 
                 }
+
             "bridgeToken" ->
                 if (from != null && amount != null) {
                     val function = Function(
@@ -353,23 +355,35 @@ suspend fun getEstimateGasAsync(
                         emptyList()
                     )
                     val encodedFunction = FunctionEncoder.encode(function)
-                        result = web3.ethEstimateGas(
-                            Transaction.createFunctionCallTransaction(
-                                from,
-                                BigInteger.ONE,
-                                gasPrice,
-                                BigInteger.ZERO, // temporary gasLimit
-                                bridgeContractAddress,
-                                encodedFunction // data
-                            )
-                        ).send().amountUsed
+                    result = web3.ethEstimateGas(
+                        Transaction.createFunctionCallTransaction(
+                            from,
+                            BigInteger.ONE,
+                            gasPrice,
+                            BigInteger.ZERO, // temporary gasLimit
+                            bridgeContractAddress,
+                            encodedFunction // data
+                        )
+                    ).send().amountUsed
                 }
+
             "swapToken" ->
                 if (from != null && token_address != null && amount != null && to_token_address != null) {
-                    val path = DynamicArray(Address::class.java, listOf(Address(token_address), Address(to_token_address)))
+                    val path =
+                        DynamicArray(Address::class.java, listOf(Address(token_address), Address(to_token_address)))
                     // Deadline is the current time + 10 minutes in seconds
                     val deadline = Instant.now().epochSecond + 600
-                    val function = Function("swapExactTokensForTokens", listOf(Uint256(BigInteger(amount)), Uint256(BigInteger.ZERO), path, Address(from), Uint256(deadline)), emptyList())
+                    val function = Function(
+                        "swapExactTokensForTokens",
+                        listOf(
+                            Uint256(BigInteger(amount)),
+                            Uint256(BigInteger.ZERO),
+                            path,
+                            Address(from),
+                            Uint256(deadline)
+                        ),
+                        emptyList()
+                    )
 
                     val encodedFunction = FunctionEncoder.encode(function)
                     result = web3.ethEstimateGas(
@@ -384,6 +398,7 @@ suspend fun getEstimateGasAsync(
                         )
                     ).send().amountUsed
                 }
+
             "transferERC721" ->
                 if (token_id != null && to != null && from != null && token_address != null) {
                     val function = Function(
@@ -404,6 +419,7 @@ suspend fun getEstimateGasAsync(
                         )
                     ).send().amountUsed
                 }
+
             "transferERC1155" ->
                 if (token_id != null && to != null && from != null && token_address != null && amount != null) {
                     val function = Function(
@@ -427,6 +443,7 @@ suspend fun getEstimateGasAsync(
                         )
                     ).send().amountUsed
                 }
+
             "batchTransferERC721" ->
                 if (token_address != null && to != null && from != null && batch_token_id != null) {
                     val batchTokenId = batch_token_id.map { Uint256(BigInteger(it)) }
@@ -450,6 +467,7 @@ suspend fun getEstimateGasAsync(
                         )
                     ).send().amountUsed
                 }
+
             "batchTransferERC1155" ->
                 if (token_address != null && to != null && from != null && batch_token_id != null && batch_token_amount != null) {
                     val batchTokenId = batch_token_id.map { Uint256(BigInteger(it)) }
@@ -457,7 +475,11 @@ suspend fun getEstimateGasAsync(
                     val function = Function(
                         "safeBatchTransferFrom",
                         listOf(
-                            Address(from), Address(to), DynamicArray(batchTokenId), DynamicArray(batchAmount), DynamicBytes(byteArrayOf(0))
+                            Address(from),
+                            Address(to),
+                            DynamicArray(batchTokenId),
+                            DynamicArray(batchAmount),
+                            DynamicBytes(byteArrayOf(0))
                         ),
                         emptyList()
                     )
@@ -474,6 +496,7 @@ suspend fun getEstimateGasAsync(
                         )
                     ).send().amountUsed
                 }
+
             "deployERC721" ->
                 if (name != null && symbol != null && from != null && base_uri != null && uri_type != null) {
                     val function = Function(
@@ -494,6 +517,7 @@ suspend fun getEstimateGasAsync(
                         )
                     ).send().amountUsed
                 }
+
             "deployERC1155" ->
                 if (name != null && symbol != null && from != null && base_uri != null && uri_type != null) {
                     val function = Function(
@@ -514,6 +538,7 @@ suspend fun getEstimateGasAsync(
                         )
                     ).send().amountUsed
                 }
+
             "mintERC721" ->
                 if (from != null && to != null && token_uri != null && token_id != null && token_address != null) {
                     val function = Function(
@@ -534,11 +559,17 @@ suspend fun getEstimateGasAsync(
                         )
                     ).send().amountUsed
                 }
+
             "mintERC1155" ->
-                if (from != null && to != null && token_uri != null && token_id != null && token_address != null && amount!= null) {
+                if (from != null && to != null && token_uri != null && token_id != null && token_address != null && amount != null) {
                     val function = Function(
                         "mint",
-                        listOf(Address(to), Uint256(BigInteger(token_id)), Uint256(BigInteger(amount)), Utf8String(token_uri)),
+                        listOf(
+                            Address(to),
+                            Uint256(BigInteger(token_id)),
+                            Uint256(BigInteger(amount)),
+                            Utf8String(token_uri)
+                        ),
                         emptyList()
                     )
                     val encodedFunction = FunctionEncoder.encode(function)
@@ -554,6 +585,7 @@ suspend fun getEstimateGasAsync(
                         )
                     ).send().amountUsed
                 }
+
             "batchMintERC721" ->
                 if (from != null && to != null && batch_token_uri != null && start_id != null && end_id != null && token_address != null) {
 
@@ -561,7 +593,12 @@ suspend fun getEstimateGasAsync(
 
                     val function = Function(
                         "mintBatch",
-                        listOf(Address(to), Uint256(BigInteger(start_id)), Uint256(BigInteger(end_id)), DynamicArray(b)),
+                        listOf(
+                            Address(to),
+                            Uint256(BigInteger(start_id)),
+                            Uint256(BigInteger(end_id)),
+                            DynamicArray(b)
+                        ),
                         emptyList()
                     )
                     val encodedFunction = FunctionEncoder.encode(function)
@@ -577,8 +614,9 @@ suspend fun getEstimateGasAsync(
                         )
                     ).send().amountUsed
                 }
+
             "batchMintERC1155" ->
-                if (from != null && to != null && batch_token_uri != null && batch_token_id != null && token_address != null && batch_token_amount!= null) {
+                if (from != null && to != null && batch_token_uri != null && batch_token_id != null && token_address != null && batch_token_amount != null) {
                     val a = batch_token_id.map { Uint256(BigInteger(it)) }
                     val b = batch_token_amount.map { Uint256(BigInteger(it)) }
                     val c = batch_token_uri.map { Utf8String(it) }
@@ -601,6 +639,7 @@ suspend fun getEstimateGasAsync(
                         )
                     ).send().amountUsed
                 }
+
             "burnERC721" ->
                 if (from != null && token_id != null && token_address != null) {
                     val function = Function(
@@ -621,6 +660,7 @@ suspend fun getEstimateGasAsync(
                         )
                     ).send().amountUsed
                 }
+
             "burnERC1155" ->
                 if (from != null && token_id != null && token_address != null && amount != null) {
                     val function = Function(
@@ -661,61 +701,132 @@ fun textToHex(text: String): String {
     return text.map { it.toInt().toString(16).padStart(2, '0') }.joinToString("")
 }
 
-suspend fun getNetworkFeeAsync(network: String, toNetwork: String, type: String): JSONObject = withContext(Dispatchers.IO) {
-    networkSettings(network)
-    val jsonData = JSONObject()
-    // return array & object
-    var resultArray = JSONArray()
-    var resultData = JSONObject()
-    resultData.put("result", "FAIL")
-    resultData.put("value", resultArray)
-    try {
-        val web3j = Web3j.build(HttpService(rpcUrl))
-        val hex = textToHex(toNetwork)
-        // Convert hex string to BigInteger
-        val toNetworkHex = BigInteger(hex, 16)
-        val networkFeeIdxFunction = Function("getNetworkFeeIdxByName", listOf(Uint256(toNetworkHex)), emptyList())
-        val encodedNetworkFeeIdxFunction = FunctionEncoder.encode(networkFeeIdxFunction)
-        val networkFeeIdxResponse = web3j.ethCall(
-            Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeIdxFunction),
-            DefaultBlockParameterName.LATEST
-        ).send()
-
-        val networkFeeIdx = BigInteger(networkFeeIdxResponse.result.replace("0x", ""), 16)
-
-        val networkFeeFunction = Function("getNetworkFeeByIdx", listOf(Uint32(networkFeeIdx)), emptyList())
-        val encodedNetworkFeeFunction = FunctionEncoder.encode(networkFeeFunction)
-        val networkFeeResponse = web3j.ethCall(
-            Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeFunction),
-            DefaultBlockParameterName.LATEST
-        ).send()
-
-        // Assuming each value is of length 64 characters (32 bytes, which is standard for Ethereum)
-//    val networkHex = networkFeeResponse.result.substring(2, 66)
-        val tokenFeeHex = networkFeeResponse.result.substring(66, 130)
-        val nftFeeHex = networkFeeResponse.result.substring(130, 194)
-        val regFeeHex = networkFeeResponse.result.substring(194, 258)
-
-//    val network = String(BigInteger(networkHex, 16).toByteArray())
-        val tokenFee = BigInteger(tokenFeeHex, 16)
-        val nftFee = BigInteger(nftFeeHex, 16)
-        val regFee = BigInteger(regFeeHex, 16)
-
-        val resultFee = when (type) {
-            "nft" -> nftFee
-            "token" -> tokenFee
-            "setup" -> regFee
-            else -> throw IllegalArgumentException("Invalid main network type")
-        }
-
-        jsonData.put("networkFee", resultFee)
-        resultArray.put(jsonData)
-        resultData.put("result", "OK")
-        resultData.put("value", resultArray)
-    } catch (e: Exception) {
-        jsonData.put("error", e.message)
-        resultArray.put(jsonData)
+suspend fun getNetworkFeeAsync(network: String, toNetwork: String, type: String): JSONObject =
+    withContext(Dispatchers.IO) {
+        networkSettings(network)
+        val jsonData = JSONObject()
+        // return array & object
+        var resultArray = JSONArray()
+        var resultData = JSONObject()
         resultData.put("result", "FAIL")
         resultData.put("value", resultArray)
+        try {
+            val web3j = Web3j.build(HttpService(rpcUrl))
+            val hex = textToHex(toNetwork)
+            // Convert hex string to BigInteger
+            val toNetworkHex = BigInteger(hex, 16)
+            val networkFeeIdxFunction = Function("getNetworkFeeIdxByName", listOf(Uint256(toNetworkHex)), emptyList())
+            val encodedNetworkFeeIdxFunction = FunctionEncoder.encode(networkFeeIdxFunction)
+            val networkFeeIdxResponse = web3j.ethCall(
+                Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeIdxFunction),
+                DefaultBlockParameterName.LATEST
+            ).send()
+
+            val networkFeeIdx = BigInteger(networkFeeIdxResponse.result.replace("0x", ""), 16)
+
+            val networkFeeFunction = Function("getNetworkFeeByIdx", listOf(Uint32(networkFeeIdx)), emptyList())
+            val encodedNetworkFeeFunction = FunctionEncoder.encode(networkFeeFunction)
+            val networkFeeResponse = web3j.ethCall(
+                Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedNetworkFeeFunction),
+                DefaultBlockParameterName.LATEST
+            ).send()
+
+            // Assuming each value is of length 64 characters (32 bytes, which is standard for Ethereum)
+//    val networkHex = networkFeeResponse.result.substring(2, 66)
+            val tokenFeeHex = networkFeeResponse.result.substring(66, 130)
+            val nftFeeHex = networkFeeResponse.result.substring(130, 194)
+            val regFeeHex = networkFeeResponse.result.substring(194, 258)
+
+//    val network = String(BigInteger(networkHex, 16).toByteArray())
+            val tokenFee = BigInteger(tokenFeeHex, 16)
+            val nftFee = BigInteger(nftFeeHex, 16)
+            val regFee = BigInteger(regFeeHex, 16)
+
+            val resultFee = when (type) {
+                "nft" -> nftFee
+                "token" -> tokenFee
+                "setup" -> regFee
+                else -> throw IllegalArgumentException("Invalid main network type")
+            }
+
+            jsonData.put("networkFee", resultFee)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } catch (e: Exception) {
+            jsonData.put("error", e.message)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
     }
-}
+
+suspend fun getNodeHomeAsync(network: String, toNetwork: String, token_address: String): JSONObject =
+    withContext(Dispatchers.IO) {
+        networkSettings(network)
+        var jsonData = JSONObject()
+        // return array & object
+        var resultArray = JSONArray()
+        var resultData = JSONObject()
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
+
+        try {
+            val web3j = Web3j.build(HttpService(rpcUrl))
+            val hex = textToHex(toNetwork)
+            // Convert hex string to BigInteger
+            val toNetworkHex = BigInteger(hex, 16)
+
+            val customNhidFunction = Function("customNhid", listOf(Address(token_address)), emptyList())
+            val encodedCustomNhidFunction = FunctionEncoder.encode(customNhidFunction)
+            val customNhidResponse = web3j.ethCall(
+                Transaction.createEthCallTransaction(null, bridgeConfigContractAddress, encodedCustomNhidFunction),
+                DefaultBlockParameterName.LATEST
+            ).send()
+
+            val customNhid = BigInteger(customNhidResponse.result.replace("0x", ""), 16)
+
+            if (customNhid != BigInteger.ZERO) {
+                val getTokNetworkFunction =
+                    Function("getToNetwork", listOf(Address(token_address), Uint256(toNetworkHex)), emptyList())
+                val encodedGetTokNetworkFunction = FunctionEncoder.encode(getTokNetworkFunction)
+                val getTokNetworkResponse = web3j.ethCall(
+                    Transaction.createEthCallTransaction(
+                        null,
+                        bridgeConfigContractAddress,
+                        encodedGetTokNetworkFunction
+                    ),
+                    DefaultBlockParameterName.LATEST
+                ).send()
+
+                val getTokNetwork = BigInteger(getTokNetworkResponse.result.replace("0x", ""), 16)
+
+                if (getTokNetwork != BigInteger.ZERO) {
+                    resultArray = JSONArray()
+                    jsonData.put("type", "nft")
+                    resultArray.put(jsonData)
+                    resultData.put("result", "OK")
+                    resultData.put("value", resultArray)
+                } else {
+                    resultArray = JSONArray()
+                    jsonData.put("type", "setup")
+                    resultArray.put(jsonData)
+                    resultData.put("result", "OK")
+                    resultData.put("value", resultArray)
+                }
+            } else {
+                resultArray = JSONArray()
+                jsonData.put("type", "setup")
+                resultArray.put(jsonData)
+                resultData.put("result", "OK")
+                resultData.put("value", resultArray)
+            }
+        } catch (e: Exception) {
+            resultArray = JSONArray()
+            jsonData.put("error", e.message)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
+
+    }
