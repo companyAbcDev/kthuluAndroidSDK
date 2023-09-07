@@ -150,7 +150,7 @@ fun networkSettings(network: String) {
     gasLimit = when (network) {
         "ethereum" -> "200000"
         "cypress" -> "2000000"
-        "polygon" -> "200000"
+        "polygon" -> "500000"
         "bnb" -> "2000000"
         "goerli" -> "0"
         "baobab" -> "5000000"

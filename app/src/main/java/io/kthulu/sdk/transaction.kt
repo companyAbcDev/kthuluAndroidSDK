@@ -244,6 +244,11 @@ suspend fun sendTokenTransactionAsync(
             val decimalMultiplier = BigDecimal.TEN.pow(decimals)
             val tokenAmount = BigDecimal(amount).multiply(decimalMultiplier).toBigInteger()
 
+            val currentBalance = clone.balanceOf(fromAddress)
+            if (currentBalance < tokenAmount) {
+                throw RuntimeException("Insufficient token balance. Needed: $tokenAmount, Available: $currentBalance")
+            }
+
             // Set the send options
             val sendOptions = SendOptions()
             sendOptions.setFrom(fromAddress)
@@ -829,6 +834,11 @@ suspend fun bridgeTokenAsync(
             val decimalMultiplier = BigDecimal.TEN.pow(decimals)
             val tokenAmount = BigDecimal(amount).multiply(decimalMultiplier).toBigInteger()
 
+            val currentBalance = clone.balanceOf(fromAddress)
+            if (currentBalance < tokenAmount) {
+                throw RuntimeException("Insufficient token balance. Needed: $tokenAmount, Available: $currentBalance")
+            }
+
             val function = Function(
                 "moveFromERC20",
                 listOf(Uint256(toNetworkHex), Address(tokenAddress), Uint256(tokenAmount)),
@@ -841,8 +851,8 @@ suspend fun bridgeTokenAsync(
                 val callObject = CallObject.createCallObject(
                     fromAddress,
                     bridgeContractAddress,
-                    null,
-                    null,
+                    BigInteger.ZERO,
+                    BigInteger.ONE,
                     BigInteger(tokenFee),
                     encodedFunction
                 )
@@ -851,14 +861,16 @@ suspend fun bridgeTokenAsync(
                 gasLimit = BigInteger.ZERO
             }
 
-            val smartContractExecution = SmartContractExecution.Builder()
+            //Create a value transfer transaction
+            val smartContractExecution: SmartContractExecution = SmartContractExecution.Builder()
                 .setKlaytnCall(caver.rpc.getKlay())
                 .setFrom(keyring.address)
                 .setTo(bridgeContractAddress)
-                .setValue(tokenFee)
+                .setValue(BigInteger(tokenFee))
                 .setInput(encodedFunction)
                 .setGas(gasLimit)
                 .build()
+
             smartContractExecution.sign(keyring)
 
             transactionHash = caver.rpc.klay.sendRawTransaction(smartContractExecution.rawTransaction).send().result
