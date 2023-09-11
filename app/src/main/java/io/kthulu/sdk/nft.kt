@@ -1903,6 +1903,109 @@ suspend fun mintErc721Async(
     }
 }
 
+suspend fun mintErc721HyosungAsync(
+    network: String,
+    from: String,
+    to: String,
+    token_uri: String,
+    token_id: String,
+    collection_id: String,
+    private_key: String
+): JSONObject = withContext(Dispatchers.IO) {
+    networkSettings(network)
+    val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
+
+    try {
+        val web3j = Web3j.build(HttpService(rpcUrl))
+        val credentials =
+            Credentials.create(private_key)
+
+        val function = Function(
+            "mint",
+            listOf(Address(to), Uint256(BigInteger(token_id)), Utf8String(token_uri)),
+            emptyList()
+        )
+        val encodedFunction = FunctionEncoder.encode(function)
+
+        val nonce = web3j.ethGetTransactionCount(from, DefaultBlockParameterName.PENDING)
+            .sendAsync()
+            .get()
+            .transactionCount
+
+        val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val gasLimitEstimate = getEstimateGasAsync(
+            network,
+            "mintERC721",
+            collection_id,
+            from,
+            to,
+            null,
+            token_id,
+            null, null, null, null, null, null, null, null,
+            token_uri
+        )
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
+        val tx = if (network == "bnb" || network == "tbnb") {
+            RawTransaction.createTransaction(
+                nonce,
+                BigInteger(gasPrice), // Add 20% to the gas price
+                BigInteger(gasLimit), // Add 20% to the gas limit
+                collection_id,
+                encodedFunction
+            )
+        } else {
+            RawTransaction.createTransaction(
+                chainId,
+                nonce,
+                BigInteger(gasLimit), // Add 20% to the gas limit
+                collection_id,
+                BigInteger.ZERO,
+                encodedFunction,
+                //0.1gwei
+                BigInteger(maxPriorityFeePerGas),
+                BigInteger(gasPrice)
+            )
+        }
+
+        val signedMessage = TransactionEncoder.signMessage(tx, credentials)
+        val signedTx = Numeric.toHexString(signedMessage)
+
+        val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (!transactionHash.isNullOrEmpty()) {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
+    } catch (e: Exception) {
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
+    }
+}
+
 suspend fun mintErc1155Async(
     network: String,
     from: String,
@@ -1938,6 +2041,110 @@ suspend fun mintErc1155Async(
         val web3j = Web3j.build(HttpService(rpcUrl))
         val credentials =
             Credentials.create(privateKey)
+
+        val function = Function(
+            "mint",
+            listOf(Address(to), Uint256(BigInteger(token_id)), Uint256(BigInteger(amount)), Utf8String(token_uri)),
+            emptyList()
+        )
+        val encodedFunction = FunctionEncoder.encode(function)
+
+        val nonce = web3j.ethGetTransactionCount(from, DefaultBlockParameterName.PENDING)
+            .sendAsync()
+            .get()
+            .transactionCount
+
+        val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val gasLimitEstimate = getEstimateGasAsync(
+            network,
+            "mintERC1155",
+            collection_id,
+            from,
+            to,
+            amount,
+            token_id,
+            null, null, null, null, null, null, null, null,
+            token_uri
+        )
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
+        val tx = if (network == "bnb" || network == "tbnb") {
+            RawTransaction.createTransaction(
+                nonce,
+                BigInteger(gasPrice), // Add 20% to the gas price
+                BigInteger(gasLimit), // Add 20% to the gas limit
+                collection_id,
+                encodedFunction
+            )
+        } else {
+            RawTransaction.createTransaction(
+                chainId,
+                nonce,
+                BigInteger(gasLimit), // Add 20% to the gas limit
+                collection_id,
+                BigInteger.ZERO,
+                encodedFunction,
+                //0.1gwei
+                BigInteger(maxPriorityFeePerGas),
+                BigInteger(gasPrice)
+            )
+        }
+
+        val signedMessage = TransactionEncoder.signMessage(tx, credentials)
+        val signedTx = Numeric.toHexString(signedMessage)
+
+        val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (!transactionHash.isNullOrEmpty()) {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
+    } catch (e: Exception) {
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
+    }
+}
+
+suspend fun mintErc1155HyosungAsync(
+    network: String,
+    from: String,
+    to: String,
+    token_uri: String,
+    token_id: String,
+    collection_id: String,
+    amount: String,
+    private_key: String
+): JSONObject = withContext(Dispatchers.IO) {
+    networkSettings(network)
+    val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
+
+    try {
+        val web3j = Web3j.build(HttpService(rpcUrl))
+        val credentials =
+            Credentials.create(private_key)
 
         val function = Function(
             "mint",
