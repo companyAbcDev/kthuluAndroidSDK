@@ -32,11 +32,13 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         setContentView(R.layout.activity_main)
 
         // Application에서 Context를 가져올 수 있도록 구현
-//        setAppContext(applicationContext)
+        setAppContext(applicationContext)
 
         launch {
             withContext(Dispatchers.IO) {
-
+                var colelctionId = "0xa84cb2207cb80f8af82c44f7f41f804323f86289"
+                var getAccount = chkNFTHolder("cypress", "0x1400594A07925C7110B9D22791f220Ee924C0513", colelctionId, "91148")
+                println("getAccount ===  $getAccount")
             }
         }
     }

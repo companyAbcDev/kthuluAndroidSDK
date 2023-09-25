@@ -3515,7 +3515,13 @@ suspend fun chkNFTHolder(
                 FunctionReturnDecoder.decode(ownerResponse.result, ownerFunction.outputParameters)
             val owner = ownerOutput[0].value.toString()
             if (owner.toLowerCase() == account.toLowerCase()) {
+                val resultArray = JSONArray()
+                val jsonData = JSONObject()
+                jsonData.put("success", "OK")
+                resultArray.put(jsonData)
                 result.put("result", "OK")
+                result.put("value", resultArray)
+                return@withContext result
             } else {
                 result.put("result", "FAIL")
                 result.put("error", "NOT OWNER")
@@ -3535,7 +3541,13 @@ suspend fun chkNFTHolder(
                 FunctionReturnDecoder.decode(balanceOfResponse.result, balanceOfFunction.outputParameters)
             val balance = (balanceOfOutput[0].value as BigInteger).toInt()
             if (balance >= 1) {
+                val resultArray = JSONArray()
+                val jsonData = JSONObject()
+                jsonData.put("success", "OK")
+                resultArray.put(jsonData)
                 result.put("result", "OK")
+                result.put("value", resultArray)
+                return@withContext result
             } else {
                 val resultArray = JSONArray()
                 val jsonData = JSONObject()
@@ -3578,7 +3590,6 @@ suspend fun signMessage(
     val credentials = Credentials.create(privateKey)
     val str = prefix + network + fromAddress + collection_id + token_id
     val hash = Hash.sha3(Numeric.toHexStringNoPrefix(str.toByteArray()))
-//    println("Hash$hash")
     if (network == "cypress") {
         message = """
         \x19Klaytn Signed Message:
@@ -3609,7 +3620,6 @@ suspend fun getSignerAddressFromSignature(
     var message = ""
     val str = prefix + network + fromAddress + collection_id + token_id
     val hash = Hash.sha3(Numeric.toHexStringNoPrefix(str.toByteArray()))
-//    println("Hash$hash")
 
     if (network == "cypress") {
         message = """
