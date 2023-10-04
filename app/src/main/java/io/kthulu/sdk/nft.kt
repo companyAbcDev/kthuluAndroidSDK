@@ -2,34 +2,38 @@ package io.kthulu.sdk
 
 import android.annotation.SuppressLint
 import kotlinx.coroutines.*
-import kotlinx.coroutines.future.await
 import org.json.JSONArray
 import org.json.JSONObject
 import org.web3j.abi.FunctionEncoder
 import org.web3j.abi.FunctionReturnDecoder
 import org.web3j.abi.TypeReference
-import org.web3j.abi.datatypes.*
+import org.web3j.abi.datatypes.Address
+import org.web3j.abi.datatypes.Bool
+import org.web3j.abi.datatypes.DynamicArray
+import org.web3j.abi.datatypes.DynamicBytes
 import org.web3j.abi.datatypes.Function
+import org.web3j.abi.datatypes.Utf8String
 import org.web3j.abi.datatypes.generated.Bytes4
 import org.web3j.abi.datatypes.generated.Uint256
+import org.web3j.abi.datatypes.generated.Uint32
 import org.web3j.abi.datatypes.generated.Uint8
 import org.web3j.crypto.*
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.core.DefaultBlockParameterName
 import org.web3j.protocol.core.methods.request.Transaction
-import org.web3j.protocol.core.methods.response.TransactionReceipt
 import org.web3j.protocol.http.HttpService
 import org.web3j.utils.Numeric
 import java.io.IOException
 import java.io.InputStreamReader
+import java.math.BigDecimal
 import java.math.BigInteger
+import java.math.RoundingMode
 import java.net.HttpURLConnection
 import java.net.URL
 import java.sql.ResultSet
 import java.sql.SQLException
 import java.sql.Statement
-import java.util.*
-
+import java.util.Date
 
 suspend fun getMintableAddress(
     owner: Array<String>
@@ -1537,24 +1541,6 @@ suspend fun sendNFT1155BatchTransactionAsync(
     }
 }
 
-fun waitForTransactionReceipt(web3j: Web3j, transactionHash: String, maxAttempts: Int = 20, interval: Long = 500): Optional<TransactionReceipt> {
-    var attempts = 0
-    while (attempts < maxAttempts) {
-        val receiptResponse = web3j.ethGetTransactionReceipt(transactionHash).send()
-
-        if (receiptResponse.hasError()) {
-            println("Error fetching transaction receipt: ${receiptResponse.error.message}")
-            return Optional.empty()
-        } else if (receiptResponse.transactionReceipt.isPresent) {
-            return receiptResponse.transactionReceipt
-        }
-
-        Thread.sleep(interval)
-        attempts++
-    }
-    return Optional.empty()
-}
-
 suspend fun deployErc721Async(
     network: String,
     from: String,
@@ -1660,20 +1646,6 @@ suspend fun deployErc721Async(
         val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
         if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
-
-            val receipt = waitForTransactionReceipt(web3j, transactionHash)
-
-            if (receipt.isPresent) {
-                if (receipt.get().logs.isNotEmpty()) {
-                    val log = receipt.get().logs[0]
-                    jsonData.put("contract_address", log.address)
-                } else {
-                    println("No logs found in the transaction receipt.")
-                }
-            } else {
-                println("Transaction receipt not found after multiple attempts.")
-            }
-
             resultArray.put(jsonData)
             resultData.put("result", "OK")
             resultData.put("value", resultArray)
@@ -1797,20 +1769,6 @@ suspend fun deployErc1155Async(
         val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
         if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
-
-            val receipt = waitForTransactionReceipt(web3j, transactionHash)
-
-            if (receipt.isPresent) {
-                if (receipt.get().logs.isNotEmpty()) {
-                    val log = receipt.get().logs[0]
-                    jsonData.put("contract_address", log.address)
-                } else {
-                    println("No logs found in the transaction receipt.")
-                }
-            } else {
-                println("Transaction receipt not found after multiple attempts.")
-            }
-
             resultArray.put(jsonData)
             resultData.put("result", "OK")
             resultData.put("value", resultArray)

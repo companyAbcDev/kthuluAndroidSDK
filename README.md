@@ -22,7 +22,7 @@ Export (AAR Release)
     }
 
     defaultConfig {
-        ~~applicationId "com.example.android_sdk"~~ (delete)
+        ~~applicationId "io.kthulu.sdk"~~ (delete)
     }
 
 2. Sync Project with Gradle Files or Sync Now

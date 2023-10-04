@@ -21,10 +21,6 @@ import org.web3j.utils.Convert
 import org.web3j.utils.Numeric
 import java.math.BigDecimal
 import java.math.BigInteger
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.net.HttpURLConnection
-import java.net.URL
 
 suspend fun createAccountsAsync(
     network: Array<String>
@@ -408,7 +404,10 @@ suspend fun getTokenInfoAsync(
 suspend fun getTokenHistoryAsync(
     network: String,
     owner_account: String,
-    token_address: String? = "0x0000000000000000000000000000000000000000"
+    token_address: String? = "0x0000000000000000000000000000000000000000",
+    sort: String? = "DESC",
+    limit: Int? = 1000,
+    page_number: Int? = 1
 ): JSONObject = withContext(Dispatchers.IO) {
     var resultArray = JSONArray()
     var jsonData = JSONObject()
@@ -418,22 +417,69 @@ suspend fun getTokenHistoryAsync(
     }
 
     try {
-        val url = URL("https://app.kthulu.io:3302/token/history/$network/$owner_account/$token_address")
-        val connection = url.openConnection() as HttpURLConnection
+        val dbConnector = DBConnector()
+        dbConnector.connect()
+        val connection = dbConnector.getConnection()
+        var total_count = 0
+        val query =
+            "SELECT " +
+                    " network," +
+                    " token_address," +
+                    " block_number," +
+                    " timestamp," +
+                    " transaction_hash," +
+                    " `from`," +
+                    " `to`," +
+                    " amount," +
+                    " gas_used, " +
+                    " (SELECT token_symbol FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS symbol, " +
+                    " (SELECT decimals FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS decimals " +
+                    "FROM " +
+                    " token_transfer_table " +
+                    "WHERE " +
+                    " network = '$network' AND token_address = '$token_address' AND (`from` ='$owner_account' OR `to` ='$owner_account')" +
+                    " ORDER BY" +
+                    " block_number $sort ";
+        "LIMIT $limit " +
+                " OFFSET ${(page_number!! - 1) * limit!!}"
 
-        connection.requestMethod = "GET"
-        connection.connectTimeout = 5000
-        connection.readTimeout = 5000
+        connection?.use {
+            val dbQueryExecutor = DBQueryExector(it)
+            val resultSet = dbQueryExecutor.executeQuery(query)
+            resultSet?.use {
+                while (it.next()) {
+                    jsonData = JSONObject().apply {
+                        put("network", it.getString("network"))
+                        put("token_id", it.getString("token_address"))
+                        put("block_number", it.getString("block_number"))
+                        put("timestamp", it.getString("timestamp"))
+                        put("transaction_hash", it.getString("transaction_hash"))
+                        put("from", it.getString("from"))
+                        put("to", it.getString("to"))
+                        put("amount", it.getString("amount"))
+                        put("gas_used", it.getString("gas_used"))
+                        put("symbol", it.getString("symbol"))
+                        put("decimals", it.getString("decimals"))
+                        total_count++
 
-        if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-            val reader = BufferedReader(InputStreamReader(connection.inputStream))
-            val responseBody = reader.use { it.readText() }
-            val jsonResponse = JSONObject(responseBody)
-
-            return@withContext jsonResponse
-        } else {
-            throw Exception("HTTP error code: ${connection.responseCode}")
+                    }
+                    resultArray.put(jsonData)
+                }
+                resultData.put("result", "OK")
+                resultData.put("sum", total_count)
+                resultData.put("sort", sort)
+                val page_count: Int? = if (total_count != null && limit != null) {
+                    Math.ceil(total_count.toDouble() / limit.toDouble()).toInt()
+                } else {
+                    0
+                }
+                resultData.put("page_count", page_count)
+                resultData.put("value", resultArray)
+            }
         }
+
+        dbConnector.disconnect()
+        resultData
     } catch (e: Exception) {
         resultArray = JSONArray()
         jsonData.put("error", e.message)
@@ -441,6 +487,7 @@ suspend fun getTokenHistoryAsync(
         resultData.put("result", "FAIL")
         resultData.put("value", resultArray)
     }
+
 
 }
 
@@ -500,7 +547,9 @@ suspend fun getUsersAsync(
 suspend fun getTokenListAsync(
     network: String,
     ownerAddress: String,
-    size : String? = "100",
+    sort: String? = "DESC",
+    limit: Int? = 1000,
+    page_number: Int? = 1
 ): JSONObject = withContext(Dispatchers.IO) {
     var resultArray = JSONArray()
     var jsonData = JSONObject()
@@ -510,22 +559,69 @@ suspend fun getTokenListAsync(
     }
 
     try {
-        val url = URL("https://app.kthulu.io:3302/token/list/$network/$ownerAddress/$size")
-        val connection = url.openConnection() as HttpURLConnection
-
-        connection.requestMethod = "GET"
-        connection.connectTimeout = 5000
-        connection.readTimeout = 5000
-
-        if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-            val reader = BufferedReader(InputStreamReader(connection.inputStream))
-            val responseBody = reader.use { it.readText() }
-            val jsonResponse = JSONObject(responseBody)
-
-            return@withContext jsonResponse
-        } else {
-            throw Exception("HTTP error code: ${connection.responseCode}")
+        val dbConnector = DBConnector()
+        dbConnector.connect()
+        val connection = dbConnector.getConnection()
+        var total_count = 0
+        val resultArray = JSONArray()
+        val resultData = JSONObject().apply {
+            put("result", "FAIL")
+            put("sum", 0)
+            put("value", resultArray)
         }
+        var sum = 0;
+        val offset = limit?.let { lim -> page_number?.minus(1)?.times(lim) } ?: 0
+
+        var query =
+            " SELECT" +
+                    " idx AS idx," +
+                    " network AS network," +
+                    " token_address AS token_id," +
+                    " owner_account AS owner," +
+                    " balance AS balance," +
+                    " (SELECT decimals FROM token_table WHERE network = t.network AND token_address = t.token_address LIMIT 1) AS decimals," +
+                    " (SELECT token_symbol FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS symbol," +
+                    " (SELECT token_name FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS name " +
+                    " FROM" +
+                    " token_owner_table t" +
+                    " WHERE" +
+                    " network = '$network' AND owner_account = '$ownerAddress'" +
+                    " ORDER BY" +
+                    " idx $sort";
+        "LIMIT $limit" +
+                " OFFSET ${(page_number!! - 1) * limit!!}"
+
+        connection?.use {
+            val dbQueryExecutor = DBQueryExector(it)
+            val resultSet = dbQueryExecutor.executeQuery(query)
+            resultSet?.use {
+                while (it.next()) {
+                    jsonData = JSONObject().apply {
+                        put("network", it.getString("network"))
+                        put("token_id", it.getString("token_id"))
+                        put("owner", it.getString("owner"))
+                        put("balance", it.getString("balance"))
+                        put("decimals", it.getString("decimals"))
+                        put("symbol", it.getString("symbol"))
+                        put("name", it.getString("name"))
+                        total_count++
+                    }
+                    resultArray.put(jsonData)
+                }
+                resultData.put("result", "OK")
+                resultData.put("sum", total_count)
+                val page_count: Int? = if (total_count != null && limit != null) {
+                    Math.ceil(total_count.toDouble() / limit.toDouble()).toInt()
+                } else {
+                    0
+                }
+                resultData.put("page_count", page_count)
+                resultData.put("sort", sort)
+                resultData.put("value", resultArray)
+            }
+        }
+        dbConnector.disconnect()
+        resultData
     } catch (e: Exception) {
         resultArray = JSONArray()
         jsonData.put("error", e.message)
