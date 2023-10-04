@@ -2,38 +2,34 @@ package io.kthulu.sdk
 
 import android.annotation.SuppressLint
 import kotlinx.coroutines.*
+import kotlinx.coroutines.future.await
 import org.json.JSONArray
 import org.json.JSONObject
 import org.web3j.abi.FunctionEncoder
 import org.web3j.abi.FunctionReturnDecoder
 import org.web3j.abi.TypeReference
-import org.web3j.abi.datatypes.Address
-import org.web3j.abi.datatypes.Bool
-import org.web3j.abi.datatypes.DynamicArray
-import org.web3j.abi.datatypes.DynamicBytes
+import org.web3j.abi.datatypes.*
 import org.web3j.abi.datatypes.Function
-import org.web3j.abi.datatypes.Utf8String
 import org.web3j.abi.datatypes.generated.Bytes4
 import org.web3j.abi.datatypes.generated.Uint256
-import org.web3j.abi.datatypes.generated.Uint32
 import org.web3j.abi.datatypes.generated.Uint8
 import org.web3j.crypto.*
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.core.DefaultBlockParameterName
 import org.web3j.protocol.core.methods.request.Transaction
+import org.web3j.protocol.core.methods.response.TransactionReceipt
 import org.web3j.protocol.http.HttpService
 import org.web3j.utils.Numeric
 import java.io.IOException
 import java.io.InputStreamReader
-import java.math.BigDecimal
 import java.math.BigInteger
-import java.math.RoundingMode
 import java.net.HttpURLConnection
 import java.net.URL
 import java.sql.ResultSet
 import java.sql.SQLException
 import java.sql.Statement
-import java.util.Date
+import java.util.*
+
 
 suspend fun getMintableAddress(
     owner: Array<String>
@@ -51,7 +47,7 @@ suspend fun getMintableAddress(
 
         val own = owner?.joinToString("','", "'", "'")
 
-        val CAQuery=
+        val CAQuery =
             "SELECT " +
                     "network, " +
                     "collection_id, " +
@@ -63,17 +59,17 @@ suspend fun getMintableAddress(
                     "total_supply, " +
                     "deployment_date, " +
                     "slug, " +
-                    "category, "+
-                    "s3_logo_url, "+
-                    "isverified, "+
-                    "numOwners, "+
-                    "currency, "+
-                    "discord_link, "+
-                    "twitter_link, "+
-                    "instagram_link, "+
-                    "facebook_link, "+
-                    "telegram_link, "+
-                    "external_url "+
+                    "category, " +
+                    "s3_logo_url, " +
+                    "isverified, " +
+                    "numOwners, " +
+                    "currency, " +
+                    "discord_link, " +
+                    "twitter_link, " +
+                    "instagram_link, " +
+                    "facebook_link, " +
+                    "telegram_link, " +
+                    "external_url " +
                     "FROM " +
                     "nft_collection_table " +
                     "WHERE " +
@@ -137,11 +133,9 @@ suspend fun getMintableAddress(
 
                         resultArray.put(jsonData)
                     }
-                }
-                catch (ex: SQLException){
+                } catch (ex: SQLException) {
                     ex.printStackTrace()
-                }
-                finally {
+                } finally {
                     getCA.close()
                 }
             }
@@ -150,7 +144,7 @@ suspend fun getMintableAddress(
 
         resultData.put("result", "OK")
         resultData.put("value", resultArray)
-    }catch (e: Exception){
+    } catch (e: Exception) {
         resultData.put("result", "FAIL")
         resultData.put("reason", e)
     }
@@ -208,20 +202,15 @@ suspend fun setNFTsHide(
         resultArray = JSONArray()
         if (e.message?.contains("Duplicate entry") == true) {
             jsonData.put("error", "Duplicate entry")
-        }
-        else if (e.message?.contains("Table not found") == true) {
+        } else if (e.message?.contains("Table not found") == true) {
             jsonData.put("error", "Table not found")
-        }
-        else if (e.message?.contains("Column not found") == true) {
+        } else if (e.message?.contains("Column not found") == true) {
             jsonData.put("error", "Column not found")
-        }
-        else if (e.message?.contains("Connection timeout") == true) {
+        } else if (e.message?.contains("Connection timeout") == true) {
             jsonData.put("error", "Connection timeout")
-        }
-        else if (e.message?.contains("Connection refused") == true) {
+        } else if (e.message?.contains("Connection refused") == true) {
             jsonData.put("error", "Connection refused")
-        }
-        else {
+        } else {
             jsonData.put("error", e.message)
         }
         resultArray.put(jsonData)
@@ -230,6 +219,7 @@ suspend fun setNFTsHide(
         return@withContext resultData
     }
 }
+
 suspend fun deleteNFTsHide(
     network: String,
     account: String,
@@ -285,11 +275,11 @@ suspend fun deleteNFTsHide(
 @SuppressLint("SuspiciousIndentation")
 suspend fun getNFTsByWallet(
     network: Array<String>,
-    account: String ?= null,
-    collection_id: String ?= null,
-    sort: String ?= null,
-    limit: Int ?= null,
-    page_number: Int ?= null
+    account: String? = null,
+    collection_id: String? = null,
+    sort: String? = null,
+    limit: Int? = null,
+    page_number: Int? = null
 ): JSONObject = withContext(Dispatchers.IO) {
     var resultArray = JSONArray() // { ..., value : [ nftArray ]}
     var resultData = JSONObject() // { "result": OK, "sum": 1, "sort": "desc", "page_count": 1, "value" : nftArray }
@@ -396,7 +386,7 @@ suspend fun getNFTsByWallet(
                 "AND hide.token_id = owner.token_id " +
                 "AND hide.collection_id = owner.collection_id)";
         var sum: Int? = null
-        if ((account==null && collection_id==null) || (limit == null && page_number != null)) {
+        if ((account == null && collection_id == null) || (limit == null && page_number != null)) {
             throw Exception() // 예외 발생
         }
         if (connection != null) {
@@ -460,26 +450,22 @@ suspend fun getNFTsByWallet(
 
                         resultArray.put(objRes)
                     }
-                }
-                catch (ex: SQLException){
+                } catch (ex: SQLException) {
                     ex.printStackTrace()
-                }
-                finally {
+                } finally {
                     getNFT.close()
                 }
             }
             //sum 출력
-            if(getSum != null){
+            if (getSum != null) {
                 try {
                     while (getSum.next()) {
                         sum = getSum.getInt("sum")
                         //nftData.put("sum", sum)
                     }
-                }
-                catch (ex: SQLException){
+                } catch (ex: SQLException) {
                     ex.printStackTrace()
-                }
-                finally {
+                } finally {
                     getSum.close()
                 }
             }
@@ -499,8 +485,7 @@ suspend fun getNFTsByWallet(
         resultData.put("sort", sort)
         resultData.put("value", resultArray)
 
-    }
-    catch (e: Exception) {
+    } catch (e: Exception) {
         resultArray = JSONArray()
         val jsonData = JSONObject()
         jsonData.put("error", e.message)
@@ -510,13 +495,14 @@ suspend fun getNFTsByWallet(
     }
 
 }
+
 suspend fun getNFTsByWalletArray(
     network: Array<String>,
-    account: Array<String> ?= null,
-    collection_id: String ?= null,
-    sort: String ?= null,
-    limit: Int ?= null,
-    page_number: Int ?= null
+    account: Array<String>? = null,
+    collection_id: String? = null,
+    sort: String? = null,
+    limit: Int? = null,
+    page_number: Int? = null
 ): JSONObject = withContext(Dispatchers.IO) {
 
     val dbConnector = DBConnector()
@@ -534,7 +520,7 @@ suspend fun getNFTsByWalletArray(
     } else {
         0 // 또는 적절한 기본값 설정
     }
-    if(page_number==null || page_number==0 || page_number==1){
+    if (page_number == null || page_number == 0 || page_number == 1) {
         offset = 0
     }
     var strQuery =
@@ -626,9 +612,9 @@ suspend fun getNFTsByWalletArray(
     }
     sumQuery += " AND NOT EXISTS ( SELECT 1 FROM nft_hide_table AS hide WHERE hide.network = owner.network AND hide.account = owner.owner_account AND hide.token_id = owner.token_id AND hide.collection_id = owner.collection_id)"
 
-    try{
+    try {
         var sum: Int? = null
-        if ((account==null && collection_id==null) || (limit == null && page_number != null)) {
+        if ((account == null && collection_id == null) || (limit == null && page_number != null)) {
             throw Exception() // 예외 발생
         }
         if (connection != null) {
@@ -692,26 +678,22 @@ suspend fun getNFTsByWalletArray(
 
                         nftArray.put(objRes)
                     }
-                }
-                catch (ex: SQLException){
+                } catch (ex: SQLException) {
                     ex.printStackTrace()
-                }
-                finally {
+                } finally {
                     getNFT.close()
                 }
             }
             //sum 출력
-            if(getSum != null){
+            if (getSum != null) {
                 try {
                     while (getSum.next()) {
                         sum = getSum.getInt("sum")
                         //nftData.put("sum", sum)
                     }
-                }
-                catch (ex: SQLException){
+                } catch (ex: SQLException) {
                     ex.printStackTrace()
-                }
-                finally {
+                } finally {
                     getSum.close()
                 }
             }
@@ -731,8 +713,7 @@ suspend fun getNFTsByWalletArray(
         nftData.put("sort", sort)
         nftData.put("page_count", page_count)
         nftData.put("value", nftArray)
-    }
-    catch (e: Exception) {
+    } catch (e: Exception) {
         nftArray = JSONArray()
         nftData.put("error", e.message)
         nftArray.put(nftData)
@@ -746,13 +727,13 @@ suspend fun getNFTsByWalletArray(
 @SuppressLint("SuspiciousIndentation")
 suspend fun getNFTsTransferHistory(
     network: String,
-    collection_id: String ?= null,
-    token_id: String ?= null,
-    type: String ?= null,
-    sort: String ?= null,
-    limit: Int ?= null,
-    page_number: Int ?= null
-) : JSONObject = withContext(Dispatchers.IO){
+    collection_id: String? = null,
+    token_id: String? = null,
+    type: String? = null,
+    sort: String? = null,
+    limit: Int? = null,
+    page_number: Int? = null
+): JSONObject = withContext(Dispatchers.IO) {
 
     val dbConnector = DBConnector()
     dbConnector.connect()
@@ -765,7 +746,7 @@ suspend fun getNFTsTransferHistory(
     } else {
         0 // 또는 적절한 기본값 설정
     }
-    if(page_number==null || page_number==0 || page_number==1){
+    if (page_number == null || page_number == 0 || page_number == 1) {
         offset = 0
     }
 
@@ -792,22 +773,20 @@ suspend fun getNFTsTransferHistory(
                 " nft_transaction_table AS transaction" +
                 " WHERE" +
                 " transaction.network = '${network}'"
-    if(token_id != null){
+    if (token_id != null) {
         transferQuery += " AND transaction.token_id = '${token_id}' "
     }
-    if(collection_id != null){
+    if (collection_id != null) {
         transferQuery += " AND transaction.collection_id= '${collection_id}' "
     }
-    if(type=="transfer"){
+    if (type == "transfer") {
         transferQuery += "AND transaction.transaction_type = 'transfer' ORDER BY transaction.block_number"
-    }
-    else if(type=="sales"){
+    } else if (type == "sales") {
         transferQuery += "AND transaction.transaction_type = 'sales' ORDER BY transaction.block_number"
-    }
-    else{
+    } else {
         transferQuery += " ORDER BY transaction.block_number"
     }
-    if(sort == "asc"){
+    if (sort == "asc") {
         transferQuery += " asc"
     } else {
         transferQuery += " desc"
@@ -830,7 +809,7 @@ suspend fun getNFTsTransferHistory(
     if (collection_id != null) {
         sumQuery += " AND transaction.collection_id = '$collection_id' "
     }
-    if(type != null){
+    if (type != null) {
         sumQuery += " AND transaction.transaction_type = '${type}'"
     }
     try {
@@ -887,23 +866,20 @@ suspend fun getNFTsTransferHistory(
 
                         transactionArray.put(jsonData)
                     }
-                }
-                catch (ex: SQLException) {
+                } catch (ex: SQLException) {
                     ex.printStackTrace()
                 } finally {
                     getTransaction1.close()
                 }
             }
-            if(getSum != null){
+            if (getSum != null) {
                 try {
                     while (getSum.next()) {
                         sum = getSum.getInt("sum")
                     }
-                }
-                catch (ex: SQLException){
+                } catch (ex: SQLException) {
                     ex.printStackTrace()
-                }
-                finally {
+                } finally {
                     getSum.close()
                 }
             }
@@ -923,8 +899,7 @@ suspend fun getNFTsTransferHistory(
         transferData.put("sort", sort)
         transferData.put("page_count", page_count)
         transferData.put("value", transactionArray)
-    }
-    catch (e: Exception){
+    } catch (e: Exception) {
         transactionArray = JSONArray()
         transferData.put("error", e.message)
         transactionArray.put(transferData)
@@ -933,14 +908,15 @@ suspend fun getNFTsTransferHistory(
         return@withContext transferData
     }
 }
+
 //숨김테이블 조회
 suspend fun getNFTsHide(
     network: Array<String>,
     account: Array<String>,
-    sort: String ?= null,
-    limit: Int ?= null,
-    page_number: Int ?= null
-): JSONObject = withContext(Dispatchers.IO){
+    sort: String? = null,
+    limit: Int? = null,
+    page_number: Int? = null
+): JSONObject = withContext(Dispatchers.IO) {
     val dbConnector = DBConnector()
     dbConnector.connect()
     val connection = dbConnector.getConnection()
@@ -955,7 +931,7 @@ suspend fun getNFTsHide(
     } else {
         0 // 또는 적절한 기본값 설정
     }
-    if(page_number==null || page_number==0 || page_number==1){
+    if (page_number == null || page_number == 0 || page_number == 1) {
         offset = 0
     }
 
@@ -1022,23 +998,20 @@ suspend fun getNFTsHide(
 
                         hideArray.put(jsonData)
                     }
-                }
-                catch (ex: SQLException) {
+                } catch (ex: SQLException) {
                     ex.printStackTrace()
                 } finally {
                     getTransaction1.close()
                 }
             }
-            if(getSum != null){
+            if (getSum != null) {
                 try {
                     while (getSum.next()) {
                         sum = getSum.getInt("sum")
                     }
-                }
-                catch (ex: SQLException){
+                } catch (ex: SQLException) {
                     ex.printStackTrace()
-                }
-                finally {
+                } finally {
                     getSum.close()
                 }
             }
@@ -1058,8 +1031,7 @@ suspend fun getNFTsHide(
         hideData.put("sort", sort)
         hideData.put("page_count", page_count)
         hideData.put("value", hideArray)
-    }
-    catch (e: Exception){
+    } catch (e: Exception) {
         hideArray = JSONArray()
         hideData.put("error", e.message)
         hideArray.put(hideData)
@@ -1244,7 +1216,7 @@ suspend fun sendNFT1155TransactionAsync(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-        val gasLimitEstimate =getEstimateGasAsync(
+        val gasLimitEstimate = getEstimateGasAsync(
             network,
             "transferERC1155",
             collection_id,
@@ -1467,7 +1439,7 @@ suspend fun sendNFT1155BatchTransactionAsync(
         val ethGasPrice = web3j.ethGasPrice().sendAsync().get()
 
         // Ensure amount is a valid number
-        for(a in amount) {
+        for (a in amount) {
             if (BigInteger(a) <= BigInteger.ZERO) {
                 jsonData.put("result", "FAIL")
                 jsonData.put("error", "insufficient funds")
@@ -1480,7 +1452,11 @@ suspend fun sendNFT1155BatchTransactionAsync(
         val function = Function(
             "safeBatchTransferFrom",
             listOf(
-                Address(from), Address(to), DynamicArray(batchTokenId), DynamicArray(batchAmount), DynamicBytes(byteArrayOf(0))
+                Address(from),
+                Address(to),
+                DynamicArray(batchTokenId),
+                DynamicArray(batchAmount),
+                DynamicBytes(byteArrayOf(0))
             ),
             emptyList()
         )
@@ -1559,6 +1535,24 @@ suspend fun sendNFT1155BatchTransactionAsync(
         resultData.put("result", "FAIL")
         resultData.put("value", resultArray)
     }
+}
+
+fun waitForTransactionReceipt(web3j: Web3j, transactionHash: String, maxAttempts: Int = 20, interval: Long = 500): Optional<TransactionReceipt> {
+    var attempts = 0
+    while (attempts < maxAttempts) {
+        val receiptResponse = web3j.ethGetTransactionReceipt(transactionHash).send()
+
+        if (receiptResponse.hasError()) {
+            println("Error fetching transaction receipt: ${receiptResponse.error.message}")
+            return Optional.empty()
+        } else if (receiptResponse.transactionReceipt.isPresent) {
+            return receiptResponse.transactionReceipt
+        }
+
+        Thread.sleep(interval)
+        attempts++
+    }
+    return Optional.empty()
 }
 
 suspend fun deployErc721Async(
@@ -1666,6 +1660,20 @@ suspend fun deployErc721Async(
         val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
         if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
+
+            val receipt = waitForTransactionReceipt(web3j, transactionHash)
+
+            if (receipt.isPresent) {
+                if (receipt.get().logs.isNotEmpty()) {
+                    val log = receipt.get().logs[0]
+                    jsonData.put("contract_address", log.address)
+                } else {
+                    println("No logs found in the transaction receipt.")
+                }
+            } else {
+                println("Transaction receipt not found after multiple attempts.")
+            }
+
             resultArray.put(jsonData)
             resultData.put("result", "OK")
             resultData.put("value", resultArray)
@@ -1738,7 +1746,7 @@ suspend fun deployErc1155Async(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-        val gasLimitEstimate =getEstimateGasAsync(
+        val gasLimitEstimate = getEstimateGasAsync(
             network,
             "deployERC1155",
             null,
@@ -1789,6 +1797,20 @@ suspend fun deployErc1155Async(
         val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
         if (!transactionHash.isNullOrEmpty()) {
             jsonData.put("transaction_hash", transactionHash)
+
+            val receipt = waitForTransactionReceipt(web3j, transactionHash)
+
+            if (receipt.isPresent) {
+                if (receipt.get().logs.isNotEmpty()) {
+                    val log = receipt.get().logs[0]
+                    jsonData.put("contract_address", log.address)
+                } else {
+                    println("No logs found in the transaction receipt.")
+                }
+            } else {
+                println("Transaction receipt not found after multiple attempts.")
+            }
+
             resultArray.put(jsonData)
             resultData.put("result", "OK")
             resultData.put("value", resultArray)
@@ -1815,7 +1837,7 @@ suspend fun mintErc721Async(
     token_uri: String,
     token_id: String,
     collection_id: String
-): JSONObject = withContext(Dispatchers.IO){
+): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
 
@@ -1923,6 +1945,109 @@ suspend fun mintErc721Async(
     }
 }
 
+suspend fun mintErc721HyosungAsync(
+    network: String,
+    from: String,
+    to: String,
+    token_uri: String,
+    token_id: String,
+    collection_id: String,
+    private_key: String
+): JSONObject = withContext(Dispatchers.IO) {
+    networkSettings(network)
+    val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
+
+    try {
+        val web3j = Web3j.build(HttpService(rpcUrl))
+        val credentials =
+            Credentials.create(private_key)
+
+        val function = Function(
+            "mint",
+            listOf(Address(to), Uint256(BigInteger(token_id)), Utf8String(token_uri)),
+            emptyList()
+        )
+        val encodedFunction = FunctionEncoder.encode(function)
+
+        val nonce = web3j.ethGetTransactionCount(from, DefaultBlockParameterName.PENDING)
+            .sendAsync()
+            .get()
+            .transactionCount
+
+        val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val gasLimitEstimate = getEstimateGasAsync(
+            network,
+            "mintERC721",
+            collection_id,
+            from,
+            to,
+            null,
+            token_id,
+            null, null, null, null, null, null, null, null,
+            token_uri
+        )
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
+        val tx = if (network == "bnb" || network == "tbnb") {
+            RawTransaction.createTransaction(
+                nonce,
+                BigInteger(gasPrice), // Add 20% to the gas price
+                BigInteger(gasLimit), // Add 20% to the gas limit
+                collection_id,
+                encodedFunction
+            )
+        } else {
+            RawTransaction.createTransaction(
+                chainId,
+                nonce,
+                BigInteger(gasLimit), // Add 20% to the gas limit
+                collection_id,
+                BigInteger.ZERO,
+                encodedFunction,
+                //0.1gwei
+                BigInteger(maxPriorityFeePerGas),
+                BigInteger(gasPrice)
+            )
+        }
+
+        val signedMessage = TransactionEncoder.signMessage(tx, credentials)
+        val signedTx = Numeric.toHexString(signedMessage)
+
+        val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (!transactionHash.isNullOrEmpty()) {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
+    } catch (e: Exception) {
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
+    }
+}
+
 suspend fun mintErc1155Async(
     network: String,
     from: String,
@@ -1931,7 +2056,7 @@ suspend fun mintErc1155Async(
     token_id: String,
     collection_id: String,
     amount: String
-): JSONObject = withContext(Dispatchers.IO){
+): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
 
@@ -2039,6 +2164,110 @@ suspend fun mintErc1155Async(
     }
 }
 
+suspend fun mintErc1155HyosungAsync(
+    network: String,
+    from: String,
+    to: String,
+    token_uri: String,
+    token_id: String,
+    collection_id: String,
+    amount: String,
+    private_key: String
+): JSONObject = withContext(Dispatchers.IO) {
+    networkSettings(network)
+    val jsonData = JSONObject()
+
+    // return array & object
+    val resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
+
+    try {
+        val web3j = Web3j.build(HttpService(rpcUrl))
+        val credentials =
+            Credentials.create(private_key)
+
+        val function = Function(
+            "mint",
+            listOf(Address(to), Uint256(BigInteger(token_id)), Uint256(BigInteger(amount)), Utf8String(token_uri)),
+            emptyList()
+        )
+        val encodedFunction = FunctionEncoder.encode(function)
+
+        val nonce = web3j.ethGetTransactionCount(from, DefaultBlockParameterName.PENDING)
+            .sendAsync()
+            .get()
+            .transactionCount
+
+        val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
+
+        val gasLimitEstimate = getEstimateGasAsync(
+            network,
+            "mintERC1155",
+            collection_id,
+            from,
+            to,
+            amount,
+            token_id,
+            null, null, null, null, null, null, null, null,
+            token_uri
+        )
+        val gasPriceEstimate = getEstimateGasAsync(network, "baseFee")
+
+        val gasLimit = gasLimitEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+        val gasPrice = gasPriceEstimate.getJSONArray("value")
+            .getJSONObject(0)
+            .getString("gas")
+
+        val tx = if (network == "bnb" || network == "tbnb") {
+            RawTransaction.createTransaction(
+                nonce,
+                BigInteger(gasPrice), // Add 20% to the gas price
+                BigInteger(gasLimit), // Add 20% to the gas limit
+                collection_id,
+                encodedFunction
+            )
+        } else {
+            RawTransaction.createTransaction(
+                chainId,
+                nonce,
+                BigInteger(gasLimit), // Add 20% to the gas limit
+                collection_id,
+                BigInteger.ZERO,
+                encodedFunction,
+                //0.1gwei
+                BigInteger(maxPriorityFeePerGas),
+                BigInteger(gasPrice)
+            )
+        }
+
+        val signedMessage = TransactionEncoder.signMessage(tx, credentials)
+        val signedTx = Numeric.toHexString(signedMessage)
+
+        val transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
+        if (!transactionHash.isNullOrEmpty()) {
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "OK")
+            resultData.put("value", resultArray)
+        } else {
+            jsonData.put("error", "insufficient funds")
+            jsonData.put("transaction_hash", transactionHash)
+            resultArray.put(jsonData)
+            resultData.put("result", "FAIL")
+            resultData.put("value", resultArray)
+        }
+    } catch (e: Exception) {
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
+    }
+}
+
 suspend fun batchMintErc721Async(
     network: String,
     from: String,
@@ -2047,7 +2276,7 @@ suspend fun batchMintErc721Async(
     start_id: String,
     end_id: String,
     collection_id: String
-): JSONObject = withContext(Dispatchers.IO){
+): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
 
@@ -2079,7 +2308,12 @@ suspend fun batchMintErc721Async(
 
         val function = Function(
             "mintBatch",
-            listOf(Address(to), Uint256(BigInteger(start_id)), Uint256(BigInteger(end_id)), DynamicArray(batchTokenURI)),
+            listOf(
+                Address(to),
+                Uint256(BigInteger(start_id)),
+                Uint256(BigInteger(end_id)),
+                DynamicArray(batchTokenURI)
+            ),
             emptyList()
         )
         val encodedFunction = FunctionEncoder.encode(function)
@@ -2091,7 +2325,7 @@ suspend fun batchMintErc721Async(
 
         val chainId = web3j.ethChainId().sendAsync().get().chainId.toLong()
 
-        val gasLimitEstimate =  getEstimateGasAsync(
+        val gasLimitEstimate = getEstimateGasAsync(
             network,
             "batchMintERC721",
             collection_id,
@@ -2156,6 +2390,7 @@ suspend fun batchMintErc721Async(
         resultData.put("value", resultArray)
     }
 }
+
 suspend fun batchMintErc1155Async(
     network: String,
     from: String,
@@ -2164,7 +2399,7 @@ suspend fun batchMintErc1155Async(
     token_id: Array<String>,
     collection_id: String,
     amount: Array<String>
-): JSONObject = withContext(Dispatchers.IO){
+): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
 
@@ -2281,7 +2516,7 @@ suspend fun burnErc721Async(
     owner: String,
     token_id: String,
     collection_id: String
-): JSONObject = withContext(Dispatchers.IO){
+): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
 
@@ -2430,7 +2665,7 @@ suspend fun approveSetupNftAsync(
                 .getJSONObject(0)
                 .getString("gas")
 
-        } catch (e: Exception){
+        } catch (e: Exception) {
             jsonData.put("error", e.message)
             resultArray.put(jsonData)
             resultData.put("result", "FAIL")
@@ -2439,8 +2674,10 @@ suspend fun approveSetupNftAsync(
         }
 
         val function =
-            Function("setApprovalForAll",  listOf(Address(bridgeSetupContractAddress), Bool(true)),
-                emptyList())
+            Function(
+                "setApprovalForAll", listOf(Address(bridgeSetupContractAddress), Bool(true)),
+                emptyList()
+            )
 
         val encodedFunction = FunctionEncoder.encode(function)
 
@@ -2476,7 +2713,7 @@ suspend fun approveSetupNftAsync(
         val signedTx = Numeric.toHexString(signedMessage)
 
         transactionHash = web3j.ethSendRawTransaction(signedTx).sendAsync().get().transactionHash
-        if(transactionHash != "") {
+        if (transactionHash != "") {
             jsonData.put("transaction_hash", transactionHash)
             resultArray.put(jsonData)
             resultData.put("result", "OK")
@@ -2503,7 +2740,7 @@ suspend fun burnErc1155Async(
     token_id: String,
     collection_id: String,
     amount: String
-): JSONObject = withContext(Dispatchers.IO){
+): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
 
@@ -2662,13 +2899,15 @@ suspend fun bridgeErc721Async(
             .getJSONObject(0)
             .getString("type")
 
-        var function : Function
+        var function: Function
         var toContractAddress = ""
-        if(type == "setup") {
+        if (type == "setup") {
             function = Function(
                 "setupFromERC721",
-                listOf(Uint256(toNetworkHex), Utf8String(name),
-                    Utf8String(symbol), Address(ownership),  Address(token_address), Uint256(BigInteger(token_id))),
+                listOf(
+                    Uint256(toNetworkHex), Utf8String(name),
+                    Utf8String(symbol), Address(ownership), Address(token_address), Uint256(BigInteger(token_id))
+                ),
                 emptyList()
             )
             toContractAddress = bridgeSetupContractAddress
@@ -2798,20 +3037,32 @@ suspend fun bridgeErc1155Async(
             .getJSONObject(0)
             .getString("type")
 
-        var function : Function
+        var function: Function
         var toContractAddress = ""
-        if(type == "setup") {
+        if (type == "setup") {
             function = Function(
                 "setupFromERC1155",
-                listOf(Uint256(toNetworkHex), Utf8String(name),
-                    Utf8String(symbol), Address(ownership),  Address(token_address), Uint256(BigInteger(token_id)), Uint256(BigInteger(amount))),
+                listOf(
+                    Uint256(toNetworkHex),
+                    Utf8String(name),
+                    Utf8String(symbol),
+                    Address(ownership),
+                    Address(token_address),
+                    Uint256(BigInteger(token_id)),
+                    Uint256(BigInteger(amount))
+                ),
                 emptyList()
             )
             toContractAddress = bridgeSetupContractAddress
         } else {
             function = Function(
                 "moveFromERC1155",
-                listOf(Uint256(toNetworkHex), Address(token_address), Uint256(BigInteger(token_id)), Uint256(BigInteger(amount))),
+                listOf(
+                    Uint256(toNetworkHex),
+                    Address(token_address),
+                    Uint256(BigInteger(token_id)),
+                    Uint256(BigInteger(amount))
+                ),
                 emptyList()
             )
             toContractAddress = nftTransferContractAddress
@@ -2892,7 +3143,7 @@ suspend fun verifyNFT(
     var resultArray = JSONArray()
     resultData.put("result", "FAIL")
 
-    if(api_key.isNullOrEmpty()) {
+    if (api_key.isNullOrEmpty()) {
         result.put("error", "API Key is NULL")
         resultArray.put(result)
         resultData.put("value", resultArray)
@@ -2950,7 +3201,7 @@ suspend fun verifyNFT(
                 }
             }
         }
-        if(nftType.isNullOrEmpty()) {
+        if (nftType.isNullOrEmpty()) {
             result.put("error", "DB info NULL")
             resultArray.put(result)
             resultData.put("value", resultArray)
@@ -2959,17 +3210,24 @@ suspend fun verifyNFT(
         val hostUrl: String
         when (network) {
             "ethereum" -> {
-                hostUrl = "https://api.etherscan.com/api?module=contract&action=getabi&address=$collection_id&apikey=$api_key"
+                hostUrl =
+                    "https://api.etherscan.com/api?module=contract&action=getabi&address=$collection_id&apikey=$api_key"
             }
+
             "cypress" -> {
                 hostUrl = ""
             }
+
             "polygon" -> {
-                hostUrl = "https://api.polygonscan.com/api?module=contract&action=getabi&address=$collection_id&apikey=$api_key"
+                hostUrl =
+                    "https://api.polygonscan.com/api?module=contract&action=getabi&address=$collection_id&apikey=$api_key"
             }
+
             "bnb" -> {
-                hostUrl = "https://api.bscscan.com/api?module=contract&action=getabi&address=$collection_id&apikey=$api_key"
+                hostUrl =
+                    "https://api.bscscan.com/api?module=contract&action=getabi&address=$collection_id&apikey=$api_key"
             }
+
             else -> {
                 result.keys().forEach {
                     result.remove(it)
@@ -2979,7 +3237,7 @@ suspend fun verifyNFT(
             }
         }
 
-        if(network == "cypress") {
+        if (network == "cypress") {
             result.put("ContractVerify", false)
             result.put("ContractStandard", false)
         } else {
@@ -3095,10 +3353,10 @@ suspend fun verifyNFT(
         networkSettings(network!!)
         val web3 = Web3j.build(HttpService(rpcUrl))
         var parameter = Numeric.hexStringToByteArray("0x80ac58cd")
-        if(nftType == "erc721") {
+        if (nftType == "erc721") {
             parameter = Numeric.hexStringToByteArray("0x80ac58cd")
 
-        } else if(nftType == "erc1155"){
+        } else if (nftType == "erc1155") {
             parameter = Numeric.hexStringToByteArray("0xd9b67a26")
         }
         val supportsInterface = Function(
@@ -3120,7 +3378,7 @@ suspend fun verifyNFT(
             result.put("supportsInterface", false)
         }
 
-        if(!tokenURI.isNullOrEmpty()) {
+        if (!tokenURI.isNullOrEmpty()) {
             var uriHttp = ""
             if (tokenURI.startsWith("ipfs://ipfs/")) {
                 uriHttp = "https://ipfs.io/ipfs/${tokenURI.substring(12)}"
@@ -3231,7 +3489,7 @@ suspend fun chkNFTHolder(
     account: String,
     collection_id: String,
     token_id: String
-): JSONObject = withContext(Dispatchers.IO){
+): JSONObject = withContext(Dispatchers.IO) {
     val result = JSONObject()
     try {
         val dbConnector = DBConnector()
@@ -3267,8 +3525,7 @@ suspend fun chkNFTHolder(
                         token_id = getTransaction1.getString("token_id")
                         nft_type = getTransaction1.getString("nft_type")
                     }
-                }
-                catch (ex: SQLException) {
+                } catch (ex: SQLException) {
                     ex.printStackTrace()
                 } finally {
                     getTransaction1.close()
@@ -3277,7 +3534,7 @@ suspend fun chkNFTHolder(
         }
         dbConnector.disconnect()
 
-        if(nft_type == null) {
+        if (nft_type == null) {
             result.put("result", "FAIL")
             result.put("error", "DB info is null")
             return@withContext result
@@ -3285,7 +3542,7 @@ suspend fun chkNFTHolder(
 
         networkSettings(network!!)
         val web3 = Web3j.build(HttpService(rpcUrl))
-        if(nft_type == "erc721") {
+        if (nft_type == "erc721") {
             val ownerFunction = Function(
                 "ownerOf",
                 listOf(Uint256(BigInteger(token_id))),
@@ -3300,7 +3557,13 @@ suspend fun chkNFTHolder(
                 FunctionReturnDecoder.decode(ownerResponse.result, ownerFunction.outputParameters)
             val owner = ownerOutput[0].value.toString()
             if (owner.toLowerCase() == account.toLowerCase()) {
+                val resultArray = JSONArray()
+                val jsonData = JSONObject()
+                jsonData.put("success", "OK")
+                resultArray.put(jsonData)
                 result.put("result", "OK")
+                result.put("value", resultArray)
+                return@withContext result
             } else {
                 result.put("result", "FAIL")
                 result.put("error", "NOT OWNER")
@@ -3320,7 +3583,13 @@ suspend fun chkNFTHolder(
                 FunctionReturnDecoder.decode(balanceOfResponse.result, balanceOfFunction.outputParameters)
             val balance = (balanceOfOutput[0].value as BigInteger).toInt()
             if (balance >= 1) {
+                val resultArray = JSONArray()
+                val jsonData = JSONObject()
+                jsonData.put("success", "OK")
+                resultArray.put(jsonData)
                 result.put("result", "OK")
+                result.put("value", resultArray)
+                return@withContext result
             } else {
                 val resultArray = JSONArray()
                 val jsonData = JSONObject()
@@ -3331,7 +3600,7 @@ suspend fun chkNFTHolder(
                 return@withContext result
             }
         }
-    } catch (e: Exception){
+    } catch (e: Exception) {
         val resultArray = JSONArray()
         val jsonData = JSONObject()
         jsonData.put("error", e.message)
@@ -3361,10 +3630,9 @@ suspend fun signMessage(
     }
     var message = ""
     val credentials = Credentials.create(privateKey)
-    val str = prefix+network+fromAddress+collection_id+token_id
+    val str = prefix + network + fromAddress + collection_id + token_id
     val hash = Hash.sha3(Numeric.toHexStringNoPrefix(str.toByteArray()))
-//    println("Hash$hash")
-    if(network == "cypress") {
+    if (network == "cypress") {
         message = """
         \x19Klaytn Signed Message:
         ${hash.length}$hash
@@ -3392,11 +3660,10 @@ suspend fun getSignerAddressFromSignature(
     prefix: String
 ): String {
     var message = ""
-    val str = prefix+network+fromAddress+collection_id+token_id
+    val str = prefix + network + fromAddress + collection_id + token_id
     val hash = Hash.sha3(Numeric.toHexStringNoPrefix(str.toByteArray()))
-//    println("Hash$hash")
 
-    if(network == "cypress") {
+    if (network == "cypress") {
         message = """
         \x19Klaytn Signed Message:
         ${hash.length}$hash

@@ -21,6 +21,10 @@ import org.web3j.utils.Convert
 import org.web3j.utils.Numeric
 import java.math.BigDecimal
 import java.math.BigInteger
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.net.HttpURLConnection
+import java.net.URL
 
 suspend fun createAccountsAsync(
     network: Array<String>
@@ -55,7 +59,7 @@ suspend fun createAccountsAsync(
 
 
 
-    try{
+    try {
         for (network in network) {
 
             // add return value
@@ -78,7 +82,7 @@ suspend fun createAccountsAsync(
         resultData.put("value", resultArray)
         resultData
 
-    } catch(e: Exception){
+    } catch (e: Exception) {
         resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
@@ -131,7 +135,7 @@ suspend fun restoreAccountAsync(
 
     val networkArray: Array<String>
 
-    if(network == null){
+    if (network == null) {
         networkArray = arrayOf("ethereum", "cypress", "polygon", "bnb")
     } else {
         networkArray = network
@@ -151,17 +155,19 @@ suspend fun restoreAccountAsync(
                 val change = Bip32ECKeyPair.deriveKeyPair(account, intArrayOf(0))
                 Bip32ECKeyPair.deriveKeyPair(change, intArrayOf(0))
             }
+
             private != null -> {
                 if (!isValidPrivateKey(private)) {
                     throw IllegalArgumentException("Invalid private key.")
                 }
                 ECKeyPair.create(Numeric.hexStringToByteArray(private))
             }
+
             else -> throw IllegalArgumentException("Either mnemonic or privateKey must be provided.")
         }
 
         val credentials = Credentials.create(keyPair)
-        var keyPairPrivateKey= "0x${Numeric.toHexStringNoPrefix(keyPair.privateKey)}"
+        var keyPairPrivateKey = "0x${Numeric.toHexStringNoPrefix(keyPair.privateKey)}"
 
         mnemonic?.let { it } ?: ""
 
@@ -190,7 +196,7 @@ suspend fun restoreAccountAsync(
         resultData.put("value", resultArray)
 
         resultData
-    } catch(e: Exception){
+    } catch (e: Exception) {
         resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
@@ -235,7 +241,7 @@ suspend fun getAccountInfoAsync(account: String): JSONObject = withContext(Dispa
             put("result", "OK")
             put("value", resultArray)
         }
-    } catch(e: Exception){
+    } catch (e: Exception) {
         resultArray = JSONArray()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
@@ -243,7 +249,6 @@ suspend fun getAccountInfoAsync(account: String): JSONObject = withContext(Dispa
         resultData.put("value", resultArray)
     }
 }
-
 
 
 // Get token info asynchronously
@@ -263,7 +268,7 @@ suspend fun getBalanceAsync(
     try {
         val web3j = Web3j.build(HttpService(rpcUrl))
 
-        if(token_address == "0x0000000000000000000000000000000000000000") {
+        if (token_address == "0x0000000000000000000000000000000000000000") {
             val ethGetBalance = web3j.ethGetBalance(owner_account, DefaultBlockParameterName.LATEST).send()
             val balance = ethGetBalance.balance
             val balanceEther = Convert.fromWei(balance.toString(), Convert.Unit.ETHER)
@@ -272,7 +277,8 @@ suspend fun getBalanceAsync(
             resultData.put("result", "OK")
             resultData.put("value", resultArray)
         } else {
-            val balanceFunction = Function("balanceOf", listOf(Address(owner_account)), listOf(object : TypeReference<Uint8>() {}))
+            val balanceFunction =
+                Function("balanceOf", listOf(Address(owner_account)), listOf(object : TypeReference<Uint8>() {}))
             val encodedbalanceFunction = FunctionEncoder.encode(balanceFunction)
             val balanceResponse = web3j.ethCall(
                 Transaction.createEthCallTransaction(null, token_address, encodedbalanceFunction),
@@ -307,7 +313,7 @@ suspend fun getBalanceAsync(
 suspend fun getTokenInfoAsync(
     network: String,
     token_address: String,
-) : JSONObject = withContext(Dispatchers.IO) {
+): JSONObject = withContext(Dispatchers.IO) {
     networkSettings(network)
     val jsonData = JSONObject()
     // return array & object
@@ -402,11 +408,8 @@ suspend fun getTokenInfoAsync(
 suspend fun getTokenHistoryAsync(
     network: String,
     owner_account: String,
-    token_address: String? = "0x0000000000000000000000000000000000000000",
-    sort: String? = "DESC",
-    limit: Int? = 1000,
-    page_number: Int? = 1
-) : JSONObject = withContext(Dispatchers.IO) {
+    token_address: String? = "0x0000000000000000000000000000000000000000"
+): JSONObject = withContext(Dispatchers.IO) {
     var resultArray = JSONArray()
     var jsonData = JSONObject()
     val resultData = JSONObject().apply {
@@ -415,69 +418,22 @@ suspend fun getTokenHistoryAsync(
     }
 
     try {
-        val dbConnector = DBConnector()
-        dbConnector.connect()
-        val connection = dbConnector.getConnection()
-        var total_count = 0
-        val query =
-            "SELECT " +
-            " network," +
-            " token_address," +
-            " block_number," +
-            " timestamp," +
-            " transaction_hash," +
-            " `from`," +
-            " `to`," +
-            " amount," +
-            " gas_used, " +
-            " (SELECT token_symbol FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS symbol, " +
-            " (SELECT decimals FROM token_table WHERE network ='$network' AND token_address ='$token_address' LIMIT 1) AS decimals " +
-            "FROM " +
-            " token_transfer_table " +
-            "WHERE " +
-            " network = '$network' AND token_address = '$token_address' AND (`from` ='$owner_account' OR `to` ='$owner_account')" +
-            " ORDER BY" +
-            " block_number $sort ";
-            "LIMIT $limit " +
-            " OFFSET ${(page_number!! - 1) * limit!!}"
+        val url = URL("https://app.kthulu.io:3302/token/history/$network/$owner_account/$token_address")
+        val connection = url.openConnection() as HttpURLConnection
 
-        connection?.use {
-            val dbQueryExecutor = DBQueryExector(it)
-            val resultSet = dbQueryExecutor.executeQuery(query)
-            resultSet?.use {
-                while (it.next()) {
-                    jsonData = JSONObject().apply {
-                        put("network", it.getString("network"))
-                        put("token_id", it.getString("token_address"))
-                        put("block_number", it.getString("block_number"))
-                        put("timestamp", it.getString("timestamp"))
-                        put("transaction_hash", it.getString("transaction_hash"))
-                        put("from", it.getString("from"))
-                        put("to", it.getString("to"))
-                        put("amount", it.getString("amount"))
-                        put("gas_used", it.getString("gas_used"))
-                        put("symbol", it.getString("symbol"))
-                        put("decimals", it.getString("decimals"))
-                        total_count++
+        connection.requestMethod = "GET"
+        connection.connectTimeout = 5000
+        connection.readTimeout = 5000
 
-                    }
-                    resultArray.put(jsonData)
-                }
-                resultData.put("result", "OK")
-                resultData.put("sum", total_count)
-                resultData.put("sort", sort)
-                val page_count: Int? = if (total_count != null && limit != null) {
-                    Math.ceil(total_count.toDouble() / limit.toDouble()).toInt()
-                } else {
-                    0
-                }
-                resultData.put("page_count", page_count)
-                resultData.put("value", resultArray)
-            }
+        if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+            val reader = BufferedReader(InputStreamReader(connection.inputStream))
+            val responseBody = reader.use { it.readText() }
+            val jsonResponse = JSONObject(responseBody)
+
+            return@withContext jsonResponse
+        } else {
+            throw Exception("HTTP error code: ${connection.responseCode}")
         }
-
-        dbConnector.disconnect()
-        resultData
     } catch (e: Exception) {
         resultArray = JSONArray()
         jsonData.put("error", e.message)
@@ -486,12 +442,11 @@ suspend fun getTokenHistoryAsync(
         resultData.put("value", resultArray)
     }
 
-
 }
 
 suspend fun getUsersAsync(
     owner: String
-) : JSONObject = withContext(Dispatchers.IO) {
+): JSONObject = withContext(Dispatchers.IO) {
     var resultArray = JSONArray()
     var jsonData = JSONObject()
     val resultData = JSONObject().apply {
@@ -545,9 +500,8 @@ suspend fun getUsersAsync(
 suspend fun getTokenListAsync(
     network: String,
     ownerAddress: String,
-    sort: String? = "DESC",
-    limit: Int? = 1000,
-    page_number: Int? = 1): JSONObject = withContext(Dispatchers.IO) {
+    size : String? = "100",
+): JSONObject = withContext(Dispatchers.IO) {
     var resultArray = JSONArray()
     var jsonData = JSONObject()
     val resultData = JSONObject().apply {
@@ -556,69 +510,22 @@ suspend fun getTokenListAsync(
     }
 
     try {
-        val dbConnector = DBConnector()
-        dbConnector.connect()
-        val connection = dbConnector.getConnection()
-        var total_count = 0
-        val resultArray = JSONArray()
-        val resultData = JSONObject().apply {
-            put("result", "FAIL")
-            put("sum", 0)
-            put("value", resultArray)
-        }
-        var sum = 0;
-        val offset = limit?.let { lim -> page_number?.minus(1)?.times(lim) } ?: 0
+        val url = URL("https://app.kthulu.io:3302/token/list/$network/$ownerAddress/$size")
+        val connection = url.openConnection() as HttpURLConnection
 
-        var query =
-        " SELECT" +
-        " idx AS idx," +
-        " network AS network," +
-        " token_address AS token_id," +
-        " owner_account AS owner," +
-        " balance AS balance," +
-        " (SELECT decimals FROM token_table WHERE network = t.network AND token_address = t.token_address LIMIT 1) AS decimals," +
-        " (SELECT token_symbol FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS symbol," +
-        " (SELECT token_name FROM token_table WHERE network = t.network AND  token_address = t.token_address LIMIT 1) AS name " +
-        " FROM" +
-        " token_owner_table t" +
-        " WHERE" +
-        " network = '$network' AND owner_account = '$ownerAddress'" +
-        " ORDER BY" +
-                " idx $sort";
-        "LIMIT $limit" +
-                " OFFSET ${(page_number!! - 1) * limit!!}"
+        connection.requestMethod = "GET"
+        connection.connectTimeout = 5000
+        connection.readTimeout = 5000
 
-        connection?.use {
-            val dbQueryExecutor = DBQueryExector(it)
-            val resultSet = dbQueryExecutor.executeQuery(query)
-            resultSet?.use {
-                while (it.next()) {
-                    jsonData = JSONObject().apply {
-                        put("network", it.getString("network"))
-                        put("token_id", it.getString("token_id"))
-                        put("owner", it.getString("owner"))
-                        put("balance", it.getString("balance"))
-                        put("decimals", it.getString("decimals"))
-                        put("symbol", it.getString("symbol"))
-                        put("name", it.getString("name"))
-                        total_count ++
-                    }
-                    resultArray.put(jsonData)
-                }
-                resultData.put("result", "OK")
-                resultData.put("sum", total_count)
-                val page_count: Int? = if (total_count != null && limit != null) {
-                    Math.ceil(total_count.toDouble() / limit.toDouble()).toInt()
-                } else {
-                    0
-                }
-                resultData.put("page_count", page_count)
-                resultData.put("sort", sort)
-                resultData.put("value", resultArray)
-            }
+        if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+            val reader = BufferedReader(InputStreamReader(connection.inputStream))
+            val responseBody = reader.use { it.readText() }
+            val jsonResponse = JSONObject(responseBody)
+
+            return@withContext jsonResponse
+        } else {
+            throw Exception("HTTP error code: ${connection.responseCode}")
         }
-        dbConnector.disconnect()
-        resultData
     } catch (e: Exception) {
         resultArray = JSONArray()
         jsonData.put("error", e.message)

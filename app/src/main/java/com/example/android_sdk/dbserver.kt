@@ -9,7 +9,12 @@ object ConfigHolder {
     var databaseDriverClassName: String? = null
 }
 
-fun setConfiguration(databaseUrl: String, databaseUsername: String, databasePassword: String, databaseDriverClassName: String) {
+fun setConfiguration(
+    databaseUrl: String,
+    databaseUsername: String,
+    databasePassword: String,
+    databaseDriverClassName: String
+) {
     ConfigHolder.databaseUrl = databaseUrl
     ConfigHolder.databaseUsername = databaseUsername
     ConfigHolder.databasePassword = databasePassword
@@ -73,14 +78,14 @@ class DBConnector() {
     }
 }
 
-class DBQueryExector(private val connection: Connection){
-    fun executeQuery(sqlQuery : String) : ResultSet?{
-        var statement : Statement? = null
+class DBQueryExector(private val connection: Connection) {
+    fun executeQuery(sqlQuery: String): ResultSet? {
+        var statement: Statement? = null
 
-        try{
+        try {
             statement = connection.createStatement()
             return statement.executeQuery(sqlQuery)
-        } catch (ex : SQLException){
+        } catch (ex: SQLException) {
             ex.printStackTrace()
         } finally {
             statement?.close()
