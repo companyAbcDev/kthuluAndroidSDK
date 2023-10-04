@@ -3,9 +3,6 @@ pluginManagement {
         google()
         jcenter()
         mavenCentral()
-        maven {
-            url 'https://dl.bintray.com/web3j/maven/'
-        }
     }
 }
 dependencyResolutionManagement {
@@ -15,6 +12,6 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "android_sdk"
+rootProject.name = "sdk"
 include ':app'
 include ':kthulu'
