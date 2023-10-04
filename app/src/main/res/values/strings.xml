@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">android_sdk</string>
+    <string name="kthulu_database_url">jdbc:mariadb://210.207.161.10:3306/kthulu?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false</string>
+    <string name="kthulu_database_username">kthulu</string>
+    <string name="kthulu_database_password">kthulu123</string>
+    <string name="kthulu_database_driver_class_name">org.mariadb.jdbc.Driver</string>
 </resources>

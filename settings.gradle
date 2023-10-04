@@ -15,6 +15,6 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "sdk"
+rootProject.name = "android_sdk"
 include ':app'
 include ':kthulu'
