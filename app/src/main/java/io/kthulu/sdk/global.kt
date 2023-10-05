@@ -761,7 +761,7 @@ suspend fun getNetworkFeeAsync(network: String, toNetwork: String, type: String)
         }
     }
 
-suspend fun getNodeHomeAsync(network: String, toNetwork: String, token_address: String): JSONObject =
+suspend fun getNodeHomeAsync(network: String, toNetwork: String, token_address: String, typed: String): JSONObject =
     withContext(Dispatchers.IO) {
         networkSettings(network)
         var jsonData = JSONObject()
@@ -803,7 +803,7 @@ suspend fun getNodeHomeAsync(network: String, toNetwork: String, token_address: 
 
                 if (getTokNetwork != BigInteger.ZERO) {
                     resultArray = JSONArray()
-                    jsonData.put("type", "nft")
+                    jsonData.put("type", typed)
                     resultArray.put(jsonData)
                     resultData.put("result", "OK")
                     resultData.put("value", resultArray)
