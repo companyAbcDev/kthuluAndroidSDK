@@ -20,8 +20,10 @@ import org.web3j.protocol.core.methods.request.Transaction
 import org.web3j.protocol.core.methods.response.TransactionReceipt
 import org.web3j.protocol.http.HttpService
 import org.web3j.utils.Numeric
+import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
+import java.io.OutputStreamWriter
 import java.math.BigInteger
 import java.net.HttpURLConnection
 import java.net.URL
@@ -498,228 +500,63 @@ suspend fun getNFTsByWallet(
 
 suspend fun getNFTsByWalletArray(
     network: Array<String>,
-    account: Array<String>? = null,
+    account: Array<String>,
     collection_id: String? = null,
     sort: String? = null,
     limit: Int? = null,
     page_number: Int? = null
 ): JSONObject = withContext(Dispatchers.IO) {
-
-    val dbConnector = DBConnector()
-    dbConnector.connect()
-    val connection = dbConnector.getConnection()
-    var nftArray = JSONArray() // { ..., value : [ nftArray ]}
-    var nftData = JSONObject() // { "result": OK, "sum": 1, "sort": "desc", "page_count": 1, "value" : nftArray }
-
-    val net = network.joinToString("','", "'", "'")
-    val acc = account?.joinToString("','", "'", "'")
-
-//    var offset = limit?.let { (page_number?.minus(1))?.times(it) }
-    var offset = if (page_number != null && limit != null) {
-        (page_number - 1) * limit
-    } else {
-        0 // 또는 적절한 기본값 설정
+    var resultArray = JSONArray()
+    var jsonData = JSONObject()
+    val resultData = JSONObject().apply {
+        put("result", "FAIL")
+        put("value", resultArray)
     }
-    if (page_number == null || page_number == 0 || page_number == 1) {
-        offset = 0
-    }
-    var strQuery =
-        "SELECT" +
-                " owner.network AS network," +
-                " collection.collection_id AS collection_id," +
-                " collection.collection_name AS collection_name," +
-                " collection.collection_symbol AS collection_symbol," +
-                " collection.creator AS creator," +
-                " collection.deployment_date AS deployment_date," +
-                " collection.total_supply AS total_supply," +
-                " token.nft_type AS nft_type," +
-                " token.minted_time AS minted_time," +
-                " token.block_number AS block_number," +
-                " owner.owner_account AS owner_account," +
-                " token.token_id AS token_id," +
-                " owner.balance AS balance," +
-                " token.token_uri AS token_uri," +
-                " token.nft_name AS nft_name," +
-                " token.image_url AS image_url," +
-                " token.external_url AS external_url," +
-                " token.token_info AS token_info" +
-                " FROM " +
-                "nft_owner_table AS owner" +
-                " JOIN " +
-                "nft_token_table AS token " +
-                "ON " +
-                "owner.collection_id = token.collection_id " +
-                "AND " +
-                "owner.token_id = token.token_id " +
-                "AND " +
-                "owner.network = token.network" +
-                " JOIN " +
-                "nft_collection_table AS collection " +
-                "ON " +
-                "token.collection_id = collection.collection_id " +
-                "AND " +
-                "token.network = collection.network " +
-                "WHERE " +
-                "owner.network IN (${net}) " +
-                "AND " +
-                "owner.balance != '0'"
-    if (account != null) {
-        strQuery += " AND owner.owner_account IN ($acc)"
-    }
-    if (collection_id != null) {
-        strQuery += " AND owner.collection_id = '$collection_id'"
-    }
-    strQuery += " AND NOT EXISTS ( SELECT 1 FROM nft_hide_table AS hide WHERE hide.network = owner.network AND hide.account = owner.owner_account AND hide.token_id = owner.token_id AND hide.collection_id = owner.collection_id)"
-    strQuery += " ORDER BY token.block_number"
-    if (sort == "asc") {
-        strQuery += " asc"
-    } else {
-        strQuery += " desc"
-    }
-    strQuery += ", CAST(token.token_id AS SIGNED) desc"
-    if (limit != null) {
-        strQuery += " LIMIT $limit OFFSET $offset"
-    }
-
-    var sumQuery =
-        "SELECT " +
-                " count(*) AS sum" +
-                " FROM" +
-                " nft_owner_table AS owner" +
-                " JOIN" +
-                " nft_token_table AS token" +
-                " ON" +
-                " owner.collection_id = token.collection_id" +
-                " AND" +
-                " owner.token_id = token.token_id" +
-                " AND" +
-                " owner.network = token.network" +
-                " JOIN" +
-                " nft_collection_table AS collection" +
-                " ON" +
-                " token.collection_id = collection.collection_id" +
-                " AND" +
-                " token.network = collection.network" +
-                " WHERE" +
-                " owner.network IN ($net)" +
-                " AND" +
-                " owner.balance != '0'"
-    if (account != null) {
-        sumQuery += " AND owner.owner_account IN ($acc) "
-    }
-    if (collection_id != null) {
-        sumQuery += " AND owner.collection_id = '$collection_id' "
-    }
-    sumQuery += " AND NOT EXISTS ( SELECT 1 FROM nft_hide_table AS hide WHERE hide.network = owner.network AND hide.account = owner.owner_account AND hide.token_id = owner.token_id AND hide.collection_id = owner.collection_id)"
 
     try {
-        var sum: Int? = null
-        if ((account == null && collection_id == null) || (limit == null && page_number != null)) {
-            throw Exception() // 예외 발생
-        }
-        if (connection != null) {
-            val dbQueryExector = DBQueryExector(connection)
-            val getNFT: ResultSet? = dbQueryExector.executeQuery(strQuery)
-            val getSum: ResultSet? = dbQueryExector.executeQuery(sumQuery)
-            if (getNFT != null) {
-                try {
-                    while (getNFT.next()) {
-                        val objRes = JSONObject()
+        val url = URL("https://app.kthulu.io:3302/nft/getNftListAsync")
+        val connection = url.openConnection() as HttpURLConnection
 
-                        val network = getNFT.getString("network")
-                        val collection_id = getNFT.getString("collection_id")
-                        val collection_name = getNFT.getString("collection_name")
-                        val collection_symbol = getNFT.getString("collection_symbol")
-                        val collection_creator = getNFT.getString("creator")
-                        val deployment_date = getNFT.getInt("deployment_date")
-                        val total_supply = getNFT.getString("total_supply")
-                        val nft_type = getNFT.getString("nft_type")
-                        val minted_time = getNFT.getInt("minted_time")
-                        val block_number = getNFT.getInt("block_number")
-                        val owner_account = getNFT.getString("owner_account")
-                        val token_id = getNFT.getString("token_id")
-                        val balance = getNFT.getString("balance")
-                        val token_uri = getNFT.getString("token_uri")
-                        val nft_name = getNFT.getString("nft_name")
-                        val image_url = getNFT.getString("image_url")
-                        val external_url = getNFT.getString("external_url")
-                        val token_info = getNFT.getString("token_info")
-                        var description: String? = null
-                        var attribute: JSONArray? = null
-                        if (!token_info.isNullOrBlank()) {
-                            val metadataJSON = JSONObject(token_info)
-                            description = metadataJSON.optString("description")
-                            attribute = metadataJSON.optJSONArray("attributes")
-                        }
+        // 1. 요청 방법을 "POST"로 변경합니다.
+        connection.requestMethod = "POST"
+        connection.connectTimeout = 5000
+        connection.readTimeout = 5000
 
-//                        val replace_attributes = JSONArray(attribute ?: "[]")
-//                        val replace_metadata = JSONObject(token_info ?: "{}")
+        // 2. JSON 데이터를 전송하도록 설정합니다.
+        connection.doOutput = true
 
-                        objRes.put("network", network)
-                        objRes.put("collection_id", collection_id ?: JSONObject.NULL)
-                        objRes.put("collection_name", collection_name ?: JSONObject.NULL)
-                        objRes.put("collection_symbol", collection_symbol ?: JSONObject.NULL)
-                        objRes.put("collection_creator", collection_creator ?: JSONObject.NULL)
-                        objRes.put("collection_timestamp", deployment_date ?: JSONObject.NULL)
-                        objRes.put("collection_total_supply", total_supply ?: JSONObject.NULL)
-                        objRes.put("nft_type", nft_type ?: JSONObject.NULL)
-                        objRes.put("minted_timestamp", minted_time ?: JSONObject.NULL)
-                        objRes.put("block_number", block_number ?: JSONObject.NULL)
-                        objRes.put("owner", owner_account ?: JSONObject.NULL)
-                        objRes.put("token_id", token_id ?: JSONObject.NULL)
-                        objRes.put("token_balance", balance ?: JSONObject.NULL)
-                        objRes.put("token_uri", token_uri ?: JSONObject.NULL)
-                        objRes.put("name", nft_name ?: JSONObject.NULL)
-                        objRes.put("description", description ?: JSONObject.NULL)
-                        objRes.put("image", image_url ?: JSONObject.NULL)
-                        objRes.put("external_url", external_url ?: JSONObject.NULL)
-                        objRes.put("attributes", attribute ?: JSONObject.NULL)
-                        objRes.put("metadata", token_info ?: JSONObject.NULL)
+        // 3. "Content-Type" 헤더를 추가합니다.
+        connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
 
-                        nftArray.put(objRes)
-                    }
-                } catch (ex: SQLException) {
-                    ex.printStackTrace()
-                } finally {
-                    getNFT.close()
-                }
-            }
-            //sum 출력
-            if (getSum != null) {
-                try {
-                    while (getSum.next()) {
-                        sum = getSum.getInt("sum")
-                        //nftData.put("sum", sum)
-                    }
-                } catch (ex: SQLException) {
-                    ex.printStackTrace()
-                } finally {
-                    getSum.close()
-                }
-            }
-        }
-        dbConnector.disconnect()
+        // 여기에 보낼 JSON 데이터를 작성합니다. 예를 들어:
+        val jsonPayload = JSONObject()
+        jsonPayload.put("network", network)
+        jsonPayload.put("account", account)
+        jsonPayload.put("collection_id", collection_id)
+        jsonPayload.put("sort", sort)
+        jsonPayload.put("limit", limit)
+        jsonPayload.put("page_number", page_number)
 
-        val limit: Int? = limit
-        val page_count: Int? = if (sum != null && limit != null) {
-            Math.ceil(sum.toDouble() / limit.toDouble()).toInt()
+        val outputStreamWriter = OutputStreamWriter(connection.outputStream)
+        outputStreamWriter.write(jsonPayload.toString())
+        outputStreamWriter.flush()
+        outputStreamWriter.close()
+
+        if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+            val reader = BufferedReader(InputStreamReader(connection.inputStream))
+            val responseBody = reader.use { it.readText() }
+            val jsonResponse = JSONObject(responseBody)
+
+            return@withContext jsonResponse
         } else {
-            1
+            throw Exception("HTTP error code: ${connection.responseCode}")
         }
-
-        nftData.put("result", "OK")
-        nftData.put("sum", sum)
-        val sort = sort ?: "desc" // 기본값을 "default_value"로 지정하거나 원하는 대체값을 사용하세요.
-        nftData.put("sort", sort)
-        nftData.put("page_count", page_count)
-        nftData.put("value", nftArray)
     } catch (e: Exception) {
-        nftArray = JSONArray()
-        nftData.put("error", e.message)
-        nftArray.put(nftData)
-        nftData.put("result", "FAIL")
-        nftData.put("value", nftArray)
-        return@withContext nftData
+        resultArray = JSONArray()
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
@@ -727,185 +564,63 @@ suspend fun getNFTsByWalletArray(
 @SuppressLint("SuspiciousIndentation")
 suspend fun getNFTsTransferHistory(
     network: String,
-    collection_id: String? = null,
+    collection_id: String,
     token_id: String? = null,
-    type: String? = null,
     sort: String? = null,
     limit: Int? = null,
     page_number: Int? = null
 ): JSONObject = withContext(Dispatchers.IO) {
-
-    val dbConnector = DBConnector()
-    dbConnector.connect()
-    val connection = dbConnector.getConnection()
-    var transactionArray = JSONArray()
-    var transferData = JSONObject()
-
-    var offset = if (page_number != null && limit != null) {
-        (page_number - 1) * limit
-    } else {
-        0 // 또는 적절한 기본값 설정
-    }
-    if (page_number == null || page_number == 0 || page_number == 1) {
-        offset = 0
+    var resultArray = JSONArray()
+    var jsonData = JSONObject()
+    val resultData = JSONObject().apply {
+        put("result", "FAIL")
+        put("value", resultArray)
     }
 
-    var transferQuery =
-        " SELECT" +
-                " transaction.network AS network," +
-                " transaction.`from` AS from_address," +
-                " transaction.`to` AS to_address," +
-                " transaction.collection_id AS collection_id," +
-                " transaction.block_number AS block_number," +
-                " transaction.`timestamp` AS timestamp," +
-                " transaction.transaction_hash AS transaction_hash," +
-                " transaction.log_id AS log_id," +
-                " transaction.token_id AS token_id," +
-                " transaction.amount AS amount," +
-                " transaction.currency AS currency," +
-                " transaction.currency_symbol AS currency_symbol," +
-                " transaction.decimals AS decimals," +
-                " transaction.price AS price," +
-                " transaction.market AS market," +
-                " transaction.sales_info AS sales_info," +
-                " transaction.transaction_type AS type" +
-                " FROM " +
-                " nft_transaction_table AS transaction" +
-                " WHERE" +
-                " transaction.network = '${network}'"
-    if (token_id != null) {
-        transferQuery += " AND transaction.token_id = '${token_id}' "
-    }
-    if (collection_id != null) {
-        transferQuery += " AND transaction.collection_id= '${collection_id}' "
-    }
-    if (type == "transfer") {
-        transferQuery += "AND transaction.transaction_type = 'transfer' ORDER BY transaction.block_number"
-    } else if (type == "sales") {
-        transferQuery += "AND transaction.transaction_type = 'sales' ORDER BY transaction.block_number"
-    } else {
-        transferQuery += " ORDER BY transaction.block_number"
-    }
-    if (sort == "asc") {
-        transferQuery += " asc"
-    } else {
-        transferQuery += " desc"
-    }
-    transferQuery += ", CAST(transaction.token_id AS SIGNED) desc"
-    if (limit != null) {
-        transferQuery += " LIMIT ${limit} OFFSET ${offset}"
-    }
-
-    var sumQuery =
-        "SELECT" +
-                " count(*) AS sum" +
-                " FROM " +
-                " nft_transaction_table AS transaction" +
-                " WHERE " +
-                " transaction.network = '$network'"
-    if (token_id != null) {
-        sumQuery += " AND transaction.token_id = '$token_id' "
-    }
-    if (collection_id != null) {
-        sumQuery += " AND transaction.collection_id = '$collection_id' "
-    }
-    if (type != null) {
-        sumQuery += " AND transaction.transaction_type = '${type}'"
-    }
     try {
-        var sum: Int? = null
-        if ((token_id == null && collection_id == null) || (limit == null && page_number != null)) {
-            throw Exception() // 예외 발생
-        }
-        if (connection != null) {
-            val dbQueryExector = DBQueryExector(connection)
-            val getTransaction1: ResultSet? = dbQueryExector.executeQuery(transferQuery)
-            val getSum: ResultSet? = dbQueryExector.executeQuery(sumQuery)
-            if (getTransaction1 != null) {
-                try {
-                    while (getTransaction1.next()) {
-                        val jsonData = JSONObject()
-                        // Select data = network, from, to, collection_id, block_number, timestamp, transaction_hash, log_id, token_id, amount, transaction_type
-                        val network = getTransaction1.getString("network")
-                        val from_address = getTransaction1.getString("from_address")
-                        val to_address = getTransaction1.getString("to_address")
-                        val collection_id = getTransaction1.getString("collection_id")
-                        val block_number = getTransaction1.getInt("block_number")
-                        val timestamp = getTransaction1.getInt("timestamp")
-                        val transaction_hash = getTransaction1.getString("transaction_hash")
-                        val log_id = getTransaction1.getString("log_id")
-                        val token_id = getTransaction1.getString("token_id")
-                        val amount = getTransaction1.getString("amount")
-                        val currency = getTransaction1.getString("currency")
-                        val currency_symbol = getTransaction1.getString("currency_symbol")
-                        val decimals = getTransaction1.getInt("decimals")
-                        val price = getTransaction1.getString("price")
-                        val market = getTransaction1.getString("market")
-                        val sales_info = getTransaction1.getString("sales_info")
-                        val transaction_type = getTransaction1.getString("type")
+        val url = URL("https://app.kthulu.io:3302/nft/getNftHistoryAsync")
+        val connection = url.openConnection() as HttpURLConnection
 
-//                        val replace_sales_info = JSONArray(sales_info ?: null)
+        // 1. 요청 방법을 "POST"로 변경합니다.
+        connection.requestMethod = "POST"
+        connection.connectTimeout = 5000
+        connection.readTimeout = 5000
 
-                        jsonData.put("network", network ?: JSONObject.NULL)
-                        jsonData.put("from", from_address ?: JSONObject.NULL)
-                        jsonData.put("to", to_address ?: JSONObject.NULL)
-                        jsonData.put("collection_id", collection_id ?: JSONObject.NULL)
-                        jsonData.put("block_number", block_number ?: JSONObject.NULL)
-                        jsonData.put("timestamp", timestamp ?: JSONObject.NULL)
-                        jsonData.put("transaction_hash", transaction_hash ?: JSONObject.NULL)
-                        jsonData.put("log_id", log_id ?: JSONObject.NULL)
-                        jsonData.put("token_id", token_id ?: JSONObject.NULL)
-                        jsonData.put("amount", amount ?: JSONObject.NULL)
-                        jsonData.put("currency", currency ?: JSONObject.NULL)
-                        jsonData.put("currency_symbol", currency_symbol ?: JSONObject.NULL)
-                        jsonData.put("decimals", decimals ?: JSONObject.NULL)
-                        jsonData.put("price", price ?: JSONObject.NULL)
-                        jsonData.put("market", market ?: JSONObject.NULL)
-                        jsonData.put("sales_info", sales_info ?: JSONObject.NULL)
-                        jsonData.put("type", transaction_type ?: JSONObject.NULL)
+        // 2. JSON 데이터를 전송하도록 설정합니다.
+        connection.doOutput = true
 
-                        transactionArray.put(jsonData)
-                    }
-                } catch (ex: SQLException) {
-                    ex.printStackTrace()
-                } finally {
-                    getTransaction1.close()
-                }
-            }
-            if (getSum != null) {
-                try {
-                    while (getSum.next()) {
-                        sum = getSum.getInt("sum")
-                    }
-                } catch (ex: SQLException) {
-                    ex.printStackTrace()
-                } finally {
-                    getSum.close()
-                }
-            }
-        }
-        dbConnector.disconnect()
+        // 3. "Content-Type" 헤더를 추가합니다.
+        connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
 
-        val limit: Int? = limit
-        val page_count: Int? = if (sum != null && limit != null) {
-            Math.ceil(sum.toDouble() / limit.toDouble()).toInt()
+        // 여기에 보낼 JSON 데이터를 작성합니다. 예를 들어:
+        val jsonPayload = JSONObject()
+        jsonPayload.put("network", network)
+        jsonPayload.put("collection_id", collection_id)
+        jsonPayload.put("token_id", token_id)
+        jsonPayload.put("sort", sort)
+        jsonPayload.put("limit", limit)
+        jsonPayload.put("page_number", page_number)
+
+        val outputStreamWriter = OutputStreamWriter(connection.outputStream)
+        outputStreamWriter.write(jsonPayload.toString())
+        outputStreamWriter.flush()
+        outputStreamWriter.close()
+
+        if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+            val reader = BufferedReader(InputStreamReader(connection.inputStream))
+            val responseBody = reader.use { it.readText() }
+            val jsonResponse = JSONObject(responseBody)
+
+            return@withContext jsonResponse
         } else {
-            1
+            throw Exception("HTTP error code: ${connection.responseCode}")
         }
-
-        transferData.put("result", "OK")
-        transferData.put("sum", sum)
-        val sort = sort ?: "desc" // 기본값을 "default_value"로 지정하거나 원하는 대체값을 사용하세요.
-        transferData.put("sort", sort)
-        transferData.put("page_count", page_count)
-        transferData.put("value", transactionArray)
     } catch (e: Exception) {
-        transactionArray = JSONArray()
-        transferData.put("error", e.message)
-        transactionArray.put(transferData)
-        transferData.put("result", "FAIL")
-        transferData.put("value", transactionArray)
-        return@withContext transferData
+        resultArray = JSONArray()
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
     }
 }
 
