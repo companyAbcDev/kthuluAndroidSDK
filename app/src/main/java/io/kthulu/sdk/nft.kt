@@ -519,8 +519,6 @@ suspend fun getNFTsByWalletArray(
 
         // 1. 요청 방법을 "POST"로 변경합니다.
         connection.requestMethod = "POST"
-        connection.connectTimeout = 5000
-        connection.readTimeout = 5000
 
         // 2. JSON 데이터를 전송하도록 설정합니다.
         connection.doOutput = true
@@ -530,8 +528,8 @@ suspend fun getNFTsByWalletArray(
 
         // 여기에 보낼 JSON 데이터를 작성합니다. 예를 들어:
         val jsonPayload = JSONObject()
-        jsonPayload.put("network", network)
-        jsonPayload.put("account", account)
+        jsonPayload.put("network", JSONArray(network))
+        jsonPayload.put("account", JSONArray(account))
         jsonPayload.put("collection_id", collection_id)
         jsonPayload.put("sort", sort)
         jsonPayload.put("limit", limit)
@@ -583,8 +581,6 @@ suspend fun getNFTsTransferHistory(
 
         // 1. 요청 방법을 "POST"로 변경합니다.
         connection.requestMethod = "POST"
-        connection.connectTimeout = 5000
-        connection.readTimeout = 5000
 
         // 2. JSON 데이터를 전송하도록 설정합니다.
         connection.doOutput = true
