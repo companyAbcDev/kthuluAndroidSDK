@@ -51,35 +51,19 @@ suspend fun getMintableAddress(
 
         val CAQuery =
             "SELECT " +
-                    "network, " +
-                    "collection_id, " +
-                    "collection_name, " +
-                    "collection_symbol, " +
-                    "nft_type, " +
-                    "creator, " +
-                    "owner, " +
-                    "total_supply, " +
-                    "deployment_date, " +
-                    "slug, " +
-                    "category, " +
-                    "s3_logo_url, " +
-                    "isverified, " +
-                    "numOwners, " +
-                    "currency, " +
-                    "discord_link, " +
-                    "twitter_link, " +
-                    "instagram_link, " +
-                    "facebook_link, " +
-                    "telegram_link, " +
-                    "external_url " +
-                    "FROM " +
-                    "nft_collection_table " +
-                    "WHERE " +
-                    "network IN ('ethereum','cypress','polygon','bnb') " +
-                    "AND " +
-                    "creator IN ('0x9a1c0ef3989f944e692232d491fe5395927be9bd','0x534d102f2bf1bcad450c8a5da6e1cfb6cdb93b2f', '0x718e40874dac43d840f1e9bb135c3c098174e832')" +
-                    "AND " +
-                    " owner IN (${own})"
+                "network, " +
+                "collection_id, " +
+                "collection_name, " +
+                "collection_symbol, " +
+                "nft_type, " +
+                "owner, " +
+                "base_uri " +
+            "FROM " +
+                "nft_collection_table " +
+            "WHERE " +
+                " owner IN (${own})"
+
+        println("CAQuery: $CAQuery")
 
         if (connection != null) {
             val dbQueryExector = DBQueryExector(connection)
@@ -94,44 +78,17 @@ suspend fun getMintableAddress(
                         val collection_name = getCA.getString("collection_name")
                         val collection_symbol = getCA.getString("collection_symbol")
                         val nft_type = getCA.getString("nft_type")
-                        val creator = getCA.getString("creator")
                         val owner = getCA.getString("owner")
-                        val total_supply = getCA.getString("total_supply")
-                        val deployment_date = getCA.getInt("deployment_date")
-                        val slug = getCA.getString("slug")
-                        val category = getCA.getString("category")
-                        val s3_logo_url = getCA.getString("s3_logo_url")
-                        val isverified = getCA.getString("isverified")
-                        val numOwners = getCA.getInt("numOwners")
-                        val currency = getCA.getString("currency")
-                        val discord_link = getCA.getString("discord_link")
-                        val twitter_link = getCA.getString("twitter_link")
-                        val instagram_link = getCA.getString("instagram_link")
-                        val facebook_link = getCA.getString("facebook_link")
-                        val telegram_link = getCA.getString("telegram_link")
-                        val external_url = getCA.getString("external_url")
+                        val base_uri = getCA.getString("base_uri")
+
 
                         jsonData.put("network", network)
                         jsonData.put("collection_id", collection_id)
                         jsonData.put("collection_name", collection_name)
                         jsonData.put("collection_symbol", collection_symbol)
                         jsonData.put("nft_type", nft_type)
-                        jsonData.put("creator", creator)
                         jsonData.put("owner", owner)
-                        jsonData.put("total_supply", total_supply)
-                        jsonData.put("deployment_date", deployment_date)
-                        jsonData.put("slug", slug)
-                        jsonData.put("category", category)
-                        jsonData.put("s3_logo_url", s3_logo_url)
-                        jsonData.put("isverified", isverified)
-                        jsonData.put("numOwners", numOwners)
-                        jsonData.put("currency", currency)
-                        jsonData.put("discord_link", discord_link)
-                        jsonData.put("twitter_link", twitter_link)
-                        jsonData.put("instagram_link", instagram_link)
-                        jsonData.put("facebook_link", facebook_link)
-                        jsonData.put("telegram_link", telegram_link)
-                        jsonData.put("external_url", external_url)
+                        jsonData.put("base_uri", base_uri)
 
                         resultArray.put(jsonData)
                     }
@@ -148,7 +105,7 @@ suspend fun getMintableAddress(
         resultData.put("value", resultArray)
     } catch (e: Exception) {
         resultData.put("result", "FAIL")
-        resultData.put("reason", e)
+        resultData.put("error", e.message)
     }
 }
 
@@ -1378,6 +1335,23 @@ suspend fun deployErc721Async(
                 if (receipt.get().logs.isNotEmpty()) {
                     val log = receipt.get().logs[0]
                     jsonData.put("contract_address", log.address)
+                    val dbConnector = DBConnector()
+                    dbConnector.connect()
+                    val connection = dbConnector.getConnection()
+                    val insertQuery =
+                        "INSERT INTO nft_collection_table " +
+                                "(network, collection_id, collection_name, collection_symbol, nft_type, owner, base_uri) " +
+                                "VALUES (" +
+                                "'${network}', " +
+                                "'${log.address}', " +
+                                "'${name}', " +
+                                "'${symbol}', " +
+                                "'${uri_type}', " +
+                                "'${from}', " +
+                                "'${token_base_uri}')"
+
+                    val statement: Statement = connection!!.createStatement()
+                    statement.executeUpdate(insertQuery)
                 } else {
                     println("No logs found in the transaction receipt.")
                 }
@@ -1396,6 +1370,9 @@ suspend fun deployErc721Async(
             resultData.put("value", resultArray)
         }
     } catch (e: Exception) {
+        val jsonData = JSONObject()
+        val resultArray = JSONArray()
+        var resultData = JSONObject()
         jsonData.put("error", e.message)
         resultArray.put(jsonData)
         resultData.put("result", "FAIL")
@@ -3321,6 +3298,37 @@ suspend fun chkNFTHolder(
         return@withContext result
     }
 }
+
+suspend fun getTotalSupplyAsync(network: String, collection_id: String): JSONObject = withContext(Dispatchers.IO) {
+    networkSettings(network)  // Assuming this method sets the network-specific settings like rpcUrl.
+
+    val jsonData = JSONObject()
+    val resultArray = JSONArray()
+    val resultData = JSONObject()
+
+    try {
+        val web3j = Web3j.build(HttpService(rpcUrl))
+        val totalFunction = Function("totalSupply", emptyList(), listOf(object : TypeReference<Uint256>() {}))
+        val encodedTotalFunction = FunctionEncoder.encode(totalFunction)
+        val totalResponse = web3j.ethCall(
+            Transaction.createEthCallTransaction(null, collection_id, encodedTotalFunction),
+            DefaultBlockParameterName.LATEST
+        ).send()
+        val totalsOutput = FunctionReturnDecoder.decode(totalResponse.result, totalFunction.outputParameters)
+        val totalSupply = totalsOutput[0].value as BigInteger
+
+        jsonData.put("totalSupply", totalSupply.toString())
+        resultData.put("result", "OK")
+    } catch (e: Exception) {
+        jsonData.put("error", e.message)
+        resultData.put("result", "FAIL")
+    }
+
+    resultArray.put(jsonData)
+    resultData.put("value", resultArray)
+    resultData
+}
+
 
 suspend fun signMessage(
     network: String,
