@@ -56,6 +56,7 @@ suspend fun getMintableAddress(
                 "collection_name, " +
                 "collection_symbol, " +
                 "nft_type, " +
+                "uri_type, " +
                 "owner, " +
                 "base_uri " +
             "FROM " +
@@ -78,6 +79,7 @@ suspend fun getMintableAddress(
                         val collection_name = getCA.getString("collection_name")
                         val collection_symbol = getCA.getString("collection_symbol")
                         val nft_type = getCA.getString("nft_type")
+                        val uri_type = getCA.getString("uri_type")
                         val owner = getCA.getString("owner")
                         val base_uri = getCA.getString("base_uri")
 
@@ -87,6 +89,7 @@ suspend fun getMintableAddress(
                         jsonData.put("collection_name", collection_name)
                         jsonData.put("collection_symbol", collection_symbol)
                         jsonData.put("nft_type", nft_type)
+                        jsonData.put("uri_type", uri_type)
                         jsonData.put("owner", owner)
                         jsonData.put("base_uri", base_uri)
 
@@ -1340,12 +1343,13 @@ suspend fun deployErc721Async(
                     val connection = dbConnector.getConnection()
                     val insertQuery =
                         "INSERT INTO nft_collection_table " +
-                                "(network, collection_id, collection_name, collection_symbol, nft_type, owner, base_uri) " +
+                                "(network, collection_id, collection_name, collection_symbol, nft_type, uri_type, owner, base_uri) " +
                                 "VALUES (" +
                                 "'${network}', " +
                                 "'${log.address}', " +
                                 "'${name}', " +
                                 "'${symbol}', " +
+                                "'erc721', " +
                                 "'${uri_type}', " +
                                 "'${from}', " +
                                 "'${token_base_uri}')"
@@ -1492,6 +1496,34 @@ suspend fun deployErc1155Async(
                 if (receipt.get().logs.isNotEmpty()) {
                     val log = receipt.get().logs[0]
                     jsonData.put("contract_address", log.address)
+                    if (receipt.isPresent) {
+                        if (receipt.get().logs.isNotEmpty()) {
+                            val log = receipt.get().logs[0]
+                            jsonData.put("contract_address", log.address)
+                            val dbConnector = DBConnector()
+                            dbConnector.connect()
+                            val connection = dbConnector.getConnection()
+                            val insertQuery =
+                                "INSERT INTO nft_collection_table " +
+                                        "(network, collection_id, collection_name, collection_symbol, nft_type, uri_type, owner, base_uri) " +
+                                        "VALUES (" +
+                                        "'${network}', " +
+                                        "'${log.address}', " +
+                                        "'${name}', " +
+                                        "'${symbol}', " +
+                                        "'erc1155', " +
+                                        "'${uri_type}', " +
+                                        "'${from}', " +
+                                        "'${token_base_uri}')"
+
+                            val statement: Statement = connection!!.createStatement()
+                            statement.executeUpdate(insertQuery)
+                        } else {
+                            println("No logs found in the transaction receipt.")
+                        }
+                    } else {
+                        println("Transaction receipt not found after multiple attempts.")
+                    }
                 } else {
                     println("No logs found in the transaction receipt.")
                 }
