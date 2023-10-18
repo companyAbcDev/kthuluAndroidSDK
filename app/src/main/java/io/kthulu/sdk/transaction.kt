@@ -438,7 +438,7 @@ suspend fun deployErc20Async(
             val keyring = KeyringFactory.createFromPrivateKey(privateKey)
             caver.wallet.add(keyring)
             //deploy contract
-            val initialSupply = BigInteger.TEN.multiply(BigInteger.TEN.pow(18)) // 10 * 10¹⁸
+            val initialSupply = BigInteger(totalSupply).multiply(BigInteger.TEN.pow(18))
 
             val tokenInfo = KIP7DeployParams(name, symbol, 18, initialSupply)
 
