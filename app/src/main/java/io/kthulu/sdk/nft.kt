@@ -51,18 +51,18 @@ suspend fun getMintableAddress(
 
         val CAQuery =
             "SELECT " +
-                "network, " +
-                "collection_id, " +
-                "collection_name, " +
-                "collection_symbol, " +
-                "nft_type, " +
-                "uri_type, " +
-                "owner, " +
-                "base_uri " +
-            "FROM " +
-                "nft_collection_table " +
-            "WHERE " +
-                " owner IN (${own})"
+                    "network, " +
+                    "collection_id, " +
+                    "collection_name, " +
+                    "collection_symbol, " +
+                    "nft_type, " +
+                    "uri_type, " +
+                    "owner, " +
+                    "base_uri " +
+                    "FROM " +
+                    "nft_collection_table " +
+                    "WHERE " +
+                    " owner IN (${own})"
 
         println("CAQuery: $CAQuery")
 
@@ -524,9 +524,10 @@ suspend fun getNFTsTransferHistory(
     network: String,
     collection_id: String,
     token_id: String? = null,
-    sort: String? = null,
-    limit: Int? = null,
-    page_number: Int? = null
+    type: String? = null,
+    sort: String? = "DESC",
+    limit: Int? = 100,
+    page_number: Int? = 1
 ): JSONObject = withContext(Dispatchers.IO) {
     var resultArray = JSONArray()
     var jsonData = JSONObject()
@@ -553,6 +554,7 @@ suspend fun getNFTsTransferHistory(
         jsonPayload.put("network", network)
         jsonPayload.put("collection_id", collection_id)
         jsonPayload.put("token_id", token_id)
+        jsonPayload.put("type", type)
         jsonPayload.put("sort", sort)
         jsonPayload.put("limit", limit)
         jsonPayload.put("page_number", page_number)

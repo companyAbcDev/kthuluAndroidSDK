@@ -36,9 +36,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
 
         launch {
             withContext(Dispatchers.IO) {
-                var colelctionId = "0xa84cb2207cb80f8af82c44f7f41f804323f86289"
-                var getAccount = chkNFTHolder("cypress", "0x1400594A07925C7110B9D22791f220Ee924C0513", colelctionId, "91148")
-                println("getAccount ===  $getAccount")
+
             }
         }
     }

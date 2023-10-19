@@ -408,7 +408,9 @@ suspend fun getTokenInfoAsync(
 suspend fun getTokenHistoryAsync(
     network: String,
     owner_account: String,
-    token_address: String? = "0x0000000000000000000000000000000000000000"
+    token_address: String? = "0x0000000000000000000000000000000000000000",
+    sort: String? = "DESC",
+    size: String? = "100"
 ): JSONObject = withContext(Dispatchers.IO) {
     var resultArray = JSONArray()
     var jsonData = JSONObject()
@@ -418,7 +420,7 @@ suspend fun getTokenHistoryAsync(
     }
 
     try {
-        val url = URL("https://app.kthulu.io:3302/token/history/$network/$owner_account/$token_address")
+        val url = URL("https://app.kthulu.io:3302/token/history/$network/$owner_account/$token_address/$sort/$size")
         val connection = url.openConnection() as HttpURLConnection
 
         connection.requestMethod = "GET"
