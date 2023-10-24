@@ -23,6 +23,7 @@ import java.math.BigDecimal
 import java.math.BigInteger
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -502,7 +503,9 @@ suspend fun getUsersAsync(
 suspend fun getTokenListAsync(
     network: String,
     ownerAddress: String,
-    size : String? = "100",
+    size : Int?= 100,
+    sort : String?= null,
+    page_number : Int?=null
 ): JSONObject = withContext(Dispatchers.IO) {
     var resultArray = JSONArray()
     var jsonData = JSONObject()
@@ -512,12 +515,30 @@ suspend fun getTokenListAsync(
     }
 
     try {
-        val url = URL("https://app.kthulu.io:3302/token/list/$network/$ownerAddress/$size")
+        val url = URL("https://app.kthulu.io:3302/token/getTokenListAsync")
         val connection = url.openConnection() as HttpURLConnection
 
-        connection.requestMethod = "GET"
-        connection.connectTimeout = 5000
-        connection.readTimeout = 5000
+        // 1. 요청 방법을 "POST"로 변경합니다.
+        connection.requestMethod = "POST"
+
+        // 2. JSON 데이터를 전송하도록 설정합니다.
+        connection.doOutput = true
+
+        // 3. "Content-Type" 헤더를 추가합니다.
+        connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+
+        // 여기에 보낼 JSON 데이터를 작성합니다. 예를 들어:
+        val jsonPayload = JSONObject()
+        jsonPayload.put("network", network)
+        jsonPayload.put("account", ownerAddress)
+        jsonPayload.put("limit", size)
+        jsonPayload.put("sort", sort)
+        jsonPayload.put("page_number", page_number)
+
+        val outputStreamWriter = OutputStreamWriter(connection.outputStream)
+        outputStreamWriter.write(jsonPayload.toString())
+        outputStreamWriter.flush()
+        outputStreamWriter.close()
 
         if (connection.responseCode == HttpURLConnection.HTTP_OK) {
             val reader = BufferedReader(InputStreamReader(connection.inputStream))
