@@ -724,6 +724,8 @@ suspend fun getNetworkFeeAsync(network: String, toNetwork: String, type: String)
 
             val networkFeeIdx = BigInteger(networkFeeIdxResponse.result.replace("0x", ""), 16)
 
+            println("networkFeeIdx $networkFeeIdx")
+
             val networkFeeFunction = Function("getNetworkFeeByIdx", listOf(Uint32(networkFeeIdx)), emptyList())
             val encodedNetworkFeeFunction = FunctionEncoder.encode(networkFeeFunction)
             val networkFeeResponse = web3j.ethCall(
@@ -732,12 +734,12 @@ suspend fun getNetworkFeeAsync(network: String, toNetwork: String, type: String)
             ).send()
 
             // Assuming each value is of length 64 characters (32 bytes, which is standard for Ethereum)
-//    val networkHex = networkFeeResponse.result.substring(2, 66)
+            //    val networkHex = networkFeeResponse.result.substring(2, 66)
             val tokenFeeHex = networkFeeResponse.result.substring(66, 130)
             val nftFeeHex = networkFeeResponse.result.substring(130, 194)
             val regFeeHex = networkFeeResponse.result.substring(194, 258)
 
-//    val network = String(BigInteger(networkHex, 16).toByteArray())
+            //    val network = String(BigInteger(networkHex, 16).toByteArray())
             val tokenFee = BigInteger(tokenFeeHex, 16)
             val nftFee = BigInteger(nftFeeHex, 16)
             val regFee = BigInteger(regFeeHex, 16)

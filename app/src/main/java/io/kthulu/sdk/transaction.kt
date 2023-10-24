@@ -611,6 +611,13 @@ suspend fun bridgeCoinAsync(
 
         val amountInWei = Convert.toWei(amount, Convert.Unit.ETHER).toBigIntegerExact()
 
+        val networkFee = getNetworkFeeAsync(network, toNetwork, "token").getJSONArray("value")
+            .getJSONObject(0)
+            .getString("networkFee")
+            .toBigInteger()
+
+        val totalAmount = amountInWei.plus(networkFee)
+
         val function = Function(
             "moveFromETHER",
             listOf(Uint256(bigIntValue)),
@@ -632,7 +639,7 @@ suspend fun bridgeCoinAsync(
                     bridgeContractAddress,
                     null,
                     null,
-                    amountInWei,
+                    totalAmount,
                     encodedFunction
                 )
                 gasLimit = caver.rpc.klay.estimateGas(callObject).send().value
@@ -646,7 +653,7 @@ suspend fun bridgeCoinAsync(
                 .setKlaytnCall(caver.rpc.getKlay())
                 .setFrom(keyring.address)
                 .setTo(bridgeContractAddress)
-                .setValue(amountInWei)
+                .setValue(totalAmount)
                 .setInput(encodedFunction)
                 .setGas(gasLimit)
                 .build()
@@ -693,7 +700,7 @@ suspend fun bridgeCoinAsync(
                         BigInteger(gasPrice), // Add 20% to the gas price
                         BigInteger.valueOf(200000), // Add 20% to the gas limit
                         bridgeContractAddress,
-                        amountInWei,
+                        totalAmount,
                         encodedFunction
                     )
                 } else {
@@ -702,7 +709,7 @@ suspend fun bridgeCoinAsync(
                         nonce,
                         BigInteger.valueOf(200000), // Add 20% to the gas limit
                         bridgeContractAddress,
-                        amountInWei,
+                        totalAmount,
                         encodedFunction,
                         BigInteger(maxPriorityFeePerGas), // 35 Gwei maxPriorityFeePerGas
                         BigInteger(gasPrice) // Add 20% to the gas price
