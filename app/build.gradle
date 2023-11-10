@@ -17,7 +17,7 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled = false  // ProGuard 비활성화
+            minifyEnabled false  // ProGuard 비활성화
             debuggable true
             jniDebuggable true
             renderscriptDebuggable true
