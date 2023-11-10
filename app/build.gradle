@@ -18,7 +18,13 @@ android {
     buildTypes {
         release {
             minifyEnabled false  // ProGuard 비활성화
-            debuggable true
+            debuggable false  // 디버깅 옵션 비활성화
+            jniDebuggable false
+            renderscriptDebuggable false
+        }
+        debug {
+            minifyEnabled false
+            debuggable true  // 디버깅 옵션 활성화
             jniDebuggable true
             renderscriptDebuggable true
         }
