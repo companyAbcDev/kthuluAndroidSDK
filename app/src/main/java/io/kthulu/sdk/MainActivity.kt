@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by MainScope() {
         setContentView(R.layout.activity_main)
 
         // Application에서 Context를 가져올 수 있도록 구현
-        setAppContext(applicationContext)
+        // setAppContext(applicationContext)
 
         launch {
             withContext(Dispatchers.IO) {
