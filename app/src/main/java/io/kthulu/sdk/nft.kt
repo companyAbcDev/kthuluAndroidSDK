@@ -51,18 +51,18 @@ suspend fun getMintableAddress(
 
         val CAQuery =
             "SELECT " +
-                    "network, " +
-                    "collection_id, " +
-                    "collection_name, " +
-                    "collection_symbol, " +
-                    "nft_type, " +
-                    "uri_type, " +
-                    "owner, " +
-                    "base_uri " +
-                    "FROM " +
-                    "nft_collection_table " +
-                    "WHERE " +
-                    " owner IN (${own})"
+                "network, " +
+                "collection_id, " +
+                "collection_name, " +
+                "collection_symbol, " +
+                "nft_type, " +
+                "uri_type, " +
+                "owner, " +
+                "base_uri " +
+            "FROM " +
+                "nft_collection_table " +
+            "WHERE " +
+                " owner IN (${own})"
 
         println("CAQuery: $CAQuery")
 
@@ -1210,7 +1210,7 @@ suspend fun sendNFT1155BatchTransactionAsync(
     }
 }
 
-fun waitForTransactionReceipt(web3j: Web3j, transactionHash: String, maxAttempts: Int = 20, interval: Long = 500): Optional<TransactionReceipt> {
+fun waitForTransactionReceipt(web3j: Web3j, transactionHash: String, maxAttempts: Int = 50, interval: Long = 500): Optional<TransactionReceipt> {
     var attempts = 0
     while (attempts < maxAttempts) {
         val receiptResponse = web3j.ethGetTransactionReceipt(transactionHash).send()
@@ -3434,4 +3434,51 @@ suspend fun getSignerAddressFromSignature(
     val signData = Sign.SignatureData(v, r, s)
     val pubKey = Sign.signedPrefixedMessageToKey(message.toByteArray(Charsets.UTF_8), signData)
     return "0x" + Keys.getAddress(pubKey)
+}
+
+suspend fun getContractAddressAsync(
+    network: String,
+    transactionHash: String,
+    maxAttempts: Int = 20,
+    interval: Long = 500
+): JSONObject = withContext(Dispatchers.IO) {
+    try {
+        networkSettings(network)
+        val web3j = Web3j.build(HttpService(rpcUrl))
+        val resultData = JSONObject()
+        val resultArray = JSONArray()
+        var attempts = 0
+
+        while (attempts < maxAttempts) {
+            val receiptResponse = web3j.ethGetTransactionReceipt(transactionHash).send()
+
+            if (receiptResponse.hasError()) {
+                resultData.put("result", "FAIL")
+                resultArray.put(JSONObject().put("error", receiptResponse.error.message))
+            } else if (receiptResponse.transactionReceipt.isPresent) {
+                val log = receiptResponse.transactionReceipt.get().logs.firstOrNull()
+
+                if (log != null) {
+                    resultData.put("result", "OK")
+                    resultArray.put(JSONObject().put("contract_address", log.address))
+                } else {
+                    resultData.put("result", "FAIL")
+                    resultArray.put(JSONObject().put("error", "No logs found in the transaction receipt."))
+                }
+
+                resultData.put("value", resultArray)
+                return@withContext resultData
+            }
+
+            Thread.sleep(interval)
+            attempts++
+        }
+
+        resultData.put("result", "FAIL")
+        resultArray.put(JSONObject().put("error", "Max attempts reached without success."))
+        resultData.put("value", resultArray)
+        resultData
+    } catch (e: Exception) {
+        JSONObject().put("result", "FAIL").put("value", JSONArray().put(JSONObject().put("error", e.message)))
+    }
 }
