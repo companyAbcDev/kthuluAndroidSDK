@@ -92,6 +92,71 @@ suspend fun createAccountsAsync(
     }
 }
 
+suspend fun btsqlCreateAccountsAsync(
+    network: Array<String>
+): JSONObject = withContext(Dispatchers.IO) {
+    // save data arrya
+    var saveMainNet = JSONArray()
+    var jsonData = JSONObject()
+    var resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
+    val allowedStrings = setOf("ethereum", "cypress", "polygon", "bnb", "sepolia", "baobab", "mumbai", "tbnb")
+
+    for (network in network) {
+        if (network !in allowedStrings) {
+            resultData.put("result", "FAIL")
+            resultData.put("value", "Error: $network is not allowed.")
+            return@withContext resultData
+        }
+    }
+
+    val initialEntropy = RandomUtils.nextBytes(16)
+    val mnemonic = MnemonicUtils.generateMnemonic(initialEntropy)
+    val seed = MnemonicUtils.generateSeed(mnemonic, null)
+    val masterKeyPair = Bip32ECKeyPair.generateKeyPair(seed)
+    val purpose = Bip32ECKeyPair.deriveKeyPair(masterKeyPair, intArrayOf(44 or Bip32ECKeyPair.HARDENED_BIT))
+    val coinType = Bip32ECKeyPair.deriveKeyPair(purpose, intArrayOf(60 or Bip32ECKeyPair.HARDENED_BIT))
+    val account = Bip32ECKeyPair.deriveKeyPair(coinType, intArrayOf(0 or Bip32ECKeyPair.HARDENED_BIT))
+    val change = Bip32ECKeyPair.deriveKeyPair(account, intArrayOf(0))
+    val keyPair = Bip32ECKeyPair.deriveKeyPair(change, intArrayOf(0))
+    val credentials = Credentials.create(keyPair.privateKey.toString(16))
+
+    try {
+        for (network in network) {
+
+            // add return value
+            val returnData = JSONObject()
+            returnData.put("network", network)
+            returnData.put("account", credentials.address)
+            returnData.put("private", "0x${Numeric.toHexStringNoPrefix(keyPair.privateKey)}")
+            returnData.put("mnemonic", mnemonic)
+            resultArray.put(returnData)
+        }
+
+        //save
+        val saveData = JSONObject()
+        saveData.put("account", credentials.address)
+        saveData.put("private", encrypt("0x${Numeric.toHexStringNoPrefix(keyPair.privateKey)}"))
+        saveData.put("mnemonic", encrypt(mnemonic))
+        saveMainNet.put(saveData)
+
+        saveData(credentials.address.lowercase(), saveMainNet.toString())
+
+        resultData.put("result", "OK")
+        resultData.put("value", resultArray)
+        resultData
+
+    } catch (e: Exception) {
+        resultArray = JSONArray()
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
+    }
+}
+
 suspend fun isValidAddressAsync(account: String): Boolean = withContext(Dispatchers.IO) {
     try {
         WalletUtils.isValidAddress(account)
