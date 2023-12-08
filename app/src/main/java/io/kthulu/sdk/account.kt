@@ -37,7 +37,7 @@ suspend fun createAccountsAsync(
     var resultData = JSONObject()
     resultData.put("result", "FAIL")
     resultData.put("value", resultArray)
-    val allowedStrings = setOf("ethereum", "cypress", "polygon", "bnb")
+    val allowedStrings = setOf("ethereum", "cypress", "polygon", "bnb", "sepolia", "baobab", "mumbai", "tbnb")
 
     for (network in network) {
         if (network !in allowedStrings) {
