@@ -202,7 +202,7 @@ suspend fun restoreAccountAsync(
     val networkArray: Array<String>
 
     if (network == null) {
-        networkArray = arrayOf("ethereum", "cypress", "polygon", "bnb")
+        networkArray = arrayOf("ethereum", "cypress", "polygon", "bnb", "sepolia", "baobab", "mumbai", "tbnb")
     } else {
         networkArray = network
     }
@@ -242,6 +242,100 @@ suspend fun restoreAccountAsync(
             val returnObject = JSONObject()
             returnObject.put("network", network)
             returnObject.put("account", credentials.address)
+            resultArray.put(returnObject)
+        }
+
+        // save
+        val saveObject = JSONObject()
+        saveObject.put("account", credentials.address)
+        saveObject.put("private", encrypt(keyPairPrivateKey))
+        if (mnemonic == null) {
+            saveObject.put("mnemonic", "")
+        } else {
+            saveObject.put("mnemonic", encrypt(mnemonic))
+        }
+        saveMainNet.put(saveObject)
+
+        saveData(credentials.address.lowercase(), saveMainNet.toString())
+
+        resultData.put("result", "OK")
+        resultData.put("value", resultArray)
+
+        resultData
+    } catch (e: Exception) {
+        resultArray = JSONArray()
+        jsonData.put("error", e.message)
+        resultArray.put(jsonData)
+        resultData.put("result", "FAIL")
+        resultData.put("value", resultArray)
+    }
+
+}
+
+suspend fun btsqlRestoreAccountAsync(
+    network: Array<String>? = null,
+    private: String? = null,
+    mnemonic: String? = null
+): JSONObject = withContext(Dispatchers.IO) {
+
+    // save data array
+    var saveMainNet = JSONArray()
+    var jsonData = JSONObject()
+    // return array & object
+    var resultArray = JSONArray()
+    var resultData = JSONObject()
+    resultData.put("result", "FAIL")
+    resultData.put("value", resultArray)
+
+    val networkArray: Array<String>
+
+    if (network == null) {
+        networkArray = arrayOf("ethereum", "cypress", "polygon", "bnb", "sepolia", "baobab", "mumbai", "tbnb")
+    } else {
+        networkArray = network
+    }
+
+    try {
+        val keyPair = when {
+            mnemonic != null -> {
+                if (!isValidMnemonic(mnemonic)) {
+                    throw IllegalArgumentException("Invalid mnemonic phrase.")
+                }
+                val seed = MnemonicUtils.generateSeed(mnemonic, "")
+                val masterKeyPair = Bip32ECKeyPair.generateKeyPair(seed)
+                val purpose = Bip32ECKeyPair.deriveKeyPair(masterKeyPair, intArrayOf(44 or Bip32ECKeyPair.HARDENED_BIT))
+                val coinType = Bip32ECKeyPair.deriveKeyPair(purpose, intArrayOf(60 or Bip32ECKeyPair.HARDENED_BIT))
+                val account = Bip32ECKeyPair.deriveKeyPair(coinType, intArrayOf(0 or Bip32ECKeyPair.HARDENED_BIT))
+                val change = Bip32ECKeyPair.deriveKeyPair(account, intArrayOf(0))
+                Bip32ECKeyPair.deriveKeyPair(change, intArrayOf(0))
+            }
+
+            private != null -> {
+                if (!isValidPrivateKey(private)) {
+                    throw IllegalArgumentException("Invalid private key.")
+                }
+                ECKeyPair.create(Numeric.hexStringToByteArray(private))
+            }
+
+            else -> throw IllegalArgumentException("Either mnemonic or privateKey must be provided.")
+        }
+
+        val credentials = Credentials.create(keyPair)
+        var keyPairPrivateKey = "0x${Numeric.toHexStringNoPrefix(keyPair.privateKey)}"
+
+        mnemonic?.let { it } ?: ""
+
+        for (network in networkArray) {
+            // add return value
+            val returnObject = JSONObject()
+            returnObject.put("network", network)
+            returnObject.put("account", credentials.address)
+            returnObject.put("private", keyPairPrivateKey)
+            if (mnemonic == null) {
+                returnObject.put("mnemonic", "")
+            } else {
+                returnObject.put("mnemonic", mnemonic)
+            }
             resultArray.put(returnObject)
         }
 
