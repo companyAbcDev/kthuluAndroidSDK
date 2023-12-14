@@ -64,7 +64,7 @@ fun networkSettings(network: String) {
         "cypress" -> "https://rpc.ankr.com/klaytn"
         "polygon" -> "https://rpc-mainnet.maticvigil.com/v1/96ab7849c9d3f105416383dd284c3f7e6511208c"
         "bnb" -> "https://bsc-dataseed.binance.org"
-        "goerli" -> "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"
+        "sepolia" -> "https://rpc.sepolia.org"
         "baobab" -> "https://api.baobab.klaytn.net:8651"
         "mumbai" -> "https://polygon-mumbai.infura.io/v3/4458cf4d1689497b9a38b1d6bbf05e78"
         "tbnb" -> "https://data-seed-prebsc-1-s1.binance.org:8545"
@@ -75,7 +75,7 @@ fun networkSettings(network: String) {
         "cypress" -> "0"
         "polygon" -> "50000000000"
         "bnb" -> "0"
-        "goerli" -> "2000000000"
+        "sepolia" -> "10"
         "baobab" -> "0"
         "mumbai" -> "1500000000"
         "tbnb" -> "0"
@@ -86,7 +86,7 @@ fun networkSettings(network: String) {
         "cypress" -> "0x33fcf21e795447cc1668ef2ca06dbf78eb180763"
         "polygon" -> "0xf643a4fb01cbbfb561cc906c1f37d5718ef3bba3"
         "bnb" -> "0xf643a4fb01cbbfb561cc906c1f37d5718ef3bba3"
-        "goerli" -> ""
+        "sepolia" -> "0x9b0125085ccfec4e697b2e0d4ce0e3fe5f5eaf53"
         "baobab" -> "0xd3cb20c7476d544d9b34878ea352cd460125b34c"
         "mumbai" -> "0xd6012f44f054a811ffae39c69660d3a759dae7e8"
         "tbnb" -> ""
@@ -97,10 +97,21 @@ fun networkSettings(network: String) {
         "cypress" -> "0xb7e2b748364c7d38311444a62a57d76dd697e99b"
         "polygon" -> "0x7362fa30ada8ccf2130017f2a8f0b6be78aa38de"
         "bnb" -> "0x873caf09b6668db216191a0121bc481e261643b3"
-        "goerli" -> "0xc11735Ce3c155E755bC9839A5B5d06dEa0482306"
+        "sepolia" -> "0x99c0c3fff607ea8c1c6e7ef66a7410bf9ab5db94"
         "baobab" -> "0x68bfcdfd034f050e65ae1de11103c94dc2e7747d"
         "mumbai" -> "0x9eab88e535d6676649c4b0b7f783ee53a29624df"
         "tbnb" -> "0x808EE7147d91EAe0f658164248402ac380EB5F17"
+        else -> throw IllegalArgumentException("Invalid main network type")
+    }
+    nftTransferContractAddress = when (network) {
+        "ethereum" -> "0x9a1c0ef3989f944e692232d491fe5395927be9bd"
+        "cypress" -> "0x534d102f2bf1bcad450c8a5da6e1cfb6cdb93b2f"
+        "polygon" -> "0x9a1c0ef3989f944e692232d491fe5395927be9bd"
+        "bnb" -> "0x718e40874dac43d840f1e9bb135c3c098174e832"
+        "sepolia" -> "0xcab822accb20114c715aad8ca3315204f6f81d90"
+        "baobab" -> "0x7ae6b96456d8ba526c8615b75e3c22f7d955b30b"
+        "mumbai" -> "0xe3b3e095c50e3e0c202e496e5bc94df2ec59eef5"
+        "tbnb" -> ""
         else -> throw IllegalArgumentException("Invalid main network type")
     }
     bridgeSetupContractAddress = when (network) {
@@ -108,7 +119,7 @@ fun networkSettings(network: String) {
         "cypress" -> "0x41ec118425e4d13b509382e97cdc3f09dbba8fd9"
         "polygon" -> "0x4f5d095ccda117e168ea58bcccffafb9c3617491"
         "bnb" -> "0x35baced894af326573a85565c1cf3aed54394b60"
-        "goerli" -> ""
+        "sepolia" -> "0x65c3ff55f9d32e2144b25f20b3f833056d22e97c"
         "baobab" -> "0xa2b3ab85d49caed1b125532d4e6ed8f1153d7929"
         "mumbai" -> "0x09d51e8bbe25a114e8e1c6f280153dcc041eb1ef"
         "tbnb" -> ""
@@ -119,7 +130,7 @@ fun networkSettings(network: String) {
         "cypress" -> ""
         "polygon" -> "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff"
         "bnb" -> "0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F"
-        "goerli" -> ""
+        "sepolia" -> ""
         "baobab" -> ""
         "mumbai" -> ""
         "tbnb" -> ""
@@ -130,20 +141,9 @@ fun networkSettings(network: String) {
         "cypress" -> ""
         "polygon" -> "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"
         "bnb" -> "0xBCfCcbde45cE874adCB698cC183deBcF17952812"
-        "goerli" -> ""
+        "sepolia" -> ""
         "baobab" -> ""
         "mumbai" -> ""
-        "tbnb" -> ""
-        else -> throw IllegalArgumentException("Invalid main network type")
-    }
-    nftTransferContractAddress = when (network) {
-        "ethereum" -> "0x9a1c0ef3989f944e692232d491fe5395927be9bd"
-        "cypress" -> "0x534d102f2bf1bcad450c8a5da6e1cfb6cdb93b2f"
-        "polygon" -> "0x9a1c0ef3989f944e692232d491fe5395927be9bd"
-        "bnb" -> "0x718e40874dac43d840f1e9bb135c3c098174e832"
-        "goerli" -> ""
-        "baobab" -> "0x7ae6b96456d8ba526c8615b75e3c22f7d955b30b"
-        "mumbai" -> "0xe3b3e095c50e3e0c202e496e5bc94df2ec59eef5"
         "tbnb" -> ""
         else -> throw IllegalArgumentException("Invalid main network type")
     }
@@ -152,7 +152,7 @@ fun networkSettings(network: String) {
         "cypress" -> "2000000"
         "polygon" -> "500000"
         "bnb" -> "2000000"
-        "goerli" -> "0"
+        "sepolia" -> "0"
         "baobab" -> "5000000"
         "mumbai" -> "5500000"
         "tbnb" -> "0"
