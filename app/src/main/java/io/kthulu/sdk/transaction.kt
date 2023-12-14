@@ -601,6 +601,10 @@ suspend fun bridgeCoinAsync(
             "cypress" -> "KLAYTN"
             "polygon" -> "POLYGON"
             "bnb" -> "BNBMAIN"
+            "sepolia" -> "SEPOLIA"
+            "baobab" -> "BAOBAB"
+            "mumbai" -> "MUMBAI"
+            "tbnb" -> "BNBTEST"
             else -> throw IllegalArgumentException("Invalid main network type")
         }
 
@@ -779,8 +783,10 @@ suspend fun bridgeTokenAsync(
             "cypress" -> "KLAYTN"
             "polygon" -> "POLYGON"
             "bnb" -> "BNBMAIN"
+            "sepolia" -> "SEPOLIA"
             "baobab" -> "BAOBAB"
             "mumbai" -> "MUMBAI"
+            "tbnb" -> "BNBTEST"
             else -> throw IllegalArgumentException("Invalid main network type")
         }
 

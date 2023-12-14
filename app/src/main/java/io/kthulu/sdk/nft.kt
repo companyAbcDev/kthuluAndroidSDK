@@ -2609,6 +2609,10 @@ suspend fun bridgeErc721Async(
             "cypress" -> "KLAYTN"
             "polygon" -> "POLYGON"
             "bnb" -> "BNBMAIN"
+            "sepolia" -> "SEPOLIA"
+            "baobab" -> "BAOBAB"
+            "mumbai" -> "MUMBAI"
+            "tbnb" -> "BNBTEST"
             else -> throw IllegalArgumentException("Invalid main network type")
         }
 
@@ -2747,6 +2751,10 @@ suspend fun bridgeErc1155Async(
             "cypress" -> "KLAYTN"
             "polygon" -> "POLYGON"
             "bnb" -> "BNBMAIN"
+            "sepolia" -> "SEPOLIA"
+            "baobab" -> "BAOBAB"
+            "mumbai" -> "MUMBAI"
+            "tbnb" -> "BNBTEST"
             else -> throw IllegalArgumentException("Invalid main network type")
         }
 
